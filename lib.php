@@ -11,8 +11,8 @@ defined('MOODLE_INTERNAL') || die();
  * @return bool
  */
 function local_proctorcore_is_attempt_allowed(int $attemptid, int $userid): bool {
-    // Workflow placeholder for quizaccess_proctorgate integration.
-    return true;
+    // Delegate to the business logic layer to check identity and tech readiness.
+    return \local_proctorcore\local\gate_service::is_attempt_allowed($attemptid);
 }
 
 /**
@@ -22,6 +22,6 @@ function local_proctorcore_is_attempt_allowed(int $attemptid, int $userid): bool
  * @return int Company id, or 0 for site/global context.
  */
 function local_proctorcore_get_user_companyid(int $userid): int {
-    // Workflow placeholder for IOMAD tenant resolution.
-    return 0;
+    // Delegate to the tenant resolver to handle IOMAD checks.
+    return \local_proctorcore\local\tenant_resolver::get_user_companyid($userid);
 }
