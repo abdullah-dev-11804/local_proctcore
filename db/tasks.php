@@ -5,7 +5,29 @@ defined('MOODLE_INTERNAL') || die();
 
 $tasks = [
     [
+<<<<<<< HEAD
         'classname' => 'local_proctorcore\task\cleanup_retention_task',
+=======
+        'classname' => 'local_proctorcore\\task\\connection_recovery_task',
+        'blocking' => 0,
+        'minute' => '*',
+        'hour' => '*',
+        'day' => '*',
+        'month' => '*',
+        'dayofweek' => '*',
+    ],
+    [
+        'classname' => 'local_proctorcore\\task\\generate_reports_task',
+        'blocking' => 0,
+        'minute' => '*/5',
+        'hour' => '*',
+        'day' => '*',
+        'month' => '*',
+        'dayofweek' => '*',
+    ],
+    [
+        'classname' => 'local_proctorcore\\task\\cleanup_retention_task',
+>>>>>>> origin/danial
         'blocking' => 0,
         'minute' => 'R',
         'hour' => '3',

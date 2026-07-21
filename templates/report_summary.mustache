@@ -1,4 +1,143 @@
 {{!
+<<<<<<< HEAD
     Summary block for a proctoring session report.
 }}
 <div class="local-proctorcore-report-summary"></div>
+=======
+    ProctorCore Section 3.1 report detail.
+}}
+<div class="local-proctorcore-report">
+    <div class="d-flex flex-wrap justify-content-between align-items-start mb-3">
+        <div>
+            <h2 class="mb-1">{{title}}</h2>
+            <div class="text-muted">{{sessionid}}</div>
+        </div>
+        <div class="local-proctorcore-report-actions">
+            <a class="btn btn-secondary" href="{{backurl}}">{{#str}}report:backtolist, local_proctorcore{{/str}}</a>
+            <a class="btn btn-outline-secondary" href="{{attempturl}}">{{#str}}report:viewattempt, local_proctorcore{{/str}}</a>
+            {{#candownload}}
+                <a class="btn btn-primary" href="{{downloadurl}}">{{#str}}report:downloadpdf, local_proctorcore{{/str}}</a>
+            {{/candownload}}
+        </div>
+    </div>
+
+    <div class="local-proctorcore-report-statusbar mb-4">
+        <div><span class="text-muted">{{#str}}report:result, local_proctorcore{{/str}}</span><br><span class="badge {{resultclass}}">{{resulttext}}</span></div>
+        <div><span class="text-muted">{{#str}}report:status, local_proctorcore{{/str}}</span><br><span class="badge {{statusclass}}">{{statustext}}</span></div>
+        <div><span class="text-muted">{{#str}}report:identitystatus, local_proctorcore{{/str}}</span><br><span class="badge {{identityclass}}">{{identitytext}}</span></div>
+        <div><span class="text-muted">{{#str}}report:technicalstatus, local_proctorcore{{/str}}</span><br><span class="badge {{technicalclass}}">{{technicaltext}}</span></div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header"><strong>{{#str}}report:sessiondetails, local_proctorcore{{/str}}</strong></div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-striped mb-0">
+                    <tbody>
+                        <tr><th>{{#str}}report:student, local_proctorcore{{/str}}</th><td>{{studentname}}</td></tr>
+                        <tr><th>{{#str}}report:email, local_proctorcore{{/str}}</th><td>{{studentemail}}</td></tr>
+                        {{#studentidnumber}}<tr><th>{{#str}}report:idnumber, local_proctorcore{{/str}}</th><td>{{studentidnumber}}</td></tr>{{/studentidnumber}}
+                        <tr><th>{{#str}}report:company, local_proctorcore{{/str}}</th><td>{{companyname}}</td></tr>
+                        <tr><th>{{#str}}report:course, local_proctorcore{{/str}}</th><td>{{coursename}}</td></tr>
+                        <tr><th>{{#str}}report:quiz, local_proctorcore{{/str}}</th><td>{{quizname}}</td></tr>
+                        <tr><th>{{#str}}report:attempt, local_proctorcore{{/str}}</th><td>{{attemptnumber}} ({{attemptstate}})</td></tr>
+                        <tr><th>{{#str}}report:starttime, local_proctorcore{{/str}}</th><td>{{starttime}}</td></tr>
+                        <tr><th>{{#str}}report:endtime, local_proctorcore{{/str}}</th><td>{{endtime}}</td></tr>
+                        <tr><th>{{#str}}report:duration, local_proctorcore{{/str}}</th><td>{{duration}}</td></tr>
+                        <tr><th>{{#str}}report:grade, local_proctorcore{{/str}}</th><td>{{grade}}</td></tr>
+                        <tr><th>{{#str}}report:percentage, local_proctorcore{{/str}}</th><td>{{percent}}</td></tr>
+                        <tr><th>{{#str}}report:riskscore, local_proctorcore{{/str}}</th><td>{{risk}}</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {{#hasfields}}
+    <div class="card mb-4">
+        <div class="card-header"><strong>{{#str}}report:participantfields, local_proctorcore{{/str}}</strong></div>
+        <div class="card-body p-0">
+            <table class="table table-striped mb-0">
+                <tbody>{{#fields}}<tr><th>{{name}}</th><td>{{value}}</td></tr>{{/fields}}</tbody>
+            </table>
+        </div>
+    </div>
+    {{/hasfields}}
+
+    {{#hascheck}}
+    <div class="card mb-4">
+        <div class="card-header"><strong>{{#str}}report:technicalcheck, local_proctorcore{{/str}}</strong></div>
+        <div class="card-body p-0">
+            <table class="table table-striped mb-0">
+                <tbody>{{#checkitems}}<tr><th>{{name}}</th><td>{{value}}</td></tr>{{/checkitems}}</tbody>
+            </table>
+        </div>
+    </div>
+    {{/hascheck}}
+
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between">
+            <strong>{{#str}}report:violations, local_proctorcore{{/str}}</strong>
+            <span class="badge badge-secondary">{{violationcount}}</span>
+        </div>
+        <div class="card-body p-0">
+            {{#hasviolations}}
+            <div class="table-responsive">
+                <table class="table table-striped mb-0">
+                    <thead><tr><th>{{#str}}report:time, local_proctorcore{{/str}}</th><th>{{#str}}report:type, local_proctorcore{{/str}}</th><th>{{#str}}report:severity, local_proctorcore{{/str}}</th><th>{{#str}}report:description, local_proctorcore{{/str}}</th><th>{{#str}}report:duration, local_proctorcore{{/str}}</th></tr></thead>
+                    <tbody>{{#violations}}<tr><td>{{time}}</td><td>{{type}}</td><td>{{severity}}</td><td>{{{description}}}</td><td>{{duration}}</td></tr>{{/violations}}</tbody>
+                </table>
+            </div>
+            {{/hasviolations}}
+            {{^hasviolations}}<div class="p-3 text-muted">{{#str}}report:noviolations, local_proctorcore{{/str}}</div>{{/hasviolations}}
+        </div>
+    </div>
+
+    {{#hassnapshots}}
+    <div class="card mb-4">
+        <div class="card-header"><strong>{{#str}}report:snapshots, local_proctorcore{{/str}}</strong></div>
+        <div class="card-body">
+            {{#snapshotgroups}}
+                <h4 class="h6 mt-2">{{label}}</h4>
+                <div class="local-proctorcore-report-gallery mb-3">
+                    {{#items}}
+                    <figure class="local-proctorcore-report-snapshot">
+                        <a href="{{viewurl}}" target="_blank" rel="noopener"><img src="{{viewurl}}" alt="{{reason}}"></a>
+                        <figcaption><strong>{{reason}}</strong><br>{{createdat}} · {{filesize}}</figcaption>
+                    </figure>
+                    {{/items}}
+                </div>
+            {{/snapshotgroups}}
+        </div>
+    </div>
+    {{/hassnapshots}}
+
+    <div class="card mb-4">
+        <div class="card-header"><strong>{{#str}}report:videoclips, local_proctorcore{{/str}}</strong></div>
+        <div class="card-body">
+            {{#hasvideos}}
+                <div class="list-group">
+                    {{#videos}}
+                    <a class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" href="{{viewurl}}" target="_blank" rel="noopener">
+                        <span><strong>{{reason}}</strong><br><small class="text-muted">{{createdat}}</small></span>
+                        <span>{{filesize}}</span>
+                    </a>
+                    {{/videos}}
+                </div>
+            {{/hasvideos}}
+            {{^hasvideos}}<div class="text-muted">{{#str}}report:novideos, local_proctorcore{{/str}}</div>{{/hasvideos}}
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header"><strong>{{#str}}report:retention, local_proctorcore{{/str}}</strong></div>
+        <div class="card-body p-0">
+            <table class="table table-striped mb-0"><tbody>
+                <tr><th>{{#str}}report:appealuntil, local_proctorcore{{/str}}</th><td>{{appealuntil}}</td></tr>
+                <tr><th>{{#str}}report:reportexpiresat, local_proctorcore{{/str}}</th><td>{{reportexpiresat}}</td></tr>
+                <tr><th>{{#str}}report:videoexpiresat, local_proctorcore{{/str}}</th><td>{{videoexpiresat}}</td></tr>
+            </tbody></table>
+        </div>
+    </div>
+</div>
+>>>>>>> origin/danial

@@ -21,9 +21,15 @@ $capabilities = [
     'local/proctorcore:viewallreports' => [
         'captype' => 'read',
         'contextlevel' => CONTEXT_SYSTEM,
+<<<<<<< HEAD
         'archetypes' => [
             'manager' => CAP_ALLOW,
         ],
+=======
+        // Assign explicitly only to SENTAL global-report roles. Site administrators
+        // always pass capability checks through Moodle's normal do-anything rule.
+        'archetypes' => [],
+>>>>>>> origin/danial
     ],
     'local/proctorcore:manage' => [
         'captype' => 'write',

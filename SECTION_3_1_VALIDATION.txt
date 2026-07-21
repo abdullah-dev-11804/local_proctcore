@@ -1,0 +1,9 @@
+ProctorCore Section 3.1 v0.9.0 validation
+- 55 plugin PHP files passed php -l.
+- Existing AMD source JavaScript files passed node --check.
+- db/install.xml parsed successfully and was not changed.
+- All referenced local_proctorcore English language strings were present.
+- Development Server B router passed php -l.
+- Protected Server B content endpoint test: unauthorised=401, authorised=200.
+- Expired PDF assets are not regenerated after the 183-day retention period.
+Runtime Moodle/IOMAD acceptance testing is still required.
