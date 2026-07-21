@@ -4,22 +4,16 @@
 defined('MOODLE_INTERNAL') || die();
 
 /**
-<<<<<<< HEAD
- * Handles schema/data upgrades for ProctorCore.
-=======
  * Plugin upgrade steps.
  *
  * All upgrades below are code/settings/task registrations only. The existing
  * install.xml schema is intentionally preserved and no database table or field
  * is changed by these steps.
->>>>>>> origin/danial
  *
  * @param int $oldversion Installed plugin version.
  * @return bool
  */
 function xmldb_local_proctorcore_upgrade(int $oldversion): bool {
-<<<<<<< HEAD
-=======
     if ($oldversion < 2026071501) {
         upgrade_plugin_savepoint(true, 2026071501, 'local', 'proctorcore');
     }
@@ -73,6 +67,5 @@ function xmldb_local_proctorcore_upgrade(int $oldversion): bool {
         upgrade_plugin_savepoint(true, 2026072003, 'local', 'proctorcore');
     }
 
->>>>>>> origin/danial
     return true;
 }

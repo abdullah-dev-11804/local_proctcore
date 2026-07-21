@@ -17,11 +17,7 @@ $string['settings:webhooksecret_desc'] = 'Shared secret used to validate signed 
 $string['settings:reportretentiondays'] = 'PDF report retention days';
 $string['settings:videoretentiondays'] = 'Video retention days';
 $string['settings:appealperioddays'] = 'Appeal period days';
-<<<<<<< HEAD
-$string['task:cleanup_retention'] = 'Clean expired proctoring evidence links';
-=======
 $string['task:cleanup_retention'] = 'Delete expired proctoring evidence';
->>>>>>> origin/danial
 $string['privacy:metadata:sessions'] = 'Stores official proctoring session records linked to quiz attempts.';
 $string['privacy:metadata:sessions:userid'] = 'The user whose quiz attempt was proctored.';
 $string['privacy:metadata:sessions:result'] = 'The final proctoring result returned by Server B.';
@@ -34,8 +30,6 @@ $string['privacy:metadata:appeals'] = 'Stores user appeals against proctoring ou
 $string['privacy:metadata:appeals:userid'] = 'The user who filed the appeal.';
 $string['privacy:metadata:appeals:reason'] = 'The selected appeal reason.';
 $string['privacy:metadata:appeals:details'] = 'The free-text appeal explanation.';
-<<<<<<< HEAD
-=======
 $string['settings:enabled'] = 'Enable ProctorCore';
 $string['settings:enabled_desc'] = 'Enable ProctorCore. The selected capture mode determines whether production Server B or development-only local storage is used.';
 $string['settings:serverapikey'] = 'Server B API key';
@@ -341,4 +335,3 @@ $string['error:mlhttpsrequired'] = 'The ML service must use HTTPS when TLS verif
 $string['error:mlunavailable'] = 'The ProctorCore ML service is unavailable.';
 $string['error:mlresponse'] = 'The ProctorCore ML service returned an error: {$a}';
 $string['error:invalidmlresponse'] = 'The ProctorCore ML service returned invalid JSON.';
->>>>>>> origin/danial

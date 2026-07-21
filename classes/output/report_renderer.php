@@ -6,11 +6,6 @@ namespace local_proctorcore\output;
 defined('MOODLE_INTERNAL') || die();
 
 /**
-<<<<<<< HEAD
- * Prepares proctoring report pages, links, violations, and evidence summaries.
- */
-final class report_renderer {
-=======
  * Converts report service data into Mustache-safe values.
  *
  * @package local_proctorcore
@@ -241,5 +236,4 @@ final class report_renderer {
         $value = trim(str_replace(['_', '-'], ' ', $value));
         return $value === '' ? '—' : ucfirst($value);
     }
->>>>>>> origin/danial
 }

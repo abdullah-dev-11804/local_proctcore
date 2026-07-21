@@ -3,14 +3,6 @@
 
 namespace local_proctorcore\task;
 
-<<<<<<< HEAD
-defined('MOODLE_INTERNAL') || die();
-
-/**
- * Clears expired proctoring evidence references after retention periods end.
- */
-final class cleanup_retention_task extends \core\task\scheduled_task {
-=======
 use local_proctorcore\local\asset_repository;
 use local_proctorcore\local\audit_logger;
 use local_proctorcore\local\local_capture_storage;
@@ -36,15 +28,10 @@ final class cleanup_retention_task extends \core\task\scheduled_task {
      *
      * @return string
      */
->>>>>>> origin/danial
     public function get_name(): string {
         return get_string('task:cleanup_retention', 'local_proctorcore');
     }
 
-<<<<<<< HEAD
-    public function execute(): void {
-        // Workflow placeholder for retention cleanup and Server B deletion calls.
-=======
     /**
      * Deletes expired non-held evidence and soft-deletes its local reference.
      *
@@ -196,6 +183,5 @@ final class cleanup_retention_task extends \core\task\scheduled_task {
                     'Unsupported ProctorCore asset storage backend: ' . (string) $asset->storage
                 );
         }
->>>>>>> origin/danial
     }
 }

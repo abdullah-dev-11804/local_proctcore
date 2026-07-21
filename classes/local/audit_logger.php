@@ -7,11 +7,6 @@ defined('MOODLE_INTERNAL') || die();
 
 /**
  * Writes append-only administrator, coordinator, proctor, and integration audit events.
-<<<<<<< HEAD
- */
-final class audit_logger {
-    public const TABLE = 'local_proctorcore_audit';
-=======
  *
  * The class intentionally exposes no update or delete method. Audit rows are append-only.
  *
@@ -79,5 +74,4 @@ final class audit_logger {
 
         return (int) $DB->insert_record(self::TABLE, $record);
     }
->>>>>>> origin/danial
 }

@@ -28,11 +28,11 @@ try {
     echo json_encode($result, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 } catch (\Throwable $exception) {
     http_response_code($exception instanceof \required_capability_exception ? 403 : 400);
+    debugging('ProctorCore heartbeat endpoint failed: ' . $exception->getMessage(), DEBUG_DEVELOPER);
     echo json_encode([
         'ok' => false,
         'error' => $exception instanceof \moodle_exception
             ? $exception->errorcode
             : 'connection_recovery_error',
-        'message' => clean_param($exception->getMessage(), PARAM_TEXT),
     ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 }

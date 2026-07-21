@@ -7,11 +7,6 @@ defined('MOODLE_INTERNAL') || die();
 
 /**
  * Owns reads and writes for official proctoring session records.
-<<<<<<< HEAD
- */
-final class session_repository {
-    public const TABLE = 'local_proctorcore_sessions';
-=======
  *
  * @package local_proctorcore
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -567,5 +562,4 @@ final class session_repository {
         }
         return $encoded;
     }
->>>>>>> origin/danial
 }

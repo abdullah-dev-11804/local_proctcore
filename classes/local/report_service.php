@@ -6,11 +6,6 @@ namespace local_proctorcore\local;
 defined('MOODLE_INTERNAL') || die();
 
 /**
-<<<<<<< HEAD
- * Builds company-scoped report data from sessions, violations, assets, and quiz attempts.
- */
-final class report_service {
-=======
  * Builds tenant-aware proctoring report data.
  *
  * @package local_proctorcore
@@ -609,5 +604,4 @@ final class report_service {
         }
         return clean_param((string) $asset->assettype . '-' . (int) $asset->id, PARAM_FILE);
     }
->>>>>>> origin/danial
 }

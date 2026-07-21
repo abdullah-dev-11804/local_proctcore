@@ -7,10 +7,6 @@ defined('MOODLE_INTERNAL') || die();
 
 /**
  * Resolves IOMAD company scope for users, courses, attempts, and reports.
-<<<<<<< HEAD
- */
-final class tenant_resolver {
-=======
  *
  * The resolver supports both the legacy IOMAD table names used by Moodle/IOMAD
  * 4.x and the local_iomad-prefixed names introduced by newer IOMAD releases.
@@ -275,5 +271,4 @@ final class tenant_resolver {
         global $DB;
         return $DB->get_manager()->table_exists(new \xmldb_table($tablename));
     }
->>>>>>> origin/danial
 }

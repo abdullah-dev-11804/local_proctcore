@@ -6,11 +6,6 @@ namespace local_proctorcore\local;
 defined('MOODLE_INTERNAL') || die();
 
 /**
-<<<<<<< HEAD
- * Validates, deduplicates, stores, and applies inbound Server B webhook events.
- */
-final class webhook_processor {
-=======
  * Validates, deduplicates, stores, and applies inbound Server B webhooks.
  *
  * Supported Section 1.1 events:
@@ -622,5 +617,4 @@ final class webhook_processor {
         ]);
         $event->trigger();
     }
->>>>>>> origin/danial
 }

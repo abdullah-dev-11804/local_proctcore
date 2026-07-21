@@ -7,10 +7,6 @@ defined('MOODLE_INTERNAL') || die();
 
 /**
  * Calculates report, video, appeal, and evidence-hold expiry dates.
-<<<<<<< HEAD
- */
-final class retention_policy {
-=======
  *
  * Section 1.1 (camera/microphone capture) requires three retention rules:
  * - Video clips of key moments: kept until the appeal period ends, or until
@@ -122,5 +118,4 @@ final class retention_policy {
 
         return (int) $asset->expiresat <= $now;
     }
->>>>>>> origin/danial
 }

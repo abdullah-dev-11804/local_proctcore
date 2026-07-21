@@ -7,11 +7,6 @@ defined('MOODLE_INTERNAL') || die();
 
 /**
  * Owns report, video, snapshot, room scan, ID photo, and violation-act references.
-<<<<<<< HEAD
- */
-final class asset_repository {
-    public const TABLE = 'local_proctorcore_assets';
-=======
  *
  * Section 1.1: the browser/Server B side performs the actual camera and
  * microphone capture. This repository stores what Moodle needs to know
@@ -425,5 +420,4 @@ final class asset_repository {
                 return null;
         }
     }
->>>>>>> origin/danial
 }
