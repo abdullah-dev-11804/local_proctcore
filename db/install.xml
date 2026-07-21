@@ -1,0 +1,357 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="local/proctorcore/db" VERSION="2026071500" COMMENT="XMLDB file for local_proctorcore"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd">
+  <TABLES>
+    <TABLE NAME="local_proctorcore_companycfg" COMMENT="Per-company proctoring policy and integration defaults.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="companyid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="enabled" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1"/>
+        <FIELD NAME="serverbaseurl" TYPE="char" LENGTH="255" NOTNULL="false"/>
+        <FIELD NAME="webhooksecretref" TYPE="char" LENGTH="255" NOTNULL="false"/>
+        <FIELD NAME="reportretentiondays" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="183"/>
+        <FIELD NAME="videoretentiondays" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="30"/>
+        <FIELD NAME="appealperioddays" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="14"/>
+        <FIELD NAME="allowedlanguages" TYPE="char" LENGTH="64" NOTNULL="true" DEFAULT="en,ru,kk"/>
+        <FIELD NAME="featureflags" TYPE="text" NOTNULL="false"/>
+        <FIELD NAME="instructions" TYPE="text" NOTNULL="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="usermodified" TYPE="foreign" FIELDS="usermodified" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="companyuniq" UNIQUE="true" FIELDS="companyid"/>
+        <INDEX NAME="enabled" UNIQUE="false" FIELDS="enabled"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="local_proctorcore_quizcfg" COMMENT="Proctoring configuration for Moodle quiz activities.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="companyid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="cmid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="quizid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="enabled" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="requireidentity" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1"/>
+        <FIELD NAME="requiretechcheck" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1"/>
+        <FIELD NAME="requirerulesack" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1"/>
+        <FIELD NAME="allowresume" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1"/>
+        <FIELD NAME="resumewindowsecs" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="600"/>
+        <FIELD NAME="ruleshtml" TYPE="text" NOTNULL="false"/>
+        <FIELD NAME="settingsjson" TYPE="text" NOTNULL="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="courseid" TYPE="foreign" FIELDS="courseid" REFTABLE="course" REFFIELDS="id"/>
+        <KEY NAME="cmid" TYPE="foreign" FIELDS="cmid" REFTABLE="course_modules" REFFIELDS="id"/>
+        <KEY NAME="quizid" TYPE="foreign" FIELDS="quizid" REFTABLE="quiz" REFFIELDS="id"/>
+        <KEY NAME="usermodified" TYPE="foreign" FIELDS="usermodified" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="companyquiz" UNIQUE="true" FIELDS="companyid, quizid"/>
+        <INDEX NAME="cmid" UNIQUE="false" FIELDS="cmid"/>
+        <INDEX NAME="enabled" UNIQUE="false" FIELDS="enabled"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="local_proctorcore_fields" COMMENT="Company-configured participant fields copied into session reports.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="companyid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="shortname" TYPE="char" LENGTH="64" NOTNULL="true"/>
+        <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true"/>
+        <FIELD NAME="datatype" TYPE="char" LENGTH="32" NOTNULL="true" DEFAULT="text"/>
+        <FIELD NAME="required" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="editablebyuser" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1"/>
+        <FIELD NAME="sortorder" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="configjson" TYPE="text" NOTNULL="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="companyshort" UNIQUE="true" FIELDS="companyid, shortname"/>
+        <INDEX NAME="companysort" UNIQUE="false" FIELDS="companyid, sortorder"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="local_proctorcore_sessions" COMMENT="Official Moodle-side proctoring session record linked to a quiz attempt.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="companyid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="cmid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="quizid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="attemptid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="server_sessionid" TYPE="char" LENGTH="128" NOTNULL="false"/>
+        <FIELD NAME="server_roomid" TYPE="char" LENGTH="128" NOTNULL="false"/>
+        <FIELD NAME="launch_token_hash" TYPE="char" LENGTH="128" NOTNULL="false"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="32" NOTNULL="true" DEFAULT="created"/>
+        <FIELD NAME="result" TYPE="char" LENGTH="32" NOTNULL="true" DEFAULT="unknown"/>
+        <FIELD NAME="identitystatus" TYPE="char" LENGTH="32" NOTNULL="true" DEFAULT="pending"/>
+        <FIELD NAME="techcheckstatus" TYPE="char" LENGTH="32" NOTNULL="true" DEFAULT="pending"/>
+        <FIELD NAME="appealstatus" TYPE="char" LENGTH="32" NOTNULL="true" DEFAULT="none"/>
+        <FIELD NAME="risk_score" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="false"/>
+        <FIELD NAME="violationcount" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="snapshotcount" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="startedat" TYPE="int" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="endedat" TYPE="int" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="lastheartbeat" TYPE="int" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="appealuntil" TYPE="int" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="reportexpiresat" TYPE="int" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="videoexpiresat" TYPE="int" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="closedreason" TYPE="char" LENGTH="64" NOTNULL="false"/>
+        <FIELD NAME="servermetadata" TYPE="text" NOTNULL="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="courseid" TYPE="foreign" FIELDS="courseid" REFTABLE="course" REFFIELDS="id"/>
+        <KEY NAME="cmid" TYPE="foreign" FIELDS="cmid" REFTABLE="course_modules" REFFIELDS="id"/>
+        <KEY NAME="quizid" TYPE="foreign" FIELDS="quizid" REFTABLE="quiz" REFFIELDS="id"/>
+        <KEY NAME="attemptid" TYPE="foreign" FIELDS="attemptid" REFTABLE="quiz_attempts" REFFIELDS="id"/>
+        <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="companyuser" UNIQUE="false" FIELDS="companyid, userid"/>
+        <INDEX NAME="companyattempt" UNIQUE="false" FIELDS="companyid, attemptid"/>
+        <INDEX NAME="serversession" UNIQUE="false" FIELDS="server_sessionid"/>
+        <INDEX NAME="statusresult" UNIQUE="false" FIELDS="status, result"/>
+        <INDEX NAME="retention" UNIQUE="false" FIELDS="reportexpiresat, videoexpiresat"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="local_proctorcore_fieldvals" COMMENT="Participant field values captured for a proctoring session.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="sessionid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="fieldid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="value" TYPE="text" NOTNULL="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="sessionid" TYPE="foreign" FIELDS="sessionid" REFTABLE="local_proctorcore_sessions" REFFIELDS="id"/>
+        <KEY NAME="fieldid" TYPE="foreign" FIELDS="fieldid" REFTABLE="local_proctorcore_fields" REFFIELDS="id"/>
+        <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="sessionfield" UNIQUE="true" FIELDS="sessionid, fieldid"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="local_proctorcore_checks" COMMENT="Browser equipment and readiness checks performed before admission.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="sessionid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="32" NOTNULL="true" DEFAULT="pending"/>
+        <FIELD NAME="speed_mbps" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="false"/>
+        <FIELD NAME="cameraok" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="microphoneok" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="lightingok" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="browsername" TYPE="char" LENGTH="64" NOTNULL="false"/>
+        <FIELD NAME="browserversion" TYPE="char" LENGTH="64" NOTNULL="false"/>
+        <FIELD NAME="failurejson" TYPE="text" NOTNULL="false"/>
+        <FIELD NAME="checkedat" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="sessionid" TYPE="foreign" FIELDS="sessionid" REFTABLE="local_proctorcore_sessions" REFFIELDS="id"/>
+        <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="sessionstatus" UNIQUE="false" FIELDS="sessionid, status"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="local_proctorcore_rulesack" COMMENT="Rules acknowledgement before the proctored quiz starts.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="sessionid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="language" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="en"/>
+        <FIELD NAME="ruleshash" TYPE="char" LENGTH="128" NOTNULL="true"/>
+        <FIELD NAME="ipaddress" TYPE="char" LENGTH="45" NOTNULL="false"/>
+        <FIELD NAME="useragent" TYPE="text" NOTNULL="false"/>
+        <FIELD NAME="acknowledgedat" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="sessionid" TYPE="foreign" FIELDS="sessionid" REFTABLE="local_proctorcore_sessions" REFFIELDS="id"/>
+        <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="sessionuser" UNIQUE="false" FIELDS="sessionid, userid"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="local_proctorcore_violations" COMMENT="Detected or manually flagged proctoring violations.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="sessionid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="companyid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="servereventid" TYPE="char" LENGTH="128" NOTNULL="false"/>
+        <FIELD NAME="type" TYPE="char" LENGTH="64" NOTNULL="true"/>
+        <FIELD NAME="severity" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="1"/>
+        <FIELD NAME="source" TYPE="char" LENGTH="32" NOTNULL="true" DEFAULT="server"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="32" NOTNULL="true" DEFAULT="open"/>
+        <FIELD NAME="occurredat" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="durationms" TYPE="int" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="description" TYPE="text" NOTNULL="false"/>
+        <FIELD NAME="metadata" TYPE="text" NOTNULL="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="sessionid" TYPE="foreign" FIELDS="sessionid" REFTABLE="local_proctorcore_sessions" REFFIELDS="id"/>
+        <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="sessiontime" UNIQUE="false" FIELDS="sessionid, occurredat"/>
+        <INDEX NAME="companytype" UNIQUE="false" FIELDS="companyid, type"/>
+        <INDEX NAME="serverevent" UNIQUE="false" FIELDS="servereventid"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="local_proctorcore_assets" COMMENT="References to reports, snapshots, clips, identity photos, acts, and room scans.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="sessionid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="companyid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="violationid" TYPE="int" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="assettype" TYPE="char" LENGTH="64" NOTNULL="true"/>
+        <FIELD NAME="storage" TYPE="char" LENGTH="32" NOTNULL="true" DEFAULT="server_b"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="32" NOTNULL="true" DEFAULT="active"/>
+        <FIELD NAME="externalid" TYPE="char" LENGTH="128" NOTNULL="false"/>
+        <FIELD NAME="url" TYPE="text" NOTNULL="false"/>
+        <FIELD NAME="filearea" TYPE="char" LENGTH="64" NOTNULL="false"/>
+        <FIELD NAME="itemid" TYPE="int" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="checksum" TYPE="char" LENGTH="128" NOTNULL="false"/>
+        <FIELD NAME="mime" TYPE="char" LENGTH="100" NOTNULL="false"/>
+        <FIELD NAME="filesize" TYPE="int" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="isheld" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="availableat" TYPE="int" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="expiresat" TYPE="int" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="deletedat" TYPE="int" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="metadata" TYPE="text" NOTNULL="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="sessionid" TYPE="foreign" FIELDS="sessionid" REFTABLE="local_proctorcore_sessions" REFFIELDS="id"/>
+        <KEY NAME="violationid" TYPE="foreign" FIELDS="violationid" REFTABLE="local_proctorcore_violations" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="sessiontype" UNIQUE="false" FIELDS="sessionid, assettype"/>
+        <INDEX NAME="companystatus" UNIQUE="false" FIELDS="companyid, status"/>
+        <INDEX NAME="expiry" UNIQUE="false" FIELDS="expiresat, isheld, status"/>
+        <INDEX NAME="externalid" UNIQUE="false" FIELDS="externalid"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="local_proctorcore_webhooks" COMMENT="Inbound Server B webhook events and processing outcomes.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="companyid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="sessionid" TYPE="int" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="server_sessionid" TYPE="char" LENGTH="128" NOTNULL="false"/>
+        <FIELD NAME="eventid" TYPE="char" LENGTH="128" NOTNULL="false"/>
+        <FIELD NAME="eventtype" TYPE="char" LENGTH="64" NOTNULL="true"/>
+        <FIELD NAME="signaturehash" TYPE="char" LENGTH="128" NOTNULL="false"/>
+        <FIELD NAME="payload" TYPE="text" NOTNULL="true"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="32" NOTNULL="true" DEFAULT="received"/>
+        <FIELD NAME="attempts" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="lasterror" TYPE="text" NOTNULL="false"/>
+        <FIELD NAME="receivedat" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="processedat" TYPE="int" LENGTH="10" NOTNULL="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="sessionid" TYPE="foreign" FIELDS="sessionid" REFTABLE="local_proctorcore_sessions" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="eventid" UNIQUE="false" FIELDS="eventid"/>
+        <INDEX NAME="serversession" UNIQUE="false" FIELDS="server_sessionid"/>
+        <INDEX NAME="status" UNIQUE="false" FIELDS="status"/>
+        <INDEX NAME="received" UNIQUE="false" FIELDS="receivedat"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="local_proctorcore_appeals" COMMENT="Appeal requests and review decisions for failed or disputed sessions.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="sessionid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="companyid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="reason" TYPE="char" LENGTH="64" NOTNULL="true"/>
+        <FIELD NAME="details" TYPE="text" NOTNULL="false"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="32" NOTNULL="true" DEFAULT="submitted"/>
+        <FIELD NAME="decision" TYPE="text" NOTNULL="false"/>
+        <FIELD NAME="reviewerid" TYPE="int" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="submittedat" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="decidedat" TYPE="int" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="sessionid" TYPE="foreign" FIELDS="sessionid" REFTABLE="local_proctorcore_sessions" REFFIELDS="id"/>
+        <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="reviewerid" TYPE="foreign" FIELDS="reviewerid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="companystatus" UNIQUE="false" FIELDS="companyid, status"/>
+        <INDEX NAME="session" UNIQUE="false" FIELDS="sessionid"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="local_proctorcore_audit" COMMENT="Append-only administrator, coordinator, proctor, and integration action log.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="companyid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="sessionid" TYPE="int" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="relateduserid" TYPE="int" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="action" TYPE="char" LENGTH="64" NOTNULL="true"/>
+        <FIELD NAME="targettype" TYPE="char" LENGTH="64" NOTNULL="false"/>
+        <FIELD NAME="targetid" TYPE="int" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="ipaddress" TYPE="char" LENGTH="45" NOTNULL="false"/>
+        <FIELD NAME="useragent" TYPE="text" NOTNULL="false"/>
+        <FIELD NAME="details" TYPE="text" NOTNULL="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="sessionid" TYPE="foreign" FIELDS="sessionid" REFTABLE="local_proctorcore_sessions" REFFIELDS="id"/>
+        <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="relateduserid" TYPE="foreign" FIELDS="relateduserid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="companytime" UNIQUE="false" FIELDS="companyid, timecreated"/>
+        <INDEX NAME="sessiontime" UNIQUE="false" FIELDS="sessionid, timecreated"/>
+        <INDEX NAME="action" UNIQUE="false" FIELDS="action"/>
+      </INDEXES>
+    </TABLE>
+  </TABLES>
+</XMLDB>

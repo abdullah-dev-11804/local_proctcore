@@ -1,0 +1,47 @@
+{{!
+    ProctorCore report list.
+}}
+<div class="local-proctorcore-report-list">
+    {{#hasrows}}
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>{{#str}}report:sessionid, local_proctorcore{{/str}}</th>
+                    <th>{{#str}}report:student, local_proctorcore{{/str}}</th>
+                    <th>{{#str}}report:company, local_proctorcore{{/str}}</th>
+                    <th>{{#str}}report:course, local_proctorcore{{/str}}</th>
+                    <th>{{#str}}report:quiz, local_proctorcore{{/str}}</th>
+                    <th>{{#str}}report:endtime, local_proctorcore{{/str}}</th>
+                    <th>{{#str}}report:result, local_proctorcore{{/str}}</th>
+                    <th>{{#str}}report:violations, local_proctorcore{{/str}}</th>
+                    <th>{{#str}}report:actions, local_proctorcore{{/str}}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#rows}}
+                <tr>
+                    <td>{{sessionid}}</td>
+                    <td>{{studentname}}</td>
+                    <td>{{companyname}}</td>
+                    <td>{{coursename}}</td>
+                    <td>{{quizname}} #{{attemptnumber}}</td>
+                    <td>{{endedat}}</td>
+                    <td><span class="badge {{resultclass}}">{{resulttext}}</span></td>
+                    <td>{{violationcount}}</td>
+                    <td class="text-nowrap">
+                        <a class="btn btn-sm btn-secondary" href="{{detailurl}}">{{#str}}report:view, local_proctorcore{{/str}}</a>
+                        {{#candownload}}
+                        <a class="btn btn-sm btn-primary" href="{{downloadurl}}">{{#str}}report:downloadpdf, local_proctorcore{{/str}}</a>
+                        {{/candownload}}
+                    </td>
+                </tr>
+                {{/rows}}
+            </tbody>
+        </table>
+    </div>
+    {{/hasrows}}
+    {{^hasrows}}
+        <div class="alert alert-info">{{#str}}report:noreports, local_proctorcore{{/str}}</div>
+    {{/hasrows}}
+</div>

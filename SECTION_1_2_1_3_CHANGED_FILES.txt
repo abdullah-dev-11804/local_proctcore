@@ -1,0 +1,40 @@
+Sections 1.2 and 1.3 changed/added files
+
+Local plugin:
+README.md
+version.php
+settings.php
+styles.css
+lib.php
+identity_verify.php
+monitor.php
+classes/local/company_config_repository.php
+classes/local/precheck_service.php
+classes/local/ml_client.php
+classes/local/identity_service.php
+classes/local/violation_repository.php
+classes/local/violation_service.php
+amd/src/precheck.js
+amd/build/precheck.min.js
+amd/src/proctorcore.js
+amd/build/proctorcore.min.js
+amd/src/identity_check.js
+amd/build/identity_check.min.js
+amd/src/violation_monitor.js
+amd/build/violation_monitor.min.js
+lang/en/local_proctorcore.php
+db/upgrade.php
+cli/test_ml_health.php
+cli/test_ml_identity.php
+cli/test_violation_event.php
+cli/acceptance_status.php
+docs/section-1.2-identity-verification.md
+docs/section-1.3-violation-monitoring.md
+
+Quiz access plugin:
+README.md
+version.php
+rule.php
+classes/local/settings_service.php
+classes/local/gate_service.php
+lang/en/quizaccess_proctorcore.php
