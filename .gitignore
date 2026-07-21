@@ -2,3 +2,27 @@ SECTION_1_2_1_3_CHANGED_FILES.txt
 SECTION_1_2_1_3_VALIDATION.txt
 SECTION_3_1_CHANGED_FILES.txt
 SECTION_3_1_VALIDATION.txt
+
+# Local repository metadata accidentally created inside the Moodle plugin.
+.git/
+
+# Files that belong on Server B / AI service / iframe frontend, not in local_proctorcore.
+lib.php.backup_*
+capture.php
+local_upload.php
+identity_verify.php
+monitor.php
+download_report.php
+classes/observer.php
+db/events.php
+classes/local/capture_service.php
+classes/local/local_capture_storage.php
+classes/local/ml_client.php
+classes/local/identity_service.php
+classes/local/violation_service.php
+classes/local/report_pdf_service.php
+classes/task/generate_reports_task.php
+amd/src/proctorcore.js
+amd/src/identity_check.js
+amd/src/violation_monitor.js
+amd/build/proctorcore.min.js
