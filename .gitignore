@@ -25,4 +25,12 @@ classes/task/generate_reports_task.php
 amd/src/proctorcore.js
 amd/src/identity_check.js
 amd/src/violation_monitor.js
+amd/build/identity_check.min.js
 amd/build/proctorcore.min.js
+amd/build/violation_monitor.min.js
+
+# CLI probes for Server B / AI-side services.
+cli/test_ml_health.php
+cli/test_ml_identity.php
+cli/test_report_generation.php
+cli/test_violation_event.php
