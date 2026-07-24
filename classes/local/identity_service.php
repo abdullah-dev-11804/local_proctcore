@@ -64,8 +64,8 @@ final class identity_service {
         }
 
         $centerframes = $this->decode_images($centerdata, 12);
-        $leftframes = $this->decode_images($leftdata, 20);
-        $rightframes = $this->decode_images($rightdata, 20);
+        $leftframes = $this->decode_optional_images($leftdata, 20);
+        $rightframes = $this->decode_optional_images($rightdata, 20);
         $transactionid = bin2hex(random_bytes(16));
 
         $response = (new server_client($companyid))->verify_identity(
@@ -309,6 +309,28 @@ final class identity_service {
         }
         if (!$frames) {
             throw new \moodle_exception('identity:invalidimage', 'local_proctorcore');
+        }
+        return $frames;
+    }
+
+    /**
+     * Decodes optional challenge frames.
+     *
+     * @param string|array $data Data URL/base64 image or list.
+     * @param int $limit Maximum frames accepted.
+     * @return array
+     */
+    private function decode_optional_images($data, int $limit): array {
+        if ($data === null || $data === '') {
+            return [];
+        }
+        $values = is_array($data) ? $data : [$data];
+        $frames = [];
+        foreach (array_slice($values, 0, $limit) as $value) {
+            if (!is_string($value) || trim($value) === '') {
+                continue;
+            }
+            $frames[] = $this->decode_image($value);
         }
         return $frames;
     }
