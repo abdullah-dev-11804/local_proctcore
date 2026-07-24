@@ -22,13 +22,11 @@
 8. A `proctorcore:violation` browser event asks Section 1.1 capture to save a matching snapshot.
 9. The report service automatically lists the violation and protected evidence.
 
-## Main Moodle files
+## Main implementation files
 
-- `monitor.php`
-- `classes/local/violation_service.php`
-- `classes/local/violation_repository.php`
-- `amd/src/violation_monitor.js`
-- `amd/build/violation_monitor.min.js`
+- Server B / iframe frontend — continuous face/gaze/browser-event analysis and clip timing.
+- `classes/local/violation_repository.php` — Moodle-side official violation records.
+- `classes/local/webhook_processor.php` — signed Server B violation/report/result updates.
 
 ## ML endpoint
 

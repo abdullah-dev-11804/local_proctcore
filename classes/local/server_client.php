@@ -35,6 +35,36 @@ final class server_client {
         return $this->request('GET', '/api/health');
     }
 
+    /**
+     * Verifies a pre-attempt identity challenge with Server B.
+     *
+     * @param string $referencebytes Moodle profile image bytes.
+     * @param string $centerbytes Straight-looking camera image bytes.
+     * @param string $leftbytes Left-turn challenge image bytes.
+     * @param string $rightbytes Right-turn challenge image bytes.
+     * @param string $transactionid Correlation id.
+     * @param float $threshold Tenant threshold.
+     * @return array
+     */
+    public function verify_identity(
+        string $referencebytes,
+        string $centerbytes,
+        string $leftbytes,
+        string $rightbytes,
+        string $transactionid,
+        float $threshold
+    ): array {
+        return $this->request('POST', '/api/v1/identity/verify', [
+            'transactionId' => $transactionid,
+            'companyId' => $this->companyid,
+            'threshold' => $threshold,
+            'referenceImage' => base64_encode($referencebytes),
+            'centerImage' => base64_encode($centerbytes),
+            'leftImage' => base64_encode($leftbytes),
+            'rightImage' => base64_encode($rightbytes),
+        ]);
+    }
+
     /** @param array $payload @return array */
     public function create_session(array $payload): array {
         return $this->request('POST', '/api/v1/sessions', $payload);
@@ -58,8 +88,8 @@ final class server_client {
     /**
      * Creates a short-lived browser participant token for the LiveKit room.
      *
-     * Expected Server B response keys are normalised by capture_service. Server B
-     * may return token/url directly or inside media/connection/session objects.
+     * Server B may return token/url directly or inside media/connection/session
+     * objects.
      *
      * @param string $serversessionid External session id.
      * @param array $payload Browser/participant metadata.

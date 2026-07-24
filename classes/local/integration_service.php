@@ -66,25 +66,6 @@ final class integration_service {
             'userid' => $user->id,
         ]);
 
-        // Development-only local mode keeps the production Server B code in
-        // place but binds a synthetic external id so the normal Moodle session
-        // lifecycle can continue without an external API.
-        if (local_capture_storage::is_enabled()) {
-            if (empty($session->server_sessionid)) {
-                $this->sessions->bind_server_session(
-                    (int) $session->id,
-                    'local-session-' . (int) $session->id,
-                    'local-room-' . (int) $session->id,
-                    [
-                        'mode' => 'localtest',
-                        'storagePath' => local_capture_storage::get_base_path(true),
-                        'createdAt' => gmdate('c'),
-                    ]
-                );
-            }
-            return $this->sessions->get_by_id((int) $session->id);
-        }
-
         if (!empty($session->server_sessionid)) {
             return $session;
         }
@@ -166,9 +147,6 @@ final class integration_service {
      * @return array
      */
     public function health(int $companyid): array {
-        if (local_capture_storage::is_enabled()) {
-            return local_capture_storage::health();
-        }
         return (new server_client($companyid))->health();
     }
 }

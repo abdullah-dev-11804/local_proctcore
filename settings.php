@@ -19,25 +19,6 @@ if ($hassiteconfig) {
         0
     ));
 
-    $settings->add(new admin_setting_configselect(
-        'local_proctorcore/capturemode',
-        get_string('settings:capturemode', 'local_proctorcore'),
-        get_string('settings:capturemode_desc', 'local_proctorcore'),
-        'serverb',
-        [
-            'serverb' => get_string('settings:capturemode_serverb', 'local_proctorcore'),
-            'localtest' => get_string('settings:capturemode_localtest', 'local_proctorcore'),
-        ]
-    ));
-
-    $settings->add(new admin_setting_configtext(
-        'local_proctorcore/localstoragepath',
-        get_string('settings:localstoragepath', 'local_proctorcore'),
-        get_string('settings:localstoragepath_desc', 'local_proctorcore'),
-        $CFG->dataroot . '/proctorcore_test',
-        PARAM_RAW_TRIMMED
-    ));
-
     $settings->add(new admin_setting_configtext(
         'local_proctorcore/serverbaseurl',
         get_string('settings:serverbaseurl', 'local_proctorcore'),
@@ -110,50 +91,6 @@ if ($hassiteconfig) {
         get_string('settings:minimumlighting', 'local_proctorcore'),
         get_string('settings:minimumlighting_desc', 'local_proctorcore'),
         35,
-        PARAM_INT
-    ));
-
-    $settings->add(new admin_setting_heading(
-        'local_proctorcore/mlheading',
-        get_string('settings:mlheading', 'local_proctorcore'),
-        get_string('settings:mlheading_desc', 'local_proctorcore')
-    ));
-
-    $settings->add(new admin_setting_configtext(
-        'local_proctorcore/mlserviceurl',
-        get_string('settings:mlserviceurl', 'local_proctorcore'),
-        get_string('settings:mlserviceurl_desc', 'local_proctorcore'),
-        '',
-        PARAM_URL
-    ));
-
-    $settings->add(new admin_setting_configpasswordunmask(
-        'local_proctorcore/mlapikey',
-        get_string('settings:mlapikey', 'local_proctorcore'),
-        get_string('settings:mlapikey_desc', 'local_proctorcore'),
-        ''
-    ));
-
-    $settings->add(new admin_setting_configcheckbox(
-        'local_proctorcore/mlverifyssl',
-        get_string('settings:mlverifyssl', 'local_proctorcore'),
-        get_string('settings:mlverifyssl_desc', 'local_proctorcore'),
-        1
-    ));
-
-    $settings->add(new admin_setting_configtext(
-        'local_proctorcore/mlconnecttimeout',
-        get_string('settings:mlconnecttimeout', 'local_proctorcore'),
-        get_string('settings:mlconnecttimeout_desc', 'local_proctorcore'),
-        5,
-        PARAM_INT
-    ));
-
-    $settings->add(new admin_setting_configtext(
-        'local_proctorcore/mlrequesttimeout',
-        get_string('settings:mlrequesttimeout', 'local_proctorcore'),
-        get_string('settings:mlrequesttimeout_desc', 'local_proctorcore'),
-        20,
         PARAM_INT
     ));
 

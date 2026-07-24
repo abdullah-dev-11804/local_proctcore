@@ -96,11 +96,9 @@ final class precheck_service {
             'secure' => !empty($config->requirehttps)
                 || !empty($config->requirecamera)
                 || !empty($config->requiremicrophone)
-                || !empty($config->requiresnapshot)
-                || !empty($config->requireidentity),
+                || !empty($config->requiresnapshot),
             'camera' => !empty($config->requirecamera)
-                || !empty($config->requiresnapshot)
-                || !empty($config->requireidentity),
+                || !empty($config->requiresnapshot),
             'microphone' => !empty($config->requiremicrophone),
             'lighting' => !empty($config->requirecamera) || !empty($config->requiresnapshot),
             'snapshot' => !empty($config->requiresnapshot),
@@ -137,16 +135,6 @@ final class precheck_service {
             return $errors;
         }
 
-        $identityresult = null;
-        if (!empty($config->requireidentity)) {
-            $identityresult = (new identity_service())->get_preflight_result($quizid, $userid);
-            if (!$identityresult || empty($identityresult['passed'])) {
-                $errors['proctorcore_identity_status'] =
-                    get_string('identity:notpassed', 'local_proctorcore');
-                return $errors;
-            }
-        }
-
         if (empty($data['proctorcore_preflight_passed'])) {
             $errors['proctorcore_precheck_status'] =
                 get_string('precheck:notpassed', 'local_proctorcore');
@@ -172,7 +160,10 @@ final class precheck_service {
             'browserversion' => clean_param(
                 (string) ($data['proctorcore_preflight_browserversion'] ?? ''), PARAM_TEXT),
             'checkedat' => time(),
-            'identity' => $identityresult,
+            'identity' => [
+                'status' => 'delegated_to_server_b',
+                'checkedAt' => time(),
+            ],
         ];
 
         $state['result'] = $result;
@@ -236,10 +227,7 @@ final class precheck_service {
 
         $session = (new integration_service())->create_session_for_attempt($attemptid);
 
-        $identityrequired = !empty($config->requireidentity);
-        $identitystatus = $identityrequired
-            ? (!empty($result['identity']['passed']) ? 'passed' : 'failed')
-            : 'notrequired';
+        $identitystatus = 'notrequired';
 
         $repository->update_check_statuses(
             (int) $session->id,
@@ -264,17 +252,10 @@ final class precheck_service {
                     'clientReported' => true,
                 ],
                 'identity' => $result['identity'] ?? [
-                    'status' => $identityrequired ? 'missing' : 'notrequired',
+                    'status' => 'delegated_to_server_b',
                     'checkedAt' => time(),
                 ],
             ]
-        );
-
-        (new identity_service())->apply_to_session(
-            (int) $session->id,
-            (int) $attempt->quiz,
-            $userid,
-            $identityrequired
         );
 
         $this->upsert_check_record((int) $session->id, $userid, $result);

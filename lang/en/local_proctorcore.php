@@ -186,20 +186,6 @@ $string['error:capturebusy'] = 'Another camera or recording request is already b
 $string['error:invalidcapturerequest'] = 'The camera and microphone capture request is invalid.';
 $string['error:invalidcaptureaction'] = 'The requested camera and microphone capture action is not supported.';
 
-$string['settings:capturemode'] = 'Capture mode';
-$string['settings:capturemode_desc'] = 'Use Server B for production. Local test mode records browser media to a private server folder and is only for development testing.';
-$string['settings:capturemode_serverb'] = 'Server B (production)';
-$string['settings:capturemode_localtest'] = 'Local folder (development test only)';
-$string['settings:localstoragepath'] = 'Local test storage path';
-$string['settings:localstoragepath_desc'] = 'Absolute private server path used in Local test mode. Keep it outside the public web directory. Default: Moodle data directory/proctorcore_test.';
-$string['capture:localmode'] = 'Local test recording active';
-$string['capture:localmodemessage'] = 'Camera and microphone are being saved in short local test chunks on this Moodle server.';
-$string['error:localstorageinvalid'] = 'The local ProctorCore test storage path is invalid or is inside the public Moodle code directory.';
-$string['error:localstoragenotwritable'] = 'The local ProctorCore test storage path is not writable by the web server.';
-$string['error:localuploadfailed'] = 'The local ProctorCore media upload failed.';
-$string['error:localuploadtype'] = 'The uploaded local ProctorCore media type is not allowed.';
-$string['error:localuploadtoolarge'] = 'The uploaded local ProctorCore media file is too large.';
-
 // Section 3.1 proctoring reports.
 $string['report:reports'] = 'Proctoring reports';
 $string['report:myreports'] = 'My proctoring reports';
@@ -265,21 +251,8 @@ $string['error:reportexpired'] = 'This PDF report has reached the end of its ret
 $string['error:assetunavailable'] = 'This proctoring evidence is unavailable or has passed its retention period.';
 $string['error:asseturlblocked'] = 'The evidence URL is outside the configured ProctorCore Server B origin.';
 
-// Sections 1.2 and 1.3 — ML identity and behaviour monitoring.
-$string['settings:mlheading'] = 'Identity and behaviour ML service';
-$string['settings:mlheading_desc'] = 'Configure the separate Python/OpenCV service used for face verification, liveness challenge, face counting, looking-away detection, and periodic identity re-verification.';
-$string['settings:mlserviceurl'] = 'ML service base URL';
-$string['settings:mlserviceurl_desc'] = 'Base URL of the ProctorCore ML service, for example http://127.0.0.1:8091 in development or an HTTPS private service in production.';
-$string['settings:mlapikey'] = 'ML service API key';
-$string['settings:mlapikey_desc'] = 'Bearer token shared between Moodle and the ML service.';
-$string['settings:mlverifyssl'] = 'Verify ML service TLS certificate';
-$string['settings:mlverifyssl_desc'] = 'Keep enabled in production. Disable only for a controlled local HTTP development service.';
-$string['settings:mlconnecttimeout'] = 'ML connection timeout (seconds)';
-$string['settings:mlconnecttimeout_desc'] = 'Maximum time to establish a connection to the ML service.';
-$string['settings:mlrequesttimeout'] = 'ML request timeout (seconds)';
-$string['settings:mlrequesttimeout_desc'] = 'Maximum total time for one identity or frame-analysis request.';
 $string['settings:identityenabled'] = 'Enable automatic identity verification';
-$string['settings:identityenabled_desc'] = 'When enabled, required Quizzes compare a three-frame live challenge against the Moodle profile photo before the attempt is created.';
+$string['settings:identityenabled_desc'] = 'When enabled, Server B may enforce identity verification and report the official result back to Moodle.';
 $string['settings:identitythreshold'] = 'Face similarity threshold';
 $string['settings:identitythreshold_desc'] = 'Cosine similarity required for a match. The development default is 0.45. Calibrate this threshold on approved client data before production.';
 $string['settings:monitoringenabled'] = 'Enable behaviour monitoring';

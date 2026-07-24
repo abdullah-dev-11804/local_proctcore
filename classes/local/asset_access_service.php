@@ -41,21 +41,6 @@ final class asset_access_service {
             send_stored_file($file, 0, 0, $forcedownload);
         }
 
-        $metadata = $this->metadata($asset);
-        if ((string) $asset->storage === 'external' && !empty($metadata['localTest'])) {
-            $path = $this->get_local_test_path($asset);
-            $filename = clean_param(basename($path), PARAM_FILE);
-            send_file(
-                $path,
-                $filename,
-                0,
-                0,
-                false,
-                $forcedownload,
-                (string) ($asset->mime ?: 'application/octet-stream')
-            );
-        }
-
         // Server B evidence remains private. Moodle fetches the object with its
         // server-side API credential and streams it only after the caller has
         // passed the report/session permission check.
@@ -105,15 +90,6 @@ final class asset_access_service {
             return $file->get_content();
         }
 
-        $metadata = $this->metadata($asset);
-        if ((string) $asset->storage === 'external' && !empty($metadata['localTest'])) {
-            $path = $this->get_local_test_path($asset);
-            if (!is_file($path) || filesize($path) > self::MAX_PDF_IMAGE_BYTES) {
-                return null;
-            }
-            return file_get_contents($path) ?: null;
-        }
-
         return $this->fetch_remote_asset($asset, self::MAX_PDF_IMAGE_BYTES);
     }
 
@@ -146,28 +122,6 @@ final class asset_access_service {
             throw new \moodle_exception('error:assetunavailable', 'local_proctorcore');
         }
         return $file;
-    }
-
-    /**
-     * Resolves a local development asset path safely.
-     *
-     * @param \stdClass $asset Asset row.
-     * @return string
-     */
-    private function get_local_test_path(\stdClass $asset): string {
-        $metadata = $this->metadata($asset);
-        if (empty($metadata['relativePath'])) {
-            throw new \moodle_exception('error:assetunavailable', 'local_proctorcore');
-        }
-        $base = local_capture_storage::get_base_path(false);
-        $relative = str_replace(['\\', '..'], ['/', ''], (string) $metadata['relativePath']);
-        $target = $base . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, ltrim($relative, '/'));
-        $normalbase = $this->normalise_path($base);
-        $normaltarget = $this->normalise_path($target);
-        if (strpos($normaltarget, $normalbase . '/') !== 0 || !is_file($target)) {
-            throw new \moodle_exception('error:assetunavailable', 'local_proctorcore');
-        }
-        return $target;
     }
 
     /**
@@ -284,10 +238,5 @@ final class asset_access_service {
     /** @param string $scheme @return int */
     private function default_port(string $scheme): int {
         return strtolower($scheme) === 'https' ? 443 : 80;
-    }
-
-    /** @param string $path @return string */
-    private function normalise_path(string $path): string {
-        return rtrim(preg_replace('#/+#', '/', str_replace('\\', '/', $path)), '/');
     }
 }

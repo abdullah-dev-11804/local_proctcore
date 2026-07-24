@@ -31,8 +31,6 @@ foreach ($tables as $name) {
 }
 
 $classes = [
-    '\\local_proctorcore\\local\\identity_service',
-    '\\local_proctorcore\\local\\violation_service',
     '\\local_proctorcore\\local\\report_service',
     '\\local_proctorcore\\local\\retention_policy',
     '\\local_proctorcore\\local\\integration_service',
@@ -47,7 +45,7 @@ echo PHP_EOL . 'Configuration' . PHP_EOL;
 echo 'integration enabled: ' . (!empty($config->enabled) ? 'yes' : 'no') . PHP_EOL;
 echo 'identity enabled: ' . (!empty($config->identityenabled) ? 'yes' : 'no') . PHP_EOL;
 echo 'monitoring enabled: ' . (!empty($config->monitoringenabled) ? 'yes' : 'no') . PHP_EOL;
-echo 'ML service URL: ' . ($config->mlserviceurl ?: '(not configured)') . PHP_EOL;
+echo 'Server B URL: ' . ($config->serverbaseurl ?: '(not configured)') . PHP_EOL;
 echo 'report retention days: ' . (int) $config->reportretentiondays . PHP_EOL;
 
 $sessionid = (int) $options['sessionid'];

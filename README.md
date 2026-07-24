@@ -115,7 +115,7 @@ administrator permissions.
 
 ## Sections 1.2 and 1.3
 
-The private ML service runs separately from Moodle, normally on `127.0.0.1:8091`.
-Configure `mlserviceurl`, `mlapikey`, `identityenabled`, and `monitoringenabled` in
-Site administration. See `docs/section-1.2-identity-verification.md` and
-`docs/section-1.3-violation-monitoring.md`.
+Identity verification, behaviour analysis, media capture, clips, and PDF generation
+belong to Server B. Configure `serverbaseurl`, `serverapikey`, `identityenabled`,
+and `monitoringenabled` in Site administration. Moodle keeps the official session,
+result, appeal, retention, and report-link records.

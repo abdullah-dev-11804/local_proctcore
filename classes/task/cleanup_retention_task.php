@@ -5,7 +5,6 @@ namespace local_proctorcore\task;
 
 use local_proctorcore\local\asset_repository;
 use local_proctorcore\local\audit_logger;
-use local_proctorcore\local\local_capture_storage;
 use local_proctorcore\local\server_client;
 
 defined('MOODLE_INTERNAL') || die();
@@ -140,12 +139,6 @@ final class cleanup_retention_task extends \core\task\scheduled_task {
         switch ((string) $asset->storage) {
             case 'server_b':
             case 'external':
-                $metadata = json_decode((string) ($asset->metadata ?? ''), true);
-                if ((string) $asset->storage === 'external' && is_array($metadata)
-                        && !empty($metadata['localTest'])) {
-                    (new local_capture_storage())->delete_asset($asset);
-                    return;
-                }
                 if (empty($asset->externalid)) {
                     throw new \coding_exception(
                         'A remote ProctorCore asset cannot be deleted without externalid.'

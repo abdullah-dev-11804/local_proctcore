@@ -440,39 +440,6 @@ final class webhook_processor {
             $event
         );
 
-        // Report generation must not make a valid Passed/Failed webhook fail.
-        // A scheduled task retries any report that could not be generated here.
-        try {
-            (new report_pdf_service())->generate_and_store(
-                (int) $updated->id,
-                null,
-                'final_webhook'
-            );
-        } catch (\Throwable $exception) {
-            debugging(
-                'ProctorCore final report generation failed for session ' . (int) $updated->id
-                . ': ' . $exception->getMessage(),
-                DEBUG_DEVELOPER
-            );
-            try {
-                $this->audit->log(
-                    'report.generation_failed',
-                    (int) $updated->companyid,
-                    (int) $updated->id,
-                    (int) $updated->userid,
-                    [
-                        'eventId' => (string) ($event['eventId'] ?? ''),
-                        'error' => clean_param($exception->getMessage(), PARAM_TEXT),
-                    ],
-                    null,
-                    'session',
-                    (int) $updated->id
-                );
-            } catch (\Throwable $auditexception) {
-                debugging('ProctorCore could not audit report failure: ' . $auditexception->getMessage(), DEBUG_DEVELOPER);
-            }
-        }
-
         return $updated;
     }
 

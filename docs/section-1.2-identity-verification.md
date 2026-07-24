@@ -12,13 +12,11 @@
 8. The live identity image is stored as protected evidence and `identitystatus` becomes `passed`.
 9. A failure blocks Quiz entry. If a real session already exists, an `identity_substitution` violation is registered.
 
-## Main Moodle files
+## Main implementation files
 
-- `identity_verify.php`
-- `classes/local/identity_service.php`
-- `classes/local/ml_client.php`
-- `amd/src/identity_check.js`
-- `amd/build/identity_check.min.js`
+- Server B / iframe frontend — live identity challenge UI, face comparison, liveness checks, retry/review decisions.
+- `classes/local/server_client.php` — Moodle-side Server B API client.
+- `classes/local/webhook_processor.php` — final identity/report/result events from Server B.
 
 ## ML endpoint
 

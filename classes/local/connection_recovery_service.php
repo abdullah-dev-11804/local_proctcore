@@ -74,7 +74,7 @@ final class connection_recovery_service {
 
         $serversynced = true;
         $serversyncerror = null;
-        if (!local_capture_storage::is_enabled() && !empty($session->server_sessionid)) {
+        if (!empty($session->server_sessionid)) {
             try {
                 $client = new server_client((int) $session->companyid);
                 $client->heartbeat((string) $session->server_sessionid, [
@@ -166,7 +166,7 @@ final class connection_recovery_service {
                 throw new \moodle_exception('error:reconnectwindowexpired', 'local_proctorcore');
             }
 
-            if (!local_capture_storage::is_enabled() && !empty($session->server_sessionid)) {
+            if (!empty($session->server_sessionid)) {
                 $client = new server_client((int) $session->companyid);
                 $client->resume_session((string) $session->server_sessionid, [
                     'moodleSessionId' => (int) $session->id,
@@ -371,7 +371,7 @@ final class connection_recovery_service {
             (int) $session->id
         );
 
-        if (empty($session->server_sessionid) || local_capture_storage::is_enabled()) {
+        if (empty($session->server_sessionid)) {
             return;
         }
 
@@ -404,22 +404,6 @@ final class connection_recovery_service {
         }
 
         try {
-            // Section 1.1: finalise and preserve the current partial recording
-            // before the session enters its reconnect window.
-            try {
-                (new capture_service($this->sessions))->stop_capture(
-                    (int) $session->id,
-                    null,
-                    'connection_lost'
-                );
-            } catch (\Throwable $captureexception) {
-                $this->record_server_sync_error($session, 'recording_stop', $captureexception);
-            }
-
-            if (local_capture_storage::is_enabled()) {
-                return;
-            }
-
             $client = new server_client((int) $session->companyid);
             $client->interrupt_session((string) $session->server_sessionid, [
                 'moodleSessionId' => (int) $session->id,

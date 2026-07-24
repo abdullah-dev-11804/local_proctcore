@@ -137,12 +137,9 @@ Duplicate event IDs and duplicate tenant/session-scoped asset IDs are idempotent
 
 ## Main implementation files
 
-- `capture.php` — authenticated browser capture endpoint.
-- `amd/src/proctorcore.js` — LiveKit camera/microphone attempt-page client.
-- `classes/local/capture_service.php` — authorised recording/snapshot coordinator.
+- Server B / iframe frontend — browser capture, LiveKit connection, recording control, snapshots, and clips.
 - `classes/local/server_client.php` — Server B media API methods.
 - `classes/local/webhook_processor.php` — `asset.captured` plus final result events.
-- `classes/observer.php` and `db/events.php` — authoritative Quiz submission fallback.
 - `classes/task/cleanup_retention_task.php` — automatic evidence deletion.
 - `classes/local/asset_repository.php` — tenant/session-scoped asset references.
 - `settings.php` — internet, lighting, LiveKit, retention, and recovery settings.
