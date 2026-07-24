@@ -105,6 +105,41 @@ function local_proctorcore_require_heartbeat(int $sessionid): void {
 
 
 /**
+ * Renders the Section 1.2 identity challenge panel used in Quiz preflight.
+ *
+ * @param string $panelid Unique panel id.
+ * @return string
+ */
+function local_proctorcore_render_identity_panel(string $panelid): string {
+    $content = html_writer::tag('h4', get_string('identity:title', 'local_proctorcore'), [
+        'class' => 'local-proctorcore-identity-title',
+    ]);
+    $content .= html_writer::div(
+        get_string('identity:instructions', 'local_proctorcore'),
+        'local-proctorcore-identity-instructions'
+    );
+    $content .= html_writer::div(
+        get_string('identity:waiting', 'local_proctorcore'),
+        'local-proctorcore-identity-status',
+        [
+            'data-identity-status' => '1',
+            'role' => 'status',
+            'aria-live' => 'polite',
+        ]
+    );
+    $content .= html_writer::tag('button', get_string('identity:start', 'local_proctorcore'), [
+        'type' => 'button',
+        'class' => 'btn btn-primary btn-sm',
+        'data-identity-start' => '1',
+        'disabled' => 'disabled',
+    ]);
+
+    return html_writer::div($content, 'local-proctorcore-identity is-waiting', [
+        'id' => $panelid,
+    ]);
+}
+
+/**
  * Renders the shared ProctorCore browser/device precheck panel.
  *
  * @param string $panelid Unique HTML id.
