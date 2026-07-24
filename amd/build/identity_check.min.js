@@ -49,6 +49,15 @@ define([], function() {
         return window.ProctorCorePrecheck.captureJpeg(0.9);
     };
 
+    const captureFrames = async(count, intervalMs) => {
+        const frames = [];
+        for (let index = 0; index < count; index++) {
+            frames.push(capture());
+            await sleep(intervalMs);
+        }
+        return frames;
+    };
+
     const post = async(config, images) => {
         const token = field('proctorcore_preflight_token');
         const response = await fetch(config.endpoint, {
@@ -60,9 +69,12 @@ define([], function() {
                 sesskey: config.sesskey,
                 quizId: Number(config.quizId),
                 token: token ? token.value : '',
-                centerImage: images.center,
-                leftImage: images.left,
-                rightImage: images.right,
+                centerImage: images.center[0] || '',
+                leftImage: images.left[0] || '',
+                rightImage: images.right[0] || '',
+                centerImages: images.center,
+                leftImages: images.left,
+                rightImages: images.right,
             }),
         });
         let data = {};
@@ -86,16 +98,16 @@ define([], function() {
 
         try {
             update(panel, 'running', config.strings.lookStraight);
-            await sleep(1600);
-            const center = capture();
+            await sleep(800);
+            const center = await captureFrames(6, 250);
 
             update(panel, 'running', config.strings.turnLeft);
-            await sleep(2200);
-            const left = capture();
+            await sleep(500);
+            const left = await captureFrames(12, 250);
 
             update(panel, 'running', config.strings.turnRight);
-            await sleep(2200);
-            const right = capture();
+            await sleep(500);
+            const right = await captureFrames(12, 250);
 
             update(panel, 'running', config.strings.comparing);
             const result = await post(config, {center, left, right});

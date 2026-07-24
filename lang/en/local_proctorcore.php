@@ -271,14 +271,14 @@ $string['settings:identityrecheckseconds'] = 'Identity re-check interval (second
 $string['settings:identityrecheckseconds_desc'] = 'How often the current face is compared again with the profile photo during the Quiz.';
 
 $string['identity:title'] = 'Identity verification';
-$string['identity:instructions'] = 'After the equipment checks pass, click Start identity check. Look straight, then turn your head left and right when prompted.';
+$string['identity:instructions'] = 'After the equipment checks pass, click Start identity check. Look straight, then slowly turn your head left and right when prompted.';
 $string['identity:start'] = 'Start identity check';
 $string['identity:waiting'] = 'Waiting for the equipment check.';
 $string['identity:waitingforprecheck'] = 'Complete all equipment checks first.';
 $string['identity:ready'] = 'Ready. Keep your face clearly visible and start the identity check.';
 $string['identity:lookstraight'] = 'Look straight at the camera.';
-$string['identity:turnleft'] = 'Turn your head to your left.';
-$string['identity:turnright'] = 'Turn your head to your right.';
+$string['identity:turnleft'] = 'Slowly turn your head to your left.';
+$string['identity:turnright'] = 'Slowly turn your head to your right.';
 $string['identity:comparing'] = 'Comparing the live face with the Moodle profile photo…';
 $string['identity:passed'] = 'Identity verified';
 $string['identity:failed'] = 'Identity verification failed';

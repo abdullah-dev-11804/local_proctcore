@@ -25,18 +25,18 @@ final class identity_service {
      * @param int $quizid Quiz id.
      * @param int $userid User id.
      * @param string $token Current preflight token.
-     * @param string $centerdata Data URL/base64 centre frame.
-     * @param string $leftdata Data URL/base64 left-turn frame.
-     * @param string $rightdata Data URL/base64 right-turn frame.
+     * @param string|array $centerdata Data URL/base64 centre frame(s).
+     * @param string|array $leftdata Data URL/base64 left-turn frame(s).
+     * @param string|array $rightdata Data URL/base64 right-turn frame(s).
      * @return array Public response.
      */
     public function verify_preflight(
         int $quizid,
         int $userid,
         string $token,
-        string $centerdata,
-        string $leftdata,
-        string $rightdata
+        $centerdata,
+        $leftdata,
+        $rightdata
     ): array {
         global $DB, $SESSION;
 
@@ -63,16 +63,16 @@ final class identity_service {
             throw new \moodle_exception('identity:profilphotomissing', 'local_proctorcore');
         }
 
-        $center = $this->decode_image($centerdata);
-        $left = $this->decode_image($leftdata);
-        $right = $this->decode_image($rightdata);
+        $centerframes = $this->decode_images($centerdata, 12);
+        $leftframes = $this->decode_images($leftdata, 20);
+        $rightframes = $this->decode_images($rightdata, 20);
         $transactionid = bin2hex(random_bytes(16));
 
         $response = (new server_client($companyid))->verify_identity(
             $reference,
-            $center,
-            $left,
-            $right,
+            $centerframes,
+            $leftframes,
+            $rightframes,
             $transactionid,
             (float) $config->identitythreshold
         );
@@ -95,7 +95,7 @@ final class identity_service {
             'checkedAt' => time(),
             'transactionId' => $transactionid,
         ];
-        $this->remember($quizid, $userid, $result, $center);
+        $this->remember($quizid, $userid, $result, $centerframes[0] ?? null);
 
         (new audit_logger())->log(
             $passed ? 'identity.preflight_passed' : 'identity.preflight_failed',
@@ -289,6 +289,28 @@ final class identity_service {
             throw new \moodle_exception('identity:invalidimage', 'local_proctorcore');
         }
         return $bytes;
+    }
+
+    /**
+     * Decodes one image or a list of challenge frames.
+     *
+     * @param string|array $data Data URL/base64 image or list.
+     * @param int $limit Maximum frames accepted.
+     * @return array
+     */
+    private function decode_images($data, int $limit): array {
+        $values = is_array($data) ? $data : [$data];
+        $frames = [];
+        foreach (array_slice($values, 0, $limit) as $value) {
+            if (!is_string($value) || trim($value) === '') {
+                continue;
+            }
+            $frames[] = $this->decode_image($value);
+        }
+        if (!$frames) {
+            throw new \moodle_exception('identity:invalidimage', 'local_proctorcore');
+        }
+        return $frames;
     }
 
     /**

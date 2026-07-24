@@ -28,9 +28,9 @@ try {
         $quizid,
         (int) $USER->id,
         $token,
-        (string) ($data['centerImage'] ?? ''),
-        (string) ($data['leftImage'] ?? ''),
-        (string) ($data['rightImage'] ?? '')
+        $data['centerImages'] ?? ($data['centerImage'] ?? ''),
+        $data['leftImages'] ?? ($data['leftImage'] ?? ''),
+        $data['rightImages'] ?? ($data['rightImage'] ?? '')
     );
     echo json_encode($result, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 } catch (Throwable $exception) {

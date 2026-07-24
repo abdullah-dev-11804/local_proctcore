@@ -39,29 +39,36 @@ final class server_client {
      * Verifies a pre-attempt identity challenge with Server B.
      *
      * @param string $referencebytes Moodle profile image bytes.
-     * @param string $centerbytes Straight-looking camera image bytes.
-     * @param string $leftbytes Left-turn challenge image bytes.
-     * @param string $rightbytes Right-turn challenge image bytes.
+     * @param array $centerframes Straight-looking camera frames.
+     * @param array $leftframes Left-turn challenge frames.
+     * @param array $rightframes Right-turn challenge frames.
      * @param string $transactionid Correlation id.
      * @param float $threshold Tenant threshold.
      * @return array
      */
     public function verify_identity(
         string $referencebytes,
-        string $centerbytes,
-        string $leftbytes,
-        string $rightbytes,
+        array $centerframes,
+        array $leftframes,
+        array $rightframes,
         string $transactionid,
         float $threshold
     ): array {
+        $encode = static function(string $bytes): string {
+            return base64_encode($bytes);
+        };
+
         return $this->request('POST', '/api/v1/identity/verify', [
             'transactionId' => $transactionid,
             'companyId' => $this->companyid,
             'threshold' => $threshold,
             'referenceImage' => base64_encode($referencebytes),
-            'centerImage' => base64_encode($centerbytes),
-            'leftImage' => base64_encode($leftbytes),
-            'rightImage' => base64_encode($rightbytes),
+            'centerImage' => base64_encode($centerframes[0] ?? ''),
+            'leftImage' => base64_encode($leftframes[0] ?? ''),
+            'rightImage' => base64_encode($rightframes[0] ?? ''),
+            'centerImages' => array_map($encode, $centerframes),
+            'leftImages' => array_map($encode, $leftframes),
+            'rightImages' => array_map($encode, $rightframes),
         ]);
     }
 
