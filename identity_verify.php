@@ -30,7 +30,9 @@ try {
         $token,
         $data['centerImages'] ?? ($data['centerImage'] ?? ''),
         $data['leftImages'] ?? ($data['leftImage'] ?? ''),
-        $data['rightImages'] ?? ($data['rightImage'] ?? '')
+        $data['rightImages'] ?? ($data['rightImage'] ?? ''),
+        (string) ($data['confirmedName'] ?? ''),
+        !empty($data['confirmEnrollment'])
     );
     echo json_encode($result, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 } catch (Throwable $exception) {

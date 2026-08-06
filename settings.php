@@ -109,6 +109,18 @@ if ($hassiteconfig) {
         PARAM_FLOAT
     ));
 
+    $settings->add(new admin_setting_configselect(
+        'local_proctorcore/identitymismatchmode',
+        get_string('settings:identitymismatchmode', 'local_proctorcore'),
+        get_string('settings:identitymismatchmode_desc', 'local_proctorcore'),
+        'review',
+        [
+            'block' => get_string('settings:identitymismatchmode_block', 'local_proctorcore'),
+            'review' => get_string('settings:identitymismatchmode_review', 'local_proctorcore'),
+            'fail' => get_string('settings:identitymismatchmode_fail', 'local_proctorcore'),
+        ]
+    ));
+
     $settings->add(new admin_setting_configcheckbox(
         'local_proctorcore/monitoringenabled',
         get_string('settings:monitoringenabled', 'local_proctorcore'),

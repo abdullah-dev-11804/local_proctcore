@@ -41,6 +41,9 @@ final class company_config_repository {
             'minimumlighting' => min(255, max(1, (int) $this->global_config('minimumlighting', 35))),
             'identityenabled' => (bool) $this->global_config('identityenabled', 1),
             'identitythreshold' => min(1.0, max(-1.0, (float) $this->global_config('identitythreshold', 0.45))),
+            'identitymismatchmode' => $this->normalise_mismatch_mode(
+                (string) $this->global_config('identitymismatchmode', 'review')
+            ),
             'monitoringenabled' => (bool) $this->global_config('monitoringenabled', 1),
             'monitorintervalms' => min(30000, max(1500, (int) $this->global_config('monitorintervalms', 3000))),
             'nofaceseconds' => min(60, max(1, (int) $this->global_config('nofaceseconds', 3))),
@@ -66,6 +69,9 @@ final class company_config_repository {
         $global->reportretentiondays = max(183, (int) $company->reportretentiondays);
         $global->videoretentiondays = max(1, (int) $company->videoretentiondays);
         $global->appealperioddays = max(1, (int) $company->appealperioddays);
+        if (property_exists($company, 'identitymismatchmode') && trim((string) $company->identitymismatchmode) !== '') {
+            $global->identitymismatchmode = $this->normalise_mismatch_mode((string) $company->identitymismatchmode);
+        }
         $global->allowedlanguages = (string) $company->allowedlanguages;
         $global->featureflags = $company->featureflags;
         $global->instructions = $company->instructions;
@@ -105,6 +111,12 @@ final class company_config_repository {
     private function global_config(string $name, $default) {
         $value = get_config('local_proctorcore', $name);
         return $value === false ? $default : $value;
+    }
+
+    /** @return string */
+    private function normalise_mismatch_mode(string $mode): string {
+        $mode = clean_param($mode, PARAM_ALPHANUMEXT);
+        return in_array($mode, ['block', 'review', 'fail'], true) ? $mode : 'review';
     }
 
 }

@@ -1,7 +1,7 @@
 // This file is part of Moodle - http://moodle.org/
 
 /**
- * Section 1.2 pre-attempt identity verification and simple active liveness challenge.
+ * Section 1.2 pre-attempt identity enrollment/verification.
  *
  * @module local_proctorcore/identity_check
  */
@@ -71,6 +71,8 @@ define([], function() {
                 token: token ? token.value : '',
                 centerImage: images.center[0] || '',
                 centerImages: images.center,
+                confirmedName: config.fullName || '',
+                confirmEnrollment: config.enrollmentRequired ? 1 : 0,
             }),
         });
         let data = {};
@@ -93,18 +95,31 @@ define([], function() {
         setField('proctorcore_identity_score', '');
 
         try {
+            if (config.enrollmentRequired) {
+                const confirm = panel.querySelector('[data-identity-confirm]');
+                if (!confirm || !confirm.checked) {
+                    throw new Error(config.strings.confirmationRequired);
+                }
+            }
+
             update(panel, 'running', config.strings.lookStraight);
             await sleep(800);
             const center = await captureFrames(10, 250);
 
-            update(panel, 'running', config.strings.comparing);
+            update(panel, 'running', config.enrollmentRequired ? config.strings.enrolling : config.strings.comparing);
             const result = await post(config, {center});
             setField('proctorcore_identity_status', result.result || 'failed');
             setField('proctorcore_identity_score', result.similarityScore ?? '');
             setField('proctorcore_identity_passed', result.passed ? 1 : 0);
 
             if (result.passed) {
-                update(panel, 'passed', `${config.strings.passed} (${Number(result.similarityScore || 0).toFixed(3)})`);
+                let label = config.strings.passed;
+                if (result.result === 'enrolled') {
+                    label = config.strings.enrolled;
+                } else if (result.result === 'needs_review') {
+                    label = config.strings.needsReview;
+                }
+                update(panel, 'passed', `${label} (${Number(result.similarityScore || 0).toFixed(3)})`);
                 enableSubmit(panel, true);
             } else {
                 update(panel, 'failed', result.message || config.strings.failed);

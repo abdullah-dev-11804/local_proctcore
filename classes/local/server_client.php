@@ -72,6 +72,83 @@ final class server_client {
         ]);
     }
 
+    /**
+     * Stores the user's first reusable face reference on Server B.
+     *
+     * @param int $userid Moodle user id.
+     * @param array $centerframes Straight-looking camera frames.
+     * @param string $transactionid Correlation id.
+     * @param string $fullname Profile full name confirmed by the user.
+     * @param int $confirmedat Confirmation timestamp.
+     * @param float $threshold Tenant threshold.
+     * @return array
+     */
+    public function enroll_face_reference(
+        int $userid,
+        array $centerframes,
+        string $transactionid,
+        string $fullname,
+        int $confirmedat,
+        float $threshold
+    ): array {
+        $encode = static function(string $bytes): string {
+            return base64_encode($bytes);
+        };
+
+        return $this->request('POST', '/api/v1/identity/references/enroll', [
+            'transactionId' => $transactionid,
+            'companyId' => $this->companyid,
+            'userId' => $userid,
+            'fullName' => $fullname,
+            'confirmedAt' => $confirmedat,
+            'threshold' => $threshold,
+            'centerImages' => array_map($encode, $centerframes),
+        ]);
+    }
+
+    /**
+     * Verifies a live face burst against the stored Server B reference.
+     *
+     * @param int $userid Moodle user id.
+     * @param array $centerframes Straight-looking camera frames.
+     * @param string $transactionid Correlation id.
+     * @param float $threshold Tenant threshold.
+     * @return array
+     */
+    public function verify_face_reference(
+        int $userid,
+        array $centerframes,
+        string $transactionid,
+        float $threshold
+    ): array {
+        $encode = static function(string $bytes): string {
+            return base64_encode($bytes);
+        };
+
+        return $this->request('POST', '/api/v1/identity/references/verify', [
+            'transactionId' => $transactionid,
+            'companyId' => $this->companyid,
+            'userId' => $userid,
+            'threshold' => $threshold,
+            'centerImages' => array_map($encode, $centerframes),
+        ]);
+    }
+
+    /**
+     * Removes a stored reference from Server B.
+     *
+     * @param int $userid Moodle user id.
+     * @param string $reason Administrator supplied reason.
+     * @return array
+     */
+    public function reset_face_reference(int $userid, string $reason): array {
+        return $this->request(
+            'DELETE',
+            '/api/v1/identity/references/' . $userid . '?companyId=' . $this->companyid,
+            ['reason' => $reason]
+        );
+    }
+
     /** @param array $payload @return array */
     public function create_session(array $payload): array {
         return $this->request('POST', '/api/v1/sessions', $payload);
@@ -270,9 +347,16 @@ final class server_client {
         $decoded = $textresponse === '' ? [] : json_decode($textresponse, true);
 
         if ($httpcode < 200 || $httpcode >= 300) {
-            $message = is_array($decoded)
-                ? (string) ($decoded['message'] ?? $decoded['error'] ?? 'Server B returned an error.')
-                : clean_param($textresponse, PARAM_TEXT);
+            $message = 'Server B returned an error.';
+            if (is_array($decoded)) {
+                if (isset($decoded['detail']) && is_array($decoded['detail'])) {
+                    $message = (string) ($decoded['detail']['message'] ?? $decoded['detail']['code'] ?? $message);
+                } else {
+                    $message = (string) ($decoded['message'] ?? $decoded['error'] ?? $message);
+                }
+            } else {
+                $message = clean_param($textresponse, PARAM_TEXT);
+            }
             throw new \moodle_exception('error:serverresponse', 'local_proctorcore', '', $httpcode . ': ' . $message);
         }
 

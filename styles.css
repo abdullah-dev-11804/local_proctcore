@@ -357,6 +357,21 @@
 .local-proctorcore-identity-title {
     margin: 0 0 .35rem;
 }
+.local-proctorcore-identity-enrollment-title {
+    margin: .25rem 0 .35rem;
+    font-size: 1rem;
+}
+.local-proctorcore-identity-notice {
+    margin-bottom: .65rem;
+    color: #495057;
+}
+.local-proctorcore-identity-confirm {
+    margin-bottom: .65rem;
+}
+.local-proctorcore-identity-confirm label {
+    display: inline;
+    font-weight: 600;
+}
 .local-proctorcore-identity-instructions {
     margin-bottom: .65rem;
     color: #495057;

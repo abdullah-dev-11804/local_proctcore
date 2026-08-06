@@ -30,6 +30,14 @@ final class provider implements \core_privacy\local\metadata\provider {
             'details' => 'privacy:metadata:appeals:details',
         ], 'privacy:metadata:appeals');
 
+        $collection->add_database_table('local_proctorcore_faceenrol', [
+            'userid' => 'privacy:metadata:faceenrol:userid',
+            'confirmedname' => 'privacy:metadata:faceenrol:confirmedname',
+            'confirmedat' => 'privacy:metadata:faceenrol:confirmedat',
+            'referencekey' => 'privacy:metadata:faceenrol:referencekey',
+            'qualityjson' => 'privacy:metadata:faceenrol:qualityjson',
+        ], 'privacy:metadata:faceenrol');
+
         return $collection;
     }
 }

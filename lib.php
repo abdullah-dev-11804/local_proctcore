@@ -108,12 +108,41 @@ function local_proctorcore_require_heartbeat(int $sessionid): void {
  * Renders the Section 1.2 identity challenge panel used in Quiz preflight.
  *
  * @param string $panelid Unique panel id.
+ * @param string $fullname User full name shown for first-time enrollment.
+ * @param bool $enrollmentrequired Whether this attempt will capture the reusable reference.
  * @return string
  */
-function local_proctorcore_render_identity_panel(string $panelid): string {
+function local_proctorcore_render_identity_panel(
+    string $panelid,
+    string $fullname = '',
+    bool $enrollmentrequired = false
+): string {
     $content = html_writer::tag('h4', get_string('identity:title', 'local_proctorcore'), [
         'class' => 'local-proctorcore-identity-title',
     ]);
+    if ($enrollmentrequired) {
+        $safeid = clean_param($panelid . '-confirm', PARAM_ALPHANUMEXT);
+        $content .= html_writer::tag('h5', get_string('identity:enrollmenttitle', 'local_proctorcore'), [
+            'class' => 'local-proctorcore-identity-enrollment-title',
+        ]);
+        $content .= html_writer::div(
+            get_string('identity:enrollmentnotice', 'local_proctorcore'),
+            'local-proctorcore-identity-notice'
+        );
+        $content .= html_writer::div(
+            html_writer::empty_tag('input', [
+                'type' => 'checkbox',
+                'id' => $safeid,
+                'data-identity-confirm' => '1',
+                'value' => '1',
+            ]) . ' ' . html_writer::tag(
+                'label',
+                get_string('identity:confirmname', 'local_proctorcore', $fullname),
+                ['for' => $safeid]
+            ),
+            'local-proctorcore-identity-confirm'
+        );
+    }
     $content .= html_writer::div(
         get_string('identity:instructions', 'local_proctorcore'),
         'local-proctorcore-identity-instructions'

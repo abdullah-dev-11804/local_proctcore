@@ -12,8 +12,6 @@ capture.php
 local_upload.php
 monitor.php
 download_report.php
-classes/observer.php
-db/events.php
 classes/local/capture_service.php
 classes/local/local_capture_storage.php
 classes/local/ml_client.php

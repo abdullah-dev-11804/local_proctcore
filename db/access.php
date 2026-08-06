@@ -32,6 +32,13 @@ $capabilities = [
             'manager' => CAP_ALLOW,
         ],
     ],
+    'local/proctorcore:resetfaceenrolment' => [
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => [
+            'manager' => CAP_ALLOW,
+        ],
+    ],
     'local/proctorcore:reviewappeals' => [
         'captype' => 'write',
         'contextlevel' => CONTEXT_SYSTEM,

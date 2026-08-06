@@ -3,39 +3,46 @@
 ## Flow
 
 1. The normal Section 5.1 equipment check starts the camera.
-2. The candidate presses **Start identity check**.
-3. The browser captures three frames: centre, left turn, right turn.
-4. Moodle reads the candidate's protected Moodle profile image.
-5. `local_proctorcore` sends the four images to the private ML service.
-6. The ML service detects exactly one face, checks basic image quality, performs the left/right liveness challenge, and compares face embeddings.
-7. A passed result is held in the authenticated Moodle session until Moodle creates the real Quiz attempt.
-8. The live identity image is stored as protected evidence and `identitystatus` becomes `passed`.
-9. A failure blocks Quiz entry. If a real session already exists, an `identity_substitution` violation is registered.
+2. If the user has no active face reference, Moodle shows the profile full name and the future-use notice.
+3. The candidate explicitly confirms the name and notice, then presses **Start identity check**.
+4. The browser captures a short straight-face burst.
+5. On the first proctored exam, Server B accepts only a high-quality reference with adequate lighting, framing, and exactly one frontal face.
+6. Moodle stores the confirmation timestamp/name and Server B reference id/key. Server B stores the actual reference image.
+7. On later proctored exams, Server B compares the live burst against the stored reference.
+8. Moodle applies the configured mismatch behaviour: block, allow and flag manual review, or allow and mark proctoring failed.
+9. A passed or allowed-for-review result is held in the authenticated Moodle session until Moodle creates the real Quiz attempt.
 
 ## Main implementation files
 
-- Server B / iframe frontend — live identity challenge UI, face comparison, liveness checks, retry/review decisions.
+- Server B / iframe frontend — face reference storage, quality checks, face comparison, retry/review decisions.
+- `classes/local/face_enrollment_repository.php` — Moodle-side enrollment confirmation and Server B reference metadata.
 - `classes/local/server_client.php` — Moodle-side Server B API client.
 - `classes/local/webhook_processor.php` — final identity/report/result events from Server B.
 
 ## ML endpoint
 
-- `POST /api/v1/identity/verify`
+- `POST /api/v1/identity/references/enroll`
+- `POST /api/v1/identity/references/verify`
+- `DELETE /api/v1/identity/references/{userId}`
 
 ## Result values
 
 - `matched`
-- `not_matched`
+- `enrolled`
+- `needs_review`
+- `failed_allowed`
 - `no_face`
 - `multiple_faces`
-- `reference_face_invalid`
+- `low_light`
+- `blurry`
+- `face_not_centered`
 - `verification_error`
 
 ## Security
 
 - Candidate images are never sent to the browser after processing.
-- ML credentials remain in Moodle server configuration.
-- The identity evidence uses Moodle's private File API.
+- Server B API credentials remain in Moodle server configuration.
+- The reusable reference image is stored on Server B in Kazakhstan, not in Moodle.
 - The test must run over HTTPS in production.
 
 ## Operational note

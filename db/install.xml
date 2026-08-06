@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="local/proctorcore/db" VERSION="2026071500" COMMENT="XMLDB file for local_proctorcore"
+<XMLDB PATH="local/proctorcore/db" VERSION="2026080700" COMMENT="XMLDB file for local_proctorcore"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd">
   <TABLES>
@@ -13,6 +13,7 @@
         <FIELD NAME="reportretentiondays" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="183"/>
         <FIELD NAME="videoretentiondays" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="30"/>
         <FIELD NAME="appealperioddays" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="14"/>
+        <FIELD NAME="identitymismatchmode" TYPE="char" LENGTH="16" NOTNULL="true" DEFAULT="review"/>
         <FIELD NAME="allowedlanguages" TYPE="char" LENGTH="64" NOTNULL="true" DEFAULT="en,ru,kk"/>
         <FIELD NAME="featureflags" TYPE="text" NOTNULL="false"/>
         <FIELD NAME="instructions" TYPE="text" NOTNULL="false"/>
@@ -27,6 +28,39 @@
       <INDEXES>
         <INDEX NAME="companyuniq" UNIQUE="true" FIELDS="companyid"/>
         <INDEX NAME="enabled" UNIQUE="false" FIELDS="enabled"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="local_proctorcore_faceenrol" COMMENT="One reusable Server B face reference enrollment per Moodle user.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="companyid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="32" NOTNULL="true" DEFAULT="active"/>
+        <FIELD NAME="server_referenceid" TYPE="char" LENGTH="128" NOTNULL="false"/>
+        <FIELD NAME="referencekey" TYPE="text" NOTNULL="false"/>
+        <FIELD NAME="confirmedname" TYPE="char" LENGTH="255" NOTNULL="true"/>
+        <FIELD NAME="confirmedat" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="enrolledat" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="resetat" TYPE="int" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="resetby" TYPE="int" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="resetreason" TYPE="text" NOTNULL="false"/>
+        <FIELD NAME="qualityjson" TYPE="text" NOTNULL="false"/>
+        <FIELD NAME="servermetadata" TYPE="text" NOTNULL="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="resetby" TYPE="foreign" FIELDS="resetby" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="usermodified" TYPE="foreign" FIELDS="usermodified" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="useriduniq" UNIQUE="true" FIELDS="userid"/>
+        <INDEX NAME="companystatus" UNIQUE="false" FIELDS="companyid, status"/>
+        <INDEX NAME="serverref" UNIQUE="false" FIELDS="server_referenceid"/>
       </INDEXES>
     </TABLE>
 

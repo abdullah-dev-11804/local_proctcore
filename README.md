@@ -7,18 +7,21 @@ Main Moodle-side control centre and official record keeper for the SENTAL procto
 - `version.php` - Declares the Moodle plugin component, version, Moodle requirement, and release status.
 - `index.php` - Placeholder for the ProctorCore landing/dashboard route.
 - `settings.php` - Holds global admin settings such as Server B URL, webhook secret, and retention defaults.
-- `lib.php` - Exposes shared helper functions for `quizaccess_proctorgate` and other Moodle-side plugins.
+- `lib.php` - Exposes shared helper functions for `quizaccess_proctorcore` and other Moodle-side plugins.
 - `webhook.php` - Placeholder for a direct signed Server B webhook endpoint if Moodle web services are not used.
 - `reports.php` - Placeholder for company-scoped report lists and session detail pages.
 - `appeal.php` - Placeholder for student appeal submission and appeal review entry points.
-- `db/install.xml` - Defines the full database schema for sessions, tenant settings, violations, assets, appeals, webhooks, participant fields, checks, acknowledgements, and audit logs.
-- `db/upgrade.php` - Placeholder for future schema and data upgrade steps.
-- `db/access.php` - Defines Moodle capabilities for own reports, company reports, all-company reports, exports, appeals, audit logs, and plugin management.
+- `reset_face.php` - Admin entry point for resetting a user's reusable Server B face reference.
+- `db/install.xml` - Defines the full database schema for sessions, face enrollment metadata, tenant settings, violations, assets, appeals, webhooks, participant fields, checks, acknowledgements, and audit logs.
+- `db/upgrade.php` - Applies schema upgrades for installed Moodle sites.
+- `db/access.php` - Defines Moodle capabilities for reports, exports, appeals, audit logs, plugin management, and face-reference reset.
+- `db/events.php` - Removes the user's Server B face reference when their Moodle account is deleted.
 - `db/tasks.php` - Registers the scheduled retention cleanup task.
 - `db/services.php` - Registers the Server B webhook web-service function.
 - `lang/en/local_proctorcore.php` - Contains English language strings for the plugin, settings, capabilities, and task names.
 - `classes/local/session_repository.php` - Home for session create/read/update logic and official attempt-to-proctoring mapping.
-- `classes/local/gate_service.php` - Home for quiz admission decisions consumed by `quizaccess_proctorgate`.
+- `classes/local/face_enrollment_repository.php` - Home for one-reference-per-user enrollment metadata and reset status.
+- `classes/local/gate_service.php` - Home for quiz admission decisions consumed by `quizaccess_proctorcore`.
 - `classes/local/tenant_resolver.php` - Home for IOMAD company resolution and tenant-scope checks.
 - `classes/local/retention_policy.php` - Home for retention and appeal-hold date calculations.
 - `classes/local/webhook_processor.php` - Home for webhook signature validation, deduplication, persistence, and session updates.
@@ -26,6 +29,7 @@ Main Moodle-side control centre and official record keeper for the SENTAL procto
 - `classes/local/appeal_service.php` - Home for appeal submission, review state changes, and evidence retention holds.
 - `classes/local/asset_repository.php` - Home for report, video, snapshot, room scan, ID photo, and violation-act references.
 - `classes/local/audit_logger.php` - Home for append-only administrator, coordinator, proctor, and integration audit events.
+- `classes/observer.php` - Minimal Moodle lifecycle observer for account-deletion face-reference cleanup.
 - `classes/task/cleanup_retention_task.php` - Scheduled task that will clear expired evidence links and request external deletion.
 - `classes/external/webhook_receiver.php` - Web-service receiver for signed Server B lifecycle, result, asset, and violation events.
 - `classes/privacy/provider.php` - Moodle privacy metadata declaration for stored proctoring personal data.
@@ -39,6 +43,7 @@ Main Moodle-side control centre and official record keeper for the SENTAL procto
 ## Schema overview
 
 - `local_proctorcore_companycfg` - Per-company integration, retention, language, instruction, and feature settings.
+- `local_proctorcore_faceenrol` - One reusable Server B face reference metadata record per Moodle user.
 - `local_proctorcore_quizcfg` - Per-quiz proctoring enablement and gate requirements.
 - `local_proctorcore_fields` - Configurable participant data fields such as IIN, department, or course-specific identifiers.
 - `local_proctorcore_sessions` - Official proctoring session record linked to Moodle course, quiz, attempt, user, and Server B session ids.
@@ -50,7 +55,7 @@ Main Moodle-side control centre and official record keeper for the SENTAL procto
 - `local_proctorcore_webhooks` - Raw inbound Server B events plus processing status for idempotency and troubleshooting.
 - `local_proctorcore_appeals` - Appeal requests, reasons, reviewer decisions, and evidence-hold state linkage.
 - `local_proctorcore_audit` - Append-only administrator, coordinator, proctor, and integration action log.
-# ProctorCore local plugin - release 0.10.0
+# ProctorCore local plugin - release 0.11.0
 
 Technical component: `local_proctorcore`  
 Install location: `local/proctorcore`
@@ -59,7 +64,7 @@ Implemented scope:
 
 - Section 1.1 - browser camera/microphone capture, key snapshots, evidence metadata,
   retention and automatic deletion.
-- Section 1.2 - Moodle-profile face verification with an active centre/left/right liveness challenge.
+- Section 1.2 - first-exam face enrollment, reusable Server B reference storage, and subsequent-exam verification.
 - Section 1.3 - gaze/head-direction, tab/window, no-face, additional-face, media-ended,
   and periodic identity monitoring with violation snapshots.
 - Section 3.1 — automatic HTML and PDF proctoring reports, violations, snapshots,
@@ -97,8 +102,8 @@ the existing retention task after expiry.
 
 ## Companion plugin
 
-Use the matched `quizaccess_proctorcore` release 0.10.0. It requires
-`local_proctorcore >= 2026072003`.
+Use the matched `quizaccess_proctorcore` release 0.11.0. It requires
+`local_proctorcore >= 2026080700`.
 
 For private Server B evidence, the development/production Server B must expose
 a Bearer-authenticated `GET /api/v1/assets/{externalId}/content` endpoint. Moodle
@@ -117,5 +122,5 @@ administrator permissions.
 
 Identity verification, behaviour analysis, media capture, clips, and PDF generation
 belong to Server B. Configure `serverbaseurl`, `serverapikey`, `identityenabled`,
-and `monitoringenabled` in Site administration. Moodle keeps the official session,
+`identitymismatchmode`, and `monitoringenabled` in Site administration. Moodle keeps the official session,
 result, appeal, retention, and report-link records.

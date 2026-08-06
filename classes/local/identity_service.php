@@ -9,8 +9,8 @@ defined('MOODLE_INTERNAL') || die();
  * Section 1.2 identity verification service.
  *
  * Pre-attempt identity results live in the authenticated Moodle session until
- * Moodle creates the real Quiz attempt. The successful live image is then
- * copied into the normal protected evidence store and linked to the session.
+ * Moodle creates the real Quiz attempt. The reusable biometric reference image
+ * is stored only on Server B; Moodle stores confirmation and audit metadata.
  *
  * @package local_proctorcore
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -20,7 +20,7 @@ final class identity_service {
     private const RESULT_TTL = 900;
 
     /**
-     * Verifies the live three-frame challenge against the Moodle profile photo.
+     * Enrolls or verifies the user against the Server B face reference.
      *
      * @param int $quizid Quiz id.
      * @param int $userid User id.
@@ -28,6 +28,8 @@ final class identity_service {
      * @param string|array $centerdata Data URL/base64 centre frame(s).
      * @param string|array $leftdata Data URL/base64 left-turn frame(s).
      * @param string|array $rightdata Data URL/base64 right-turn frame(s).
+     * @param string $confirmedname Name confirmed by the user during first enrollment.
+     * @param bool $confirmedenrollment Whether the user explicitly confirmed enrollment.
      * @return array Public response.
      */
     public function verify_preflight(
@@ -36,9 +38,11 @@ final class identity_service {
         string $token,
         $centerdata,
         $leftdata,
-        $rightdata
+        $rightdata,
+        string $confirmedname = '',
+        bool $confirmedenrollment = false
     ): array {
-        global $DB, $SESSION;
+        global $DB;
 
         $this->require_precheck_token($quizid, $userid, $token);
         $quiz = $DB->get_record('quiz', ['id' => $quizid], 'id,course', MUST_EXIST);
@@ -51,63 +55,117 @@ final class identity_service {
                 'score' => null,
                 'threshold' => (float) $config->identitythreshold,
                 'livenessPassed' => true,
+                'mode' => 'notrequired',
                 'checkedAt' => time(),
                 'transactionId' => 'identity-disabled-' . $quizid . '-' . $userid,
             ];
-            $this->remember($quizid, $userid, $result, null);
+            $this->remember($quizid, $userid, $result);
             return $this->public_result($result);
         }
 
-        $reference = $this->get_profile_image_bytes($userid);
-        if ($reference === null) {
-            throw new \moodle_exception('identity:profilphotomissing', 'local_proctorcore');
+        $centerframes = $this->decode_images($centerdata, 12);
+        $transactionid = bin2hex(random_bytes(16));
+        $enrollments = new face_enrollment_repository();
+        $enrollment = $enrollments->get_active($userid);
+        $server = new server_client($companyid);
+        $fullname = fullname(\core_user::get_user($userid, '*', MUST_EXIST));
+        $mismatchmode = (string) ($config->identitymismatchmode ?? 'review');
+
+        if (!$enrollment) {
+            if (!$confirmedenrollment) {
+                throw new \moodle_exception('identity:confirmationrequired', 'local_proctorcore');
+            }
+            $confirmedname = $fullname;
+            $response = $server->enroll_face_reference(
+                $userid,
+                $centerframes,
+                $transactionid,
+                $fullname,
+                time(),
+                (float) $config->identitythreshold
+            );
+            $status = clean_param((string) ($response['result'] ?? 'enrollment_error'), PARAM_ALPHANUMEXT);
+            $passed = $status === 'enrolled';
+            $result = $this->normalise_server_result(
+                $response,
+                $passed,
+                $passed ? 'enrolled' : $status,
+                'enroll',
+                $transactionid,
+                (float) $config->identitythreshold,
+                $mismatchmode
+            );
+            $result['confirmedName'] = $confirmedname;
+            $result['confirmedAt'] = time();
+            if ($passed) {
+                $enrollments->upsert_active(
+                    $userid,
+                    $companyid,
+                    (string) ($response['referenceId'] ?? ''),
+                    (string) ($response['referenceKey'] ?? ''),
+                    $confirmedname,
+                    (int) $result['confirmedAt'],
+                    is_array($response['quality'] ?? null) ? $response['quality'] : [],
+                    $response,
+                    $userid
+                );
+            }
+        } else {
+            $response = $server->verify_face_reference(
+                $userid,
+                $centerframes,
+                $transactionid,
+                (float) $config->identitythreshold
+            );
+            $rawstatus = clean_param((string) ($response['result'] ?? 'verification_error'), PARAM_ALPHANUMEXT);
+            $matched = $rawstatus === 'matched' || !empty($response['accessAllowed']);
+            $qualityretry = in_array($rawstatus, [
+                'no_face',
+                'low_light',
+                'blurry',
+                'multiple_faces',
+                'identity_no_face',
+                'identity_low_light',
+                'identity_blurry',
+                'identity_multiple_faces',
+            ], true);
+            $passed = $matched;
+            $status = $matched ? 'matched' : $rawstatus;
+            if (!$matched && !$qualityretry) {
+                if ($mismatchmode === 'review') {
+                    $passed = true;
+                    $status = 'needs_review';
+                } else if ($mismatchmode === 'fail') {
+                    $passed = true;
+                    $status = 'failed_allowed';
+                }
+            }
+            $result = $this->normalise_server_result(
+                $response,
+                $passed,
+                $status,
+                'verify',
+                $transactionid,
+                (float) $config->identitythreshold,
+                $mismatchmode
+            );
+            $result['referenceId'] = (string) $enrollment->server_referenceid;
         }
 
-        $centerframes = $this->decode_images($centerdata, 12);
-        $leftframes = $this->decode_optional_images($leftdata, 20);
-        $rightframes = $this->decode_optional_images($rightdata, 20);
-        $transactionid = bin2hex(random_bytes(16));
-
-        $response = (new server_client($companyid))->verify_identity(
-            $reference,
-            $centerframes,
-            $leftframes,
-            $rightframes,
-            $transactionid,
-            (float) $config->identitythreshold
-        );
-
-        $status = clean_param((string) ($response['result'] ?? 'verification_error'), PARAM_ALPHANUMEXT);
-        $passed = $status === 'matched' && !empty($response['livenessPassed']);
-        $result = [
-            'passed' => $passed,
-            'status' => $status,
-            'score' => isset($response['similarityScore']) ? (float) $response['similarityScore'] : null,
-            'threshold' => isset($response['threshold'])
-                ? (float) $response['threshold']
-                : (float) $config->identitythreshold,
-            'livenessPassed' => !empty($response['livenessPassed']),
-            'referenceFaceCount' => (int) ($response['referenceFaceCount'] ?? 0),
-            'liveFaceCount' => (int) ($response['liveFaceCount'] ?? 0),
-            'leftYaw' => isset($response['leftYaw']) ? (float) $response['leftYaw'] : null,
-            'rightYaw' => isset($response['rightYaw']) ? (float) $response['rightYaw'] : null,
-            'quality' => $response['quality'] ?? null,
-            'checkedAt' => time(),
-            'transactionId' => $transactionid,
-        ];
-        $this->remember($quizid, $userid, $result, $centerframes[0] ?? null);
+        $this->remember($quizid, $userid, $result);
 
         (new audit_logger())->log(
-            $passed ? 'identity.preflight_passed' : 'identity.preflight_failed',
+            !empty($result['passed']) ? 'identity.preflight_passed' : 'identity.preflight_failed',
             $companyid,
             null,
             $userid,
             [
                 'quizId' => $quizid,
-                'status' => $status,
+                'status' => $result['status'],
                 'score' => $result['score'],
                 'threshold' => $result['threshold'],
-                'livenessPassed' => $result['livenessPassed'],
+                'mode' => $result['mode'],
+                'mismatchMode' => $mismatchmode,
                 'transactionId' => $transactionid,
             ],
             $userid,
@@ -165,7 +223,6 @@ final class identity_service {
         }
 
         $key = $this->key($quizid, $userid);
-        $state = $SESSION->local_proctorcore_identity[$key] ?? null;
         $result = $this->get_preflight_result($quizid, $userid);
         if (!$result || empty($result['passed'])) {
             $sessions->update_check_statuses($sessionid, (string) $session->techcheckstatus, 'failed', [
@@ -179,10 +236,9 @@ final class identity_service {
             'identity' => $result,
         ]);
 
-        $imagepath = is_array($state) ? (string) ($state['imagePath'] ?? '') : '';
-        if ($imagepath !== '' && is_readable($imagepath)) {
-            $this->store_identity_asset($session, $imagepath, $result);
-            @unlink($imagepath);
+        if (($result['status'] ?? '') === 'failed_allowed') {
+            $this->create_identity_violation($session, $result);
+            $this->mark_session_failed_for_identity((int) $session->id);
         }
 
         (new audit_logger())->log(
@@ -194,7 +250,8 @@ final class identity_service {
                 'status' => $result['status'],
                 'score' => $result['score'],
                 'threshold' => $result['threshold'],
-                'livenessPassed' => $result['livenessPassed'],
+                'mode' => $result['mode'] ?? 'verify',
+                'mismatchMode' => $result['mismatchMode'] ?? null,
                 'transactionId' => $result['transactionId'],
             ],
             $userid,
@@ -207,42 +264,105 @@ final class identity_service {
     }
 
     /**
-     * Returns the user's protected profile photo bytes, or null.
+     * Resets a user's reusable face reference.
      *
-     * @param int $userid User id.
-     * @return string|null
+     * @param int $userid User whose reference is reset.
+     * @param string $reason Administrator supplied reason.
+     * @param int $actoruserid Administrator user id.
+     * @return void
      */
-    public function get_profile_image_bytes(int $userid): ?string {
-        $context = \context_user::instance($userid);
-        $files = get_file_storage()->get_area_files(
-            $context->id,
-            'user',
-            'icon',
-            0,
-            'filesize DESC, id DESC',
-            false
-        );
-        foreach ($files as $file) {
-            if ($file->get_filesize() > 0 && strpos((string) $file->get_mimetype(), 'image/') === 0) {
-                return $file->get_content();
+    public function reset_reference(int $userid, string $reason, int $actoruserid): void {
+        $reason = trim(clean_param($reason, PARAM_TEXT));
+        if ($reason === '') {
+            throw new \moodle_exception('identity:resetreasonrequired', 'local_proctorcore');
+        }
+
+        $repository = new face_enrollment_repository();
+        $enrollment = $repository->get_active($userid);
+        $companyid = $enrollment ? (int) $enrollment->companyid : 0;
+
+        $serverresponse = [];
+        try {
+            $serverresponse = (new server_client($companyid))->reset_face_reference($userid, $reason);
+        } catch (\moodle_exception $exception) {
+            if ($enrollment) {
+                throw $exception;
             }
         }
-        return null;
+
+        $repository->mark_reset($userid, $actoruserid, $reason);
+        (new audit_logger())->log(
+            'identity.reference_reset',
+            $companyid,
+            null,
+            $userid,
+            [
+                'reason' => $reason,
+                'serverResponse' => $serverresponse,
+            ],
+            $actoruserid,
+            'user',
+            $userid
+        );
+    }
+
+    /**
+     * Erases a user's face reference after account deletion or approved erasure.
+     *
+     * @param int $userid User id.
+     * @param string $reason Erasure reason.
+     * @param int|null $actoruserid Optional actor user id.
+     * @return void
+     */
+    public function erase_reference(int $userid, string $reason, ?int $actoruserid = null): void {
+        $repository = new face_enrollment_repository();
+        $enrollment = $repository->get_active($userid);
+        if (!$enrollment) {
+            return;
+        }
+
+        $companyid = (int) $enrollment->companyid;
+        $serverresponse = [];
+        try {
+            $serverresponse = (new server_client($companyid))->reset_face_reference($userid, $reason);
+        } catch (\Throwable $exception) {
+            debugging('ProctorCore face reference erasure failed: ' . $exception->getMessage(), DEBUG_DEVELOPER);
+        }
+
+        $repository->mark_deleted($userid, $actoruserid, $reason);
+        (new audit_logger())->log(
+            'identity.reference_erased',
+            $companyid,
+            null,
+            $userid,
+            [
+                'reason' => $reason,
+                'serverResponse' => $serverresponse,
+            ],
+            $actoruserid,
+            'user',
+            $userid
+        );
     }
 
     /** @return array */
     private function public_result(array $result): array {
+        $messagekey = 'identity:failed';
+        if (!empty($result['passed'])) {
+            $messagekey = ($result['status'] ?? '') === 'enrolled' ? 'identity:enrolled' : 'identity:passed';
+            if (($result['status'] ?? '') === 'needs_review') {
+                $messagekey = 'identity:needsreview';
+            }
+        }
         return [
             'ok' => true,
             'passed' => !empty($result['passed']),
             'result' => (string) $result['status'],
             'similarityScore' => $result['score'],
             'threshold' => $result['threshold'],
-            'livenessPassed' => !empty($result['livenessPassed']),
-            'message' => get_string(
-                !empty($result['passed']) ? 'identity:passed' : 'identity:failed',
-                'local_proctorcore'
-            ),
+            'livenessPassed' => true,
+            'enrollment' => ($result['mode'] ?? '') === 'enroll',
+            'message' => get_string($messagekey, 'local_proctorcore'),
         ];
     }
 
@@ -250,27 +370,16 @@ final class identity_service {
      * @param int $quizid Quiz id.
      * @param int $userid User id.
      * @param array $result Result.
-     * @param string|null $centerbytes Live image bytes.
      * @return void
      */
-    private function remember(int $quizid, int $userid, array $result, ?string $centerbytes): void {
-        global $CFG, $SESSION;
+    private function remember(int $quizid, int $userid, array $result): void {
+        global $SESSION;
         if (!isset($SESSION->local_proctorcore_identity)
                 || !is_array($SESSION->local_proctorcore_identity)) {
             $SESSION->local_proctorcore_identity = [];
         }
-        $path = null;
-        if ($centerbytes !== null) {
-            $dir = make_temp_directory('proctorcore_identity');
-            $path = $dir . '/' . sha1($quizid . ':' . $userid . ':' . microtime(true)) . '.jpg';
-            if (file_put_contents($path, $centerbytes, LOCK_EX) === false) {
-                throw new \moodle_exception('identity:tempwritefailed', 'local_proctorcore');
-            }
-            @chmod($path, $CFG->filepermissions);
-        }
         $SESSION->local_proctorcore_identity[$this->key($quizid, $userid)] = [
             'result' => $result,
-            'imagePath' => $path,
             'rememberedAt' => time(),
         ];
     }
@@ -289,6 +398,45 @@ final class identity_service {
             throw new \moodle_exception('identity:invalidimage', 'local_proctorcore');
         }
         return $bytes;
+    }
+
+    /**
+     * Normalises Server B identity output into the Moodle preflight shape.
+     *
+     * @param array $response Server B response.
+     * @param bool $passed Whether Moodle should allow the preflight to pass.
+     * @param string $status Moodle-facing status.
+     * @param string $mode enroll or verify.
+     * @param string $transactionid Correlation id.
+     * @param float $defaultthreshold Configured threshold.
+     * @param string $mismatchmode Configured mismatch mode.
+     * @return array
+     */
+    private function normalise_server_result(
+        array $response,
+        bool $passed,
+        string $status,
+        string $mode,
+        string $transactionid,
+        float $defaultthreshold,
+        string $mismatchmode
+    ): array {
+        return [
+            'passed' => $passed,
+            'status' => clean_param($status, PARAM_ALPHANUMEXT),
+            'score' => isset($response['similarityScore']) ? (float) $response['similarityScore'] : null,
+            'threshold' => isset($response['threshold']) ? (float) $response['threshold'] : $defaultthreshold,
+            'livenessPassed' => true,
+            'referenceFaceCount' => (int) ($response['referenceFaceCount'] ?? 0),
+            'liveFaceCount' => (int) ($response['liveFaceCount'] ?? 0),
+            'quality' => $response['quality'] ?? null,
+            'reason' => clean_param((string) ($response['reason'] ?? ($response['result'] ?? 'unknown')), PARAM_TEXT),
+            'mode' => $mode,
+            'mismatchMode' => $mismatchmode,
+            'manualReviewRequired' => $status === 'needs_review',
+            'checkedAt' => time(),
+            'transactionId' => $transactionid,
+        ];
     }
 
     /**
@@ -314,28 +462,6 @@ final class identity_service {
     }
 
     /**
-     * Decodes optional challenge frames.
-     *
-     * @param string|array $data Data URL/base64 image or list.
-     * @param int $limit Maximum frames accepted.
-     * @return array
-     */
-    private function decode_optional_images($data, int $limit): array {
-        if ($data === null || $data === '') {
-            return [];
-        }
-        $values = is_array($data) ? $data : [$data];
-        $frames = [];
-        foreach (array_slice($values, 0, $limit) as $value) {
-            if (!is_string($value) || trim($value) === '') {
-                continue;
-            }
-            $frames[] = $this->decode_image($value);
-        }
-        return $frames;
-    }
-
-    /**
      * @param int $quizid Quiz id.
      * @param int $userid User id.
      * @param string $token Token.
@@ -354,51 +480,6 @@ final class identity_service {
 
     /**
      * @param \stdClass $session Session.
-     * @param string $path Temp image path.
-     * @param array $result Identity result.
-     * @return void
-     */
-    private function store_identity_asset(\stdClass $session, string $path, array $result): void {
-        $context = \context_system::instance();
-        $fs = get_file_storage();
-        $filename = 'identity-session-' . (int) $session->id . '.jpg';
-        $fs->delete_area_files($context->id, 'local_proctorcore', 'identity', (int) $session->id);
-        $file = $fs->create_file_from_pathname([
-            'contextid' => $context->id,
-            'component' => 'local_proctorcore',
-            'filearea' => 'identity',
-            'itemid' => (int) $session->id,
-            'filepath' => '/',
-            'filename' => $filename,
-            'userid' => (int) $session->userid,
-        ], $path);
-
-        (new asset_repository())->create(
-            (int) $session->id,
-            (int) $session->companyid,
-            asset_repository::TYPE_IDENTITY_PHOTO,
-            [
-                'storage' => 'moodle_file',
-                'filearea' => 'identity',
-                'itemid' => (int) $session->id,
-                'checksum' => $file->get_contenthash(),
-                'mime' => $file->get_mimetype(),
-                'filesize' => $file->get_filesize(),
-                'metadata' => [
-                    'filename' => $filename,
-                    'reason' => 'identity_verification',
-                    'similarityScore' => $result['score'],
-                    'threshold' => $result['threshold'],
-                    'livenessPassed' => $result['livenessPassed'],
-                    'transactionId' => $result['transactionId'],
-                ],
-            ]
-        );
-        (new session_repository())->increment_snapshot_count((int) $session->id);
-    }
-
-    /**
-     * @param \stdClass $session Session.
      * @param array $result Result.
      * @return void
      */
@@ -413,6 +494,24 @@ final class identity_service {
                 'metadata' => $result,
             ]
         );
+    }
+
+    /**
+     * Sets the official local proctoring result to failed while keeping entry allowed.
+     *
+     * @param int $sessionid Session id.
+     * @return void
+     */
+    private function mark_session_failed_for_identity(int $sessionid): void {
+        global $DB;
+
+        $record = (object) [
+            'id' => $sessionid,
+            'result' => 'failed',
+            'closedreason' => 'identity_mismatch',
+            'timemodified' => time(),
+        ];
+        $DB->update_record('local_proctorcore_sessions', $record);
     }
 
     /** @return string */
