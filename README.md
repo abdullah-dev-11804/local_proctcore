@@ -12,6 +12,7 @@ Main Moodle-side control centre and official record keeper for the SENTAL procto
 - `reports.php` - Placeholder for company-scoped report lists and session detail pages.
 - `appeal.php` - Placeholder for student appeal submission and appeal review entry points.
 - `reset_face.php` - Admin entry point for resetting a user's reusable Server B face reference.
+- `cli/reset_face_reference.php` - CLI helper to reset a user's reusable face reference and force fresh enrollment.
 - `db/install.xml` - Defines the full database schema for sessions, face enrollment metadata, tenant settings, violations, assets, appeals, webhooks, participant fields, checks, acknowledgements, and audit logs.
 - `db/upgrade.php` - Applies schema upgrades for installed Moodle sites.
 - `db/access.php` - Defines Moodle capabilities for reports, exports, appeals, audit logs, plugin management, and face-reference reset.

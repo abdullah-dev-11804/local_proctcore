@@ -5,8 +5,8 @@
 1. The normal Section 5.1 equipment check starts the camera.
 2. If the user has no active face reference, Moodle shows the profile full name and the future-use notice.
 3. The candidate explicitly confirms the name and notice, then presses **Start identity check**.
-4. The browser captures a short straight-face burst.
-5. On the first proctored exam, Server B accepts only a high-quality reference with adequate lighting, framing, and exactly one frontal face.
+4. The browser captures a straight-face burst, then left-turn and right-turn bursts for active liveness.
+5. On the first proctored exam, Server B accepts only a high-quality reference with adequate lighting, framing, exactly one face, and a passed liveness challenge.
 6. Moodle stores the confirmation timestamp/name and Server B reference id/key. Server B stores the actual reference image.
 7. On later proctored exams, Server B compares the live burst against the stored reference.
 8. Moodle applies the configured mismatch behaviour: block, allow and flag manual review, or allow and mark proctoring failed.

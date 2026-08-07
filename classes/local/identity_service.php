@@ -64,6 +64,8 @@ final class identity_service {
         }
 
         $centerframes = $this->decode_images($centerdata, 12);
+        $leftframes = $this->decode_images($leftdata, 16);
+        $rightframes = $this->decode_images($rightdata, 16);
         $transactionid = bin2hex(random_bytes(16));
         $enrollments = new face_enrollment_repository();
         $enrollment = $enrollments->get_active($userid);
@@ -79,6 +81,8 @@ final class identity_service {
             $response = $server->enroll_face_reference(
                 $userid,
                 $centerframes,
+                $leftframes,
+                $rightframes,
                 $transactionid,
                 $fullname,
                 time(),
@@ -114,6 +118,8 @@ final class identity_service {
             $response = $server->verify_face_reference(
                 $userid,
                 $centerframes,
+                $leftframes,
+                $rightframes,
                 $transactionid,
                 (float) $config->identitythreshold
             );
@@ -128,6 +134,14 @@ final class identity_service {
                 'identity_low_light',
                 'identity_blurry',
                 'identity_multiple_faces',
+                'identity_liveness_failed',
+                'identity_head_turn_not_detected',
+                'identity_side_face_missing',
+                'liveness_failed',
+                'head_turn_not_detected',
+                'side_face_missing',
+                'low_face_confidence',
+                'identity_low_face_confidence',
             ], true);
             $passed = $matched;
             $status = $matched ? 'matched' : $rawstatus;

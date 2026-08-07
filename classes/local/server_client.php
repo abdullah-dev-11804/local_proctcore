@@ -86,6 +86,8 @@ final class server_client {
     public function enroll_face_reference(
         int $userid,
         array $centerframes,
+        array $leftframes,
+        array $rightframes,
         string $transactionid,
         string $fullname,
         int $confirmedat,
@@ -103,6 +105,8 @@ final class server_client {
             'confirmedAt' => $confirmedat,
             'threshold' => $threshold,
             'centerImages' => array_map($encode, $centerframes),
+            'leftImages' => array_map($encode, $leftframes),
+            'rightImages' => array_map($encode, $rightframes),
         ]);
     }
 
@@ -118,6 +122,8 @@ final class server_client {
     public function verify_face_reference(
         int $userid,
         array $centerframes,
+        array $leftframes,
+        array $rightframes,
         string $transactionid,
         float $threshold
     ): array {
@@ -131,6 +137,8 @@ final class server_client {
             'userId' => $userid,
             'threshold' => $threshold,
             'centerImages' => array_map($encode, $centerframes),
+            'leftImages' => array_map($encode, $leftframes),
+            'rightImages' => array_map($encode, $rightframes),
         ]);
     }
 

@@ -71,6 +71,8 @@ define([], function() {
                 token: token ? token.value : '',
                 centerImage: images.center[0] || '',
                 centerImages: images.center,
+                leftImages: images.left || [],
+                rightImages: images.right || [],
                 confirmedName: config.fullName || '',
                 confirmEnrollment: config.enrollmentRequired ? 1 : 0,
             }),
@@ -104,10 +106,18 @@ define([], function() {
 
             update(panel, 'running', config.strings.lookStraight);
             await sleep(800);
-            const center = await captureFrames(10, 250);
+            const center = await captureFrames(8, 250);
+
+            update(panel, 'running', config.strings.turnLeft);
+            await sleep(900);
+            const left = await captureFrames(12, 220);
+
+            update(panel, 'running', config.strings.turnRight);
+            await sleep(900);
+            const right = await captureFrames(12, 220);
 
             update(panel, 'running', config.enrollmentRequired ? config.strings.enrolling : config.strings.comparing);
-            const result = await post(config, {center});
+            const result = await post(config, {center, left, right});
             setField('proctorcore_identity_status', result.result || 'failed');
             setField('proctorcore_identity_score', result.similarityScore ?? '');
             setField('proctorcore_identity_passed', result.passed ? 1 : 0);

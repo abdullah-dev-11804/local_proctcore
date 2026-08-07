@@ -105,7 +105,7 @@ if ($hassiteconfig) {
         'local_proctorcore/identitythreshold',
         get_string('settings:identitythreshold', 'local_proctorcore'),
         get_string('settings:identitythreshold_desc', 'local_proctorcore'),
-        '0.45',
+        '0.36',
         PARAM_FLOAT
     ));
 
