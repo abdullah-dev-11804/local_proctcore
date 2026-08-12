@@ -113,6 +113,12 @@ final class identity_service {
                     $response,
                     $userid
                 );
+            } else {
+                try {
+                    $server->reset_face_reference($userid, 'failed_first_enrollment_cleanup');
+                } catch (\Throwable $exception) {
+                    debugging('ProctorCore failed enrollment cleanup failed: ' . $exception->getMessage(), DEBUG_DEVELOPER);
+                }
             }
         } else {
             $response = $server->verify_face_reference(
@@ -374,7 +380,7 @@ final class identity_service {
             'result' => (string) $result['status'],
             'similarityScore' => $result['score'],
             'threshold' => $result['threshold'],
-            'livenessPassed' => true,
+            'livenessPassed' => !empty($result['livenessPassed']),
             'enrollment' => ($result['mode'] ?? '') === 'enroll',
             'message' => get_string($messagekey, 'local_proctorcore'),
         ];
@@ -440,7 +446,7 @@ final class identity_service {
             'status' => clean_param($status, PARAM_ALPHANUMEXT),
             'score' => isset($response['similarityScore']) ? (float) $response['similarityScore'] : null,
             'threshold' => isset($response['threshold']) ? (float) $response['threshold'] : $defaultthreshold,
-            'livenessPassed' => true,
+            'livenessPassed' => array_key_exists('livenessPassed', $response) ? !empty($response['livenessPassed']) : true,
             'referenceFaceCount' => (int) ($response['referenceFaceCount'] ?? 0),
             'liveFaceCount' => (int) ($response['liveFaceCount'] ?? 0),
             'quality' => $response['quality'] ?? null,

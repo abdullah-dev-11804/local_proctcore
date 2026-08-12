@@ -105,16 +105,16 @@ define([], function() {
             }
 
             update(panel, 'running', config.strings.lookStraight);
-            await sleep(800);
-            const center = await captureFrames(8, 250);
+            await sleep(600);
+            const center = await captureFrames(5, 220);
 
             update(panel, 'running', config.strings.turnLeft);
-            await sleep(900);
-            const left = await captureFrames(12, 220);
+            await sleep(700);
+            const left = await captureFrames(6, 220);
 
             update(panel, 'running', config.strings.turnRight);
-            await sleep(900);
-            const right = await captureFrames(12, 220);
+            await sleep(700);
+            const right = await captureFrames(6, 220);
 
             update(panel, 'running', config.enrollmentRequired ? config.strings.enrolling : config.strings.comparing);
             const result = await post(config, {center, left, right});
