@@ -52,13 +52,38 @@ define([], function() {
 
     const detectBrowser = () => {
         const ua = navigator.userAgent || '';
+        const isIOS = /iPad|iPhone|iPod/.test(ua)
+            || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
         let match = ua.match(/Edg\/([0-9.]+)/);
         if (match) {
             return {ok: true, name: 'Microsoft Edge', version: match[1]};
         }
+        match = ua.match(/EdgiOS\/([0-9.]+)/);
+        if (match) {
+            return {ok: true, name: 'Microsoft Edge', version: match[1]};
+        }
+        match = ua.match(/CriOS\/([0-9.]+)/);
+        if (match) {
+            return {ok: true, name: 'Google Chrome', version: match[1]};
+        }
+        match = ua.match(/FxiOS\/([0-9.]+)/);
+        if (match) {
+            return {ok: true, name: 'Mozilla Firefox', version: match[1]};
+        }
+        match = ua.match(/OPiOS\/([0-9.]+)/);
+        if (match) {
+            return {ok: true, name: 'Opera', version: match[1]};
+        }
         match = ua.match(/Chrome\/([0-9.]+)/);
         if (match && !/OPR\//.test(ua)) {
             return {ok: true, name: 'Google Chrome', version: match[1]};
+        }
+        match = ua.match(/Version\/([0-9.]+).*Safari\//);
+        if (isIOS && match) {
+            return {ok: true, name: 'Safari', version: match[1]};
+        }
+        if (isIOS) {
+            return {ok: true, name: 'iPhone browser', version: ''};
         }
         return {ok: false, name: navigator.userAgentData?.brands?.[0]?.brand || 'Unsupported', version: ''};
     };

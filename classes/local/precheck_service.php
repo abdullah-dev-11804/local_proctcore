@@ -16,7 +16,7 @@ defined('MOODLE_INTERNAL') || die();
  */
 final class precheck_service {
     /** Session result lifetime. */
-    private const RESULT_TTL = 900;
+    private const RESULT_TTL = 3600;
 
     /**
      * Creates a short-lived token for a quiz/user precheck form.
@@ -42,6 +42,7 @@ final class precheck_service {
                 && !empty($existing['token'])
                 && !empty($existing['issuedat'])
                 && time() - (int) $existing['issuedat'] <= self::RESULT_TTL) {
+            $SESSION->local_proctorcore_prechecks[$key]['issuedat'] = time();
             return (string) $existing['token'];
         }
 
