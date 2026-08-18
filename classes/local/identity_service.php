@@ -131,6 +131,8 @@ final class identity_service {
             );
             $rawstatus = clean_param((string) ($response['result'] ?? 'verification_error'), PARAM_ALPHANUMEXT);
             $matched = $rawstatus === 'matched' || !empty($response['accessAllowed']);
+            $score = isset($response['similarityScore']) ? (float) $response['similarityScore'] : null;
+            $threshold = (float) $config->identitythreshold;
             $qualityretry = in_array($rawstatus, [
                 'no_face',
                 'low_light',
@@ -156,7 +158,9 @@ final class identity_service {
             ], true);
             $passed = $matched;
             $status = $matched ? 'matched' : $rawstatus;
-            if (!$matched && !$qualityretry) {
+            $belowthreshold = $score !== null && $score < $threshold;
+            $hardidentitymismatch = $belowthreshold && in_array($rawstatus, ['low_confidence', 'mismatch'], true);
+            if (!$matched && !$qualityretry && !$hardidentitymismatch) {
                 if ($mismatchmode === 'review') {
                     $passed = true;
                     $status = 'needs_review';

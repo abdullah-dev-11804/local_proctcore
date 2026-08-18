@@ -13,7 +13,7 @@
         <FIELD NAME="reportretentiondays" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="183"/>
         <FIELD NAME="videoretentiondays" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="30"/>
         <FIELD NAME="appealperioddays" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="14"/>
-        <FIELD NAME="identitymismatchmode" TYPE="char" LENGTH="16" NOTNULL="true" DEFAULT="review"/>
+        <FIELD NAME="identitymismatchmode" TYPE="char" LENGTH="16" NOTNULL="true" DEFAULT="block"/>
         <FIELD NAME="allowedlanguages" TYPE="char" LENGTH="64" NOTNULL="true" DEFAULT="en,ru,kk"/>
         <FIELD NAME="featureflags" TYPE="text" NOTNULL="false"/>
         <FIELD NAME="instructions" TYPE="text" NOTNULL="false"/>

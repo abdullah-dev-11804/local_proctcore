@@ -105,7 +105,7 @@ if ($hassiteconfig) {
         'local_proctorcore/identitythreshold',
         get_string('settings:identitythreshold', 'local_proctorcore'),
         get_string('settings:identitythreshold_desc', 'local_proctorcore'),
-        '0.36',
+        '0.85',
         PARAM_FLOAT
     ));
 
@@ -113,7 +113,7 @@ if ($hassiteconfig) {
         'local_proctorcore/identitymismatchmode',
         get_string('settings:identitymismatchmode', 'local_proctorcore'),
         get_string('settings:identitymismatchmode_desc', 'local_proctorcore'),
-        'review',
+        'block',
         [
             'block' => get_string('settings:identitymismatchmode_block', 'local_proctorcore'),
             'review' => get_string('settings:identitymismatchmode_review', 'local_proctorcore'),
