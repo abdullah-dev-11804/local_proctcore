@@ -107,14 +107,17 @@ define([], function() {
             update(panel, 'running', config.strings.lookStraight);
             await sleep(600);
             const center = await captureFrames(5, 220);
+            let left = [];
+            let right = [];
+            if (!config.enrollmentRequired && config.activeChallenge) {
+                update(panel, 'running', config.strings.turnLeft);
+                await sleep(700);
+                left = await captureFrames(6, 220);
 
-            update(panel, 'running', config.strings.turnLeft);
-            await sleep(700);
-            const left = await captureFrames(6, 220);
-
-            update(panel, 'running', config.strings.turnRight);
-            await sleep(700);
-            const right = await captureFrames(6, 220);
+                update(panel, 'running', config.strings.turnRight);
+                await sleep(700);
+                right = await captureFrames(6, 220);
+            }
 
             update(panel, 'running', config.enrollmentRequired ? config.strings.enrolling : config.strings.comparing);
             const result = await post(config, {center, left, right});

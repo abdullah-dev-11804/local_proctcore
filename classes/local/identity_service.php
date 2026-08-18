@@ -64,8 +64,8 @@ final class identity_service {
         }
 
         $centerframes = $this->decode_images($centerdata, 12);
-        $leftframes = $this->decode_images($leftdata, 16);
-        $rightframes = $this->decode_images($rightdata, 16);
+        $leftframes = $this->decode_optional_images($leftdata, 16);
+        $rightframes = $this->decode_optional_images($rightdata, 16);
         $transactionid = bin2hex(random_bytes(16));
         $enrollments = new face_enrollment_repository();
         $enrollment = $enrollments->get_active($userid);
@@ -136,6 +136,11 @@ final class identity_service {
                 'low_light',
                 'blurry',
                 'multiple_faces',
+                'not_enough_good_frames',
+                'unstable_reference_capture',
+                'not_enough_good_live_frames',
+                'template_missing_embeddings',
+                'needs_retry',
                 'identity_no_face',
                 'identity_low_light',
                 'identity_blurry',
@@ -373,6 +378,8 @@ final class identity_service {
             if (($result['status'] ?? '') === 'needs_review') {
                 $messagekey = 'identity:needsreview';
             }
+        } else {
+            $messagekey = $this->failure_message_key((string) ($result['status'] ?? ''), (string) ($result['reason'] ?? ''));
         }
         return [
             'ok' => true,
@@ -384,6 +391,40 @@ final class identity_service {
             'enrollment' => ($result['mode'] ?? '') === 'enroll',
             'message' => get_string($messagekey, 'local_proctorcore'),
         ];
+    }
+
+    /**
+     * Returns the best user-facing failure message for a Server B reason.
+     *
+     * @param string $status Moodle-facing status.
+     * @param string $reason Server B reason.
+     * @return string Language key.
+     */
+    private function failure_message_key(string $status, string $reason): string {
+        $value = trim($reason) !== '' ? $reason : $status;
+        $value = preg_replace('/^identity_/', '', clean_param($value, PARAM_ALPHANUMEXT));
+        $map = [
+            'no_face' => 'identity:failnoface',
+            'low_light' => 'identity:faillowlight',
+            'blurry' => 'identity:failblurry',
+            'multiple_faces' => 'identity:failmultiplefaces',
+            'not_enough_good_frames' => 'identity:notenoughgoodframes',
+            'unstable_reference_capture' => 'identity:unstablereferencecapture',
+            'not_enough_good_live_frames' => 'identity:notenoughgoodliveframes',
+            'template_missing_embeddings' => 'identity:templatemissingembeddings',
+            'needs_retry' => 'identity:needsretry',
+            'low_face_confidence' => 'identity:faillowfaceconfidence',
+            'face_not_framed' => 'identity:failnotframed',
+            'face_not_centered' => 'identity:failnotcentered',
+            'face_too_far' => 'identity:failtoofar',
+            'face_too_close' => 'identity:failtooclose',
+            'side_face_missing' => 'identity:failsidefacemissing',
+            'head_turn_not_detected' => 'identity:failheadturn',
+            'antispoof_unavailable' => 'identity:failantispoofunavailable',
+            'spoof_detected' => 'identity:failspoof',
+            'mismatch' => 'identity:failmismatch',
+        ];
+        return $map[$value] ?? 'identity:failed';
     }
 
     /**
@@ -479,6 +520,24 @@ final class identity_service {
             throw new \moodle_exception('identity:invalidimage', 'local_proctorcore');
         }
         return $frames;
+    }
+
+    /**
+     * Decodes an optional image list, returning an empty array when nothing is provided.
+     *
+     * @param string|array $data Data URL/base64 image or list.
+     * @param int $limit Maximum frames accepted.
+     * @return array
+     */
+    private function decode_optional_images($data, int $limit): array {
+        if ($data === null || $data === '' || $data === []) {
+            return [];
+        }
+        try {
+            return $this->decode_images($data, $limit);
+        } catch (\moodle_exception $exception) {
+            return [];
+        }
     }
 
     /**
