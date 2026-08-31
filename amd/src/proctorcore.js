@@ -87,14 +87,31 @@ define([], function() {
         script.src = url;
         script.async = true;
         script.dataset.proctorcoreLivekit = '1';
+        const amdDefine = window.define;
+        const amdDefineAmd = amdDefine && amdDefine.amd ? amdDefine.amd : null;
+        const disableAmd = () => {
+            if (amdDefine && Object.prototype.hasOwnProperty.call(amdDefine, 'amd')) {
+                amdDefine.amd = false;
+            }
+        };
+        const restoreAmd = () => {
+            if (amdDefine && Object.prototype.hasOwnProperty.call(amdDefine, 'amd')) {
+                amdDefine.amd = amdDefineAmd;
+            }
+        };
+        disableAmd();
         script.addEventListener('load', () => {
+            restoreAmd();
             if (window.LivekitClient) {
                 resolve(window.LivekitClient);
             } else {
                 reject(new Error(config.strings.sdkFailed));
             }
         }, {once: true});
-        script.addEventListener('error', () => reject(new Error(config.strings.sdkFailed)), {once: true});
+        script.addEventListener('error', () => {
+            restoreAmd();
+            reject(new Error(config.strings.sdkFailed));
+        }, {once: true});
         document.head.appendChild(script);
     });
 
@@ -815,7 +832,7 @@ define([], function() {
             });
             connect().catch(error => {
                 failureSent = true;
-                setAttemptLocked(true);
+                setAttemptLocked(false);
                 disconnectRoom();
                 stopLocalTracks();
                 updateStatus(
