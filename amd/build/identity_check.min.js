@@ -46,7 +46,10 @@ define([], function() {
         if (!window.ProctorCorePrecheck || typeof window.ProctorCorePrecheck.captureJpeg !== 'function') {
             throw new Error('Camera preview is unavailable. Run the equipment check again.');
         }
-        return window.ProctorCorePrecheck.captureJpeg(0.9);
+        if (typeof window.ProctorCorePrecheck.capturePng === 'function') {
+            return window.ProctorCorePrecheck.capturePng();
+        }
+        return window.ProctorCorePrecheck.captureJpeg(0.98);
     };
 
     const captureFrames = async(count, intervalMs) => {
