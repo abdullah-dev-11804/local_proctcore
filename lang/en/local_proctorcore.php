@@ -308,7 +308,7 @@ $string['settings:lookawayseconds_desc'] = 'The head/gaze estimate must remain o
 $string['settings:violationcooldownseconds'] = 'Same-violation cooldown (seconds)';
 $string['settings:violationcooldownseconds_desc'] = 'Minimum interval before the same violation type can be recorded again.';
 $string['settings:identityrecheckseconds'] = 'Identity re-check interval (seconds)';
-$string['settings:identityrecheckseconds_desc'] = 'How often the current face is compared again with the profile photo during the Quiz.';
+$string['settings:identityrecheckseconds_desc'] = 'Reserved for future template-based identity re-checks during the Quiz. The current monitoring flow checks face count and looking-away behaviour.';
 
 $string['identity:title'] = 'Identity verification';
 $string['identity:instructions'] = 'After the equipment checks pass, click Start identity check and look straight at the camera.';

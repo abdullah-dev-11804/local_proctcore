@@ -38,17 +38,9 @@ final class violation_service {
         $metadata = $this->decode_metadata($session->servermetadata);
         $monitor = is_array($metadata['monitor'] ?? null) ? $metadata['monitor'] : [];
         $now = time();
-        $lastidentity = (int) ($monitor['lastIdentityRecheckAt'] ?? 0);
-        $includereference = $lastidentity <= 0
-            || $now - $lastidentity >= (int) $config->identityrecheckseconds;
-        $reference = null;
-        if ($includereference) {
-            $reference = (new identity_service())->get_profile_image_bytes((int) $session->userid);
-        }
-
         $analysis = (new ml_client((int) $session->companyid))->analyse_frame(
             $frame,
-            $reference,
+            null,
             (string) ($session->server_sessionid ?: ('local-' . $sessionid))
         );
 
@@ -83,34 +75,6 @@ final class violation_service {
             $analysis,
             $events
         );
-
-        if ($includereference) {
-            $monitor['lastIdentityRecheckAt'] = $now;
-            $identityresult = (string) ($analysis['identityResult'] ?? 'not_checked');
-            if ($identityresult === 'not_matched') {
-                $violation = $this->create_once(
-                    $session,
-                    'different_person',
-                    5,
-                    'identity_model',
-                    (int) $config->violationcooldownseconds,
-                    [
-                        'occurredat' => $now,
-                        'description' => get_string('violation:differentperson', 'local_proctorcore'),
-                        'metadata' => $analysis,
-                    ]
-                );
-                if ($violation) {
-                    $events[] = $this->public_violation($violation);
-                    (new session_repository())->update_check_statuses(
-                        $sessionid,
-                        (string) $session->techcheckstatus,
-                        'failed',
-                        ['monitor' => ['identityRecheck' => $analysis]]
-                    );
-                }
-            }
-        }
 
         $monitor['lastAnalysisAt'] = $now;
         $monitor['lastAnalysis'] = $analysis;
