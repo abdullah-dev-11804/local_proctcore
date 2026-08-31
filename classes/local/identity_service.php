@@ -417,6 +417,7 @@ final class identity_service {
             'not_enough_good_live_frames' => 'identity:notenoughgoodliveframes',
             'template_missing_embeddings' => 'identity:templatemissingembeddings',
             'needs_retry' => 'identity:needsretry',
+            'invalid_image' => 'identity:failinvalidimage',
             'low_face_confidence' => 'identity:faillowfaceconfidence',
             'face_not_framed' => 'identity:failnotframed',
             'face_not_centered' => 'identity:failnotcentered',

@@ -103,6 +103,66 @@ function local_proctorcore_require_heartbeat(int $sessionid): void {
     ]]);
 }
 
+/**
+ * Loads the candidate-side media capture module on a proctored attempt page.
+ *
+ * @param int $sessionid Local ProctorCore session id.
+ * @return void
+ */
+function local_proctorcore_require_capture(int $sessionid): void {
+    global $PAGE;
+
+    $PAGE->requires->css('/local/proctorcore/styles.css');
+    $PAGE->requires->js_call_amd('local_proctorcore/proctorcore', 'init', [[
+        'sessionId' => $sessionid,
+        'endpoint' => (new moodle_url('/local/proctorcore/capture.php'))->out(false),
+        'sesskey' => sesskey(),
+        'strings' => [
+            'connecting' => get_string('capture:connecting', 'local_proctorcore'),
+            'permissions' => get_string('capture:permissions', 'local_proctorcore'),
+            'recording' => get_string('capture:recording', 'local_proctorcore'),
+            'recordingMessage' => get_string('capture:recordingmessage', 'local_proctorcore'),
+            'reconnecting' => get_string('capture:reconnecting', 'local_proctorcore'),
+            'reconnectingMessage' => get_string('capture:reconnectingmessage', 'local_proctorcore'),
+            'interrupted' => get_string('capture:interrupted', 'local_proctorcore'),
+            'connectionLost' => get_string('capture:connectionlost', 'local_proctorcore'),
+            'finalising' => get_string('capture:finalising', 'local_proctorcore'),
+            'submissionSnapshot' => get_string('capture:submissionsnapshot', 'local_proctorcore'),
+            'captureFailed' => get_string('capture:failed', 'local_proctorcore'),
+            'sdkFailed' => get_string('capture:sdkfailed', 'local_proctorcore'),
+            'invalidResponse' => get_string('capture:invalidresponse', 'local_proctorcore'),
+            'retry' => get_string('capture:retry', 'local_proctorcore'),
+            'localMode' => get_string('capture:recording', 'local_proctorcore'),
+            'localModeMessage' => get_string('capture:recordingmessage', 'local_proctorcore'),
+        ],
+    ]]);
+}
+
+/**
+ * Loads the candidate-side behaviour monitor on a proctored attempt page.
+ *
+ * @param int $sessionid Local ProctorCore session id.
+ * @return void
+ */
+function local_proctorcore_require_violation_monitor(int $sessionid): void {
+    global $PAGE;
+
+    $session = (new \local_proctorcore\local\session_repository())->get_by_id($sessionid);
+    $config = (new \local_proctorcore\local\company_config_repository())
+        ->get_effective_config((int) $session->companyid);
+    $PAGE->requires->js_call_amd('local_proctorcore/violation_monitor', 'init', [[
+        'enabled' => !empty($config->monitoringenabled),
+        'sessionId' => $sessionid,
+        'endpoint' => (new moodle_url('/local/proctorcore/monitor.php'))->out(false),
+        'sesskey' => sesskey(),
+        'intervalMs' => (int) $config->monitorintervalms,
+        'strings' => [
+            'failed' => get_string('violation:monitorfailed', 'local_proctorcore'),
+            'invalidResponse' => get_string('capture:invalidresponse', 'local_proctorcore'),
+        ],
+    ]]);
+}
+
 
 /**
  * Renders the Section 1.2 identity challenge panel used in Quiz preflight.

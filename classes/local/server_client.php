@@ -69,6 +69,7 @@ final class server_client {
             'centerImages' => array_map($encode, $centerframes),
             'leftImages' => array_map($encode, $leftframes),
             'rightImages' => array_map($encode, $rightframes),
+            'qualityPolicy' => $this->identity_quality_policy(),
         ]);
     }
 
@@ -110,6 +111,7 @@ final class server_client {
             'centerImages' => array_map($encode, $centerframes),
             'leftImages' => array_map($encode, $leftframes),
             'rightImages' => array_map($encode, $rightframes),
+            'qualityPolicy' => $this->identity_quality_policy(),
         ]);
     }
 
@@ -145,7 +147,27 @@ final class server_client {
             'centerImages' => array_map($encode, $centerframes),
             'leftImages' => array_map($encode, $leftframes),
             'rightImages' => array_map($encode, $rightframes),
+            'qualityPolicy' => $this->identity_quality_policy(),
         ]);
+    }
+
+    /** @return array */
+    private function identity_quality_policy(): array {
+        return [
+            'minLiveFrames' => (int) ($this->config->identityminliveframes ?? 1),
+            'minBrightness' => (float) ($this->config->identityminbrightness ?? 35),
+            'minBlur' => (float) ($this->config->identityminblur ?? 35),
+            'minFaceConfidence' => (float) ($this->config->identityminfaceconfidence ?? 0.65),
+            'minEnrollmentFrames' => (int) ($this->config->identityminenrollmentframes ?? 3),
+            'minTemplateConsistency' => (float) ($this->config->identitymintemplateconsistency ?? 0.35),
+            'enrollmentMinBrightness' => (float) ($this->config->identityenrollmentminbrightness ?? 45),
+            'enrollmentMinBlur' => (float) ($this->config->identityenrollmentminblur ?? 45),
+            'enrollmentMinFaceConfidence' => (float) ($this->config->identityenrollmentminfaceconfidence ?? 0.75),
+            'enrollmentMinFaceWidthRatio' => (float) ($this->config->identityenrollmentminfacewidthratio ?? 0.18),
+            'enrollmentMaxFaceWidthRatio' => (float) ($this->config->identityenrollmentmaxfacewidthratio ?? 0.58),
+            'enrollmentCenterToleranceX' => (float) ($this->config->identityenrollmentcentertolerancex ?? 0.18),
+            'enrollmentCenterToleranceY' => (float) ($this->config->identityenrollmentcentertolerancey ?? 0.23),
+        ];
     }
 
     /**

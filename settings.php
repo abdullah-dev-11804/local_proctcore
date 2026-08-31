@@ -109,6 +109,116 @@ if ($hassiteconfig) {
         PARAM_FLOAT
     ));
 
+    $settings->add(new admin_setting_configtext(
+        'local_proctorcore/identityminliveframes',
+        get_string('settings:identityminliveframes', 'local_proctorcore'),
+        get_string('settings:identityminliveframes_desc', 'local_proctorcore'),
+        1,
+        PARAM_INT
+    ));
+
+    $settings->add(new admin_setting_configtext(
+        'local_proctorcore/identityminbrightness',
+        get_string('settings:identityminbrightness', 'local_proctorcore'),
+        get_string('settings:identityminbrightness_desc', 'local_proctorcore'),
+        '35',
+        PARAM_FLOAT
+    ));
+
+    $settings->add(new admin_setting_configtext(
+        'local_proctorcore/identityminblur',
+        get_string('settings:identityminblur', 'local_proctorcore'),
+        get_string('settings:identityminblur_desc', 'local_proctorcore'),
+        '35',
+        PARAM_FLOAT
+    ));
+
+    $settings->add(new admin_setting_configtext(
+        'local_proctorcore/identityminfaceconfidence',
+        get_string('settings:identityminfaceconfidence', 'local_proctorcore'),
+        get_string('settings:identityminfaceconfidence_desc', 'local_proctorcore'),
+        '0.65',
+        PARAM_FLOAT
+    ));
+
+    $settings->add(new admin_setting_heading(
+        'local_proctorcore/enrollmentqualityheading',
+        get_string('settings:enrollmentqualityheading', 'local_proctorcore'),
+        get_string('settings:enrollmentqualityheading_desc', 'local_proctorcore')
+    ));
+
+    $settings->add(new admin_setting_configtext(
+        'local_proctorcore/identityminenrollmentframes',
+        get_string('settings:identityminenrollmentframes', 'local_proctorcore'),
+        get_string('settings:identityminenrollmentframes_desc', 'local_proctorcore'),
+        3,
+        PARAM_INT
+    ));
+
+    $settings->add(new admin_setting_configtext(
+        'local_proctorcore/identitymintemplateconsistency',
+        get_string('settings:identitymintemplateconsistency', 'local_proctorcore'),
+        get_string('settings:identitymintemplateconsistency_desc', 'local_proctorcore'),
+        '0.35',
+        PARAM_FLOAT
+    ));
+
+    $settings->add(new admin_setting_configtext(
+        'local_proctorcore/identityenrollmentminbrightness',
+        get_string('settings:identityenrollmentminbrightness', 'local_proctorcore'),
+        get_string('settings:identityenrollmentminbrightness_desc', 'local_proctorcore'),
+        '45',
+        PARAM_FLOAT
+    ));
+
+    $settings->add(new admin_setting_configtext(
+        'local_proctorcore/identityenrollmentminblur',
+        get_string('settings:identityenrollmentminblur', 'local_proctorcore'),
+        get_string('settings:identityenrollmentminblur_desc', 'local_proctorcore'),
+        '45',
+        PARAM_FLOAT
+    ));
+
+    $settings->add(new admin_setting_configtext(
+        'local_proctorcore/identityenrollmentminfaceconfidence',
+        get_string('settings:identityenrollmentminfaceconfidence', 'local_proctorcore'),
+        get_string('settings:identityenrollmentminfaceconfidence_desc', 'local_proctorcore'),
+        '0.75',
+        PARAM_FLOAT
+    ));
+
+    $settings->add(new admin_setting_configtext(
+        'local_proctorcore/identityenrollmentminfacewidthratio',
+        get_string('settings:identityenrollmentminfacewidthratio', 'local_proctorcore'),
+        get_string('settings:identityenrollmentminfacewidthratio_desc', 'local_proctorcore'),
+        '0.18',
+        PARAM_FLOAT
+    ));
+
+    $settings->add(new admin_setting_configtext(
+        'local_proctorcore/identityenrollmentmaxfacewidthratio',
+        get_string('settings:identityenrollmentmaxfacewidthratio', 'local_proctorcore'),
+        get_string('settings:identityenrollmentmaxfacewidthratio_desc', 'local_proctorcore'),
+        '0.58',
+        PARAM_FLOAT
+    ));
+
+    $settings->add(new admin_setting_configtext(
+        'local_proctorcore/identityenrollmentcentertolerancex',
+        get_string('settings:identityenrollmentcentertolerancex', 'local_proctorcore'),
+        get_string('settings:identityenrollmentcentertolerancex_desc', 'local_proctorcore'),
+        '0.18',
+        PARAM_FLOAT
+    ));
+
+    $settings->add(new admin_setting_configtext(
+        'local_proctorcore/identityenrollmentcentertolerancey',
+        get_string('settings:identityenrollmentcentertolerancey', 'local_proctorcore'),
+        get_string('settings:identityenrollmentcentertolerancey_desc', 'local_proctorcore'),
+        '0.23',
+        PARAM_FLOAT
+    ));
+
     $settings->add(new admin_setting_configselect(
         'local_proctorcore/identitymismatchmode',
         get_string('settings:identitymismatchmode', 'local_proctorcore'),
