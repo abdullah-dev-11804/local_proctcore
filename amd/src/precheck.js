@@ -10,30 +10,18 @@ define([], function() {
 
     const bool = value => value === true || value === 1 || value === '1';
 
-    const captureJpeg = (quality = 0.98) => {
+    const captureJpeg = (quality = 0.95, maxDimension = 1280) => {
         const video = document.querySelector('[data-precheck-video]');
         if (!video || !video.videoWidth || !video.videoHeight || video.readyState < 2) {
             throw new Error('Camera preview is not ready.');
         }
         const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
+        const scale = maxDimension > 0 ? Math.min(1, maxDimension / Math.max(video.videoWidth, video.videoHeight)) : 1;
+        canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
+        canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
         const context = canvas.getContext('2d', {alpha: false});
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
         return canvas.toDataURL('image/jpeg', quality);
-    };
-
-    const capturePng = () => {
-        const video = document.querySelector('[data-precheck-video]');
-        if (!video || !video.videoWidth || !video.videoHeight || video.readyState < 2) {
-            throw new Error('Camera preview is not ready.');
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        const context = canvas.getContext('2d', {alpha: false});
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        return canvas.toDataURL('image/png');
     };
 
     const field = name => document.querySelector(`[name="${name}"]`);
@@ -372,7 +360,6 @@ define([], function() {
                 getStream: () => currentStream,
                 getVideoElement: () => panel.querySelector('[data-precheck-video]'),
                 captureJpeg: captureJpeg,
-                capturePng: capturePng,
                 stop: stopStream,
             };
             window.addEventListener('beforeunload', stopStream, {once: true});

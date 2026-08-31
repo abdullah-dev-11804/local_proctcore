@@ -46,10 +46,7 @@ define([], function() {
         if (!window.ProctorCorePrecheck || typeof window.ProctorCorePrecheck.captureJpeg !== 'function') {
             throw new Error('Camera preview is unavailable. Run the equipment check again.');
         }
-        if (typeof window.ProctorCorePrecheck.capturePng === 'function') {
-            return window.ProctorCorePrecheck.capturePng();
-        }
-        return window.ProctorCorePrecheck.captureJpeg(0.98);
+        return window.ProctorCorePrecheck.captureJpeg(0.95, 1280);
     };
 
     const captureFrames = async(count, intervalMs) => {
@@ -109,17 +106,17 @@ define([], function() {
 
             update(panel, 'running', config.strings.lookStraight);
             await sleep(600);
-            const center = await captureFrames(8, 180);
+            const center = await captureFrames(6, 220);
             let left = [];
             let right = [];
             if (!config.enrollmentRequired && config.activeChallenge) {
                 update(panel, 'running', config.strings.turnLeft);
                 await sleep(700);
-                left = await captureFrames(8, 180);
+                left = await captureFrames(6, 220);
 
                 update(panel, 'running', config.strings.turnRight);
                 await sleep(700);
-                right = await captureFrames(8, 180);
+                right = await captureFrames(6, 220);
             }
 
             update(panel, 'running', config.enrollmentRequired ? config.strings.enrolling : config.strings.comparing);
