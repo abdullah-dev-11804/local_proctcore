@@ -29,7 +29,8 @@ try {
         $result = $service->analyse_frame(
             $sessionid,
             (int) $USER->id,
-            (string) ($data['frameImage'] ?? '')
+            (string) ($data['frameImage'] ?? ''),
+            is_array($data['clientTelemetry'] ?? null) ? $data['clientTelemetry'] : []
         );
     } elseif ($action === 'event') {
         $result = $service->record_browser_event(

@@ -21,6 +21,7 @@
         <div><span class="text-muted">{{#str}}report:status, local_proctorcore{{/str}}</span><br><span class="badge {{statusclass}}">{{statustext}}</span></div>
         <div><span class="text-muted">{{#str}}report:identitystatus, local_proctorcore{{/str}}</span><br><span class="badge {{identityclass}}">{{identitytext}}</span></div>
         <div><span class="text-muted">{{#str}}report:technicalstatus, local_proctorcore{{/str}}</span><br><span class="badge {{technicalclass}}">{{technicaltext}}</span></div>
+        <div><span class="text-muted">{{#str}}report:mediastatus, local_proctorcore{{/str}}</span><br><span class="badge {{mediaclass}}">{{mediatext}}</span></div>
     </div>
 
     <div class="card mb-4">
@@ -42,6 +43,10 @@
                         <tr><th>{{#str}}report:grade, local_proctorcore{{/str}}</th><td>{{grade}}</td></tr>
                         <tr><th>{{#str}}report:percentage, local_proctorcore{{/str}}</th><td>{{percent}}</td></tr>
                         <tr><th>{{#str}}report:riskscore, local_proctorcore{{/str}}</th><td>{{risk}}</td></tr>
+                        <tr><th>{{#str}}report:identityscore, local_proctorcore{{/str}}</th><td>{{identityscore}}</td></tr>
+                        <tr><th>{{#str}}report:identitythreshold, local_proctorcore{{/str}}</th><td>{{identitythreshold}}</td></tr>
+                        <tr><th>{{#str}}report:identitypolicy, local_proctorcore{{/str}}</th><td>{{identitypolicy}}</td></tr>
+                        <tr><th>{{#str}}report:reviewrequired, local_proctorcore{{/str}}</th><td>{{reviewrequired}}</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -120,7 +125,10 @@
                     {{/videos}}
                 </div>
             {{/hasvideos}}
-            {{^hasvideos}}<div class="text-muted">{{#str}}report:novideos, local_proctorcore{{/str}}</div>{{/hasvideos}}
+            {{^hasvideos}}
+                {{#evidenceprocessing}}<div class="alert alert-info mb-0">{{#str}}report:processingevidence, local_proctorcore{{/str}}</div>{{/evidenceprocessing}}
+                {{^evidenceprocessing}}<div class="text-muted">{{#str}}report:novideos, local_proctorcore{{/str}}</div>{{/evidenceprocessing}}
+            {{/hasvideos}}
         </div>
     </div>
 

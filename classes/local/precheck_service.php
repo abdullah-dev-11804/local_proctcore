@@ -238,9 +238,15 @@ final class precheck_service {
         $session = (new integration_service())->create_session_for_attempt($attemptid);
 
         $identityrequired = !empty($config->requireidentity);
-        $identitystatus = $identityrequired
-            ? (!empty($result['identity']['passed']) ? 'passed' : 'failed')
-            : 'notrequired';
+        $identitystatus = 'notrequired';
+        if ($identityrequired) {
+            $identitystatus = !empty($result['identity']['passed'])
+                ? (string) ($result['identity']['status'] ?? 'passed')
+                : 'failed';
+            if (in_array($identitystatus, ['enrolled', 'matched'], true)) {
+                $identitystatus = 'passed';
+            }
+        }
 
         $repository->update_check_statuses(
             (int) $session->id,

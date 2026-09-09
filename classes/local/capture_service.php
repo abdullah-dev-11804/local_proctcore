@@ -184,6 +184,8 @@ final class capture_service {
             $idempotencykey = 'recording-start-' . (int) $session->id . '-' . $segment;
             if (local_capture_storage::is_enabled()) {
                 $recordingid = 'local-recording-' . (int) $session->id . '-' . $segment;
+                $provider = 'local_test';
+                $fallback = true;
             } else {
                 $response = (new server_client((int) $session->companyid, $this->configs))->start_recording(
                     (string) $session->server_sessionid,
@@ -202,6 +204,8 @@ final class capture_service {
                 $recordingid = $this->first_string($response, [
                     'recordingId', 'recording.id', 'recording.recordingId', 'id',
                 ]);
+                $provider = clean_param((string) ($response['provider'] ?? 'livekit_egress'), PARAM_ALPHANUMEXT);
+                $fallback = !empty($response['fallback']);
             }
             $segmententry = [
                 'segment' => $segment,
@@ -210,6 +214,8 @@ final class capture_service {
                 'stoppedAt' => null,
                 'startReason' => $cleanreason,
                 'stopReason' => null,
+                'provider' => $provider,
+                'fallback' => $fallback,
             ];
             $segments = is_array($capture['segments'] ?? null) ? $capture['segments'] : [];
             $segments[(string) $segment] = $segmententry;
@@ -223,6 +229,11 @@ final class capture_service {
                     'lastError' => null,
                     'segments' => $segments,
                 ],
+            ]);
+            $this->sessions->update_media_status((int) $session->id, 'recording', [
+                'provider' => $provider,
+                'segment' => $segment,
+                'startedAt' => $now,
             ]);
 
             $this->audit->log(
@@ -246,6 +257,8 @@ final class capture_service {
                 'status' => 'active',
                 'segment' => $segment,
                 'recordingId' => $recordingid,
+                'provider' => $provider,
+                'fallback' => $fallback,
             ];
         } finally {
             $lock->release();
@@ -259,6 +272,9 @@ final class capture_service {
      * @param int|null $userid Current user id, or null for trusted server code.
      * @param string $reason identity_verification, violation, submission, or manual_proctor.
      * @param int|null $violationid Optional local violation id.
+     * @param string $violationtype Optional violation type.
+     * @param int|null $occurredat Original violation timestamp.
+     * @param string $snapshotdata JPEG data URL.
      * @return array
      */
     public function request_snapshot(
@@ -266,6 +282,8 @@ final class capture_service {
         ?int $userid,
         string $reason,
         ?int $violationid = null,
+        string $violationtype = '',
+        ?int $occurredat = null,
         string $snapshotdata = ''
     ): array {
         $allowed = ['identity_verification', 'violation', 'submission', 'manual_proctor'];
@@ -308,6 +326,10 @@ final class capture_service {
             ];
             if ($violationid !== null && $violationid > 0) {
                 $payload['violationId'] = $violationid;
+            }
+            if ($reason === 'violation') {
+                $payload['violationType'] = clean_param($violationtype, PARAM_ALPHANUMEXT) ?: 'violation';
+                $payload['occurredAt'] = max(1, (int) ($occurredat ?: $now));
             }
             if (trim($snapshotdata) !== '') {
                 $payload['snapshotImage'] = $snapshotdata;
@@ -404,6 +426,7 @@ final class capture_service {
                         'userId' => (int) $session->userid,
                         'segment' => $segment,
                         'reason' => $cleanreason,
+                        'result' => (string) $session->result === 'failed' ? 'failed' : 'passed',
                         'stoppedAt' => gmdate('c', $now),
                         'idempotencyKey' => 'recording-stop-' . (int) $session->id . '-' . $segment,
                     ]
@@ -432,6 +455,11 @@ final class capture_service {
                     'lastStopReason' => $cleanreason,
                     'segments' => $segments,
                 ],
+            ]);
+            $this->sessions->update_media_status((int) $session->id, $state === 'interrupted' ? 'partial' : 'finalizing', [
+                'segment' => $segment,
+                'stoppedAt' => $now,
+                'reason' => $cleanreason,
             ]);
 
             $this->audit->log(

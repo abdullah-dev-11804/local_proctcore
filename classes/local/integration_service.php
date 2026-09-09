@@ -86,6 +86,7 @@ final class integration_service {
                 return $session;
             }
 
+            $config = (new company_config_repository())->get_effective_config($companyid, (int) $quiz->id);
             $client = new server_client($companyid);
             $payload = [
             'moodleSessionId' => (int) $session->id,
@@ -103,6 +104,11 @@ final class integration_service {
                 'timeLimitSeconds' => (int) $quiz->timelimit,
                 'quizCloseAt' => (int) $quiz->timeclose,
                 'timerReset' => false,
+            ],
+            'retention' => [
+                'videoDays' => max((int) $config->videoretentiondays, (int) $config->appealperioddays),
+                'reportDays' => max(183, (int) $config->reportretentiondays),
+                'appealDays' => max(1, (int) $config->appealperioddays),
             ],
             'user' => [
                 'id' => (int) $user->id,

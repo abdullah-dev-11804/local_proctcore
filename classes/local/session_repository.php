@@ -55,7 +55,12 @@ final class session_repository {
             'status' => 'created',
             'result' => 'unknown',
             'identitystatus' => 'pending',
+            'identityscore' => null,
+            'identitythreshold' => null,
+            'identitypolicy' => null,
+            'reviewrequired' => 0,
             'techcheckstatus' => 'pending',
+            'mediastatus' => 'pending',
             'appealstatus' => 'none',
             'risk_score' => null,
             'violationcount' => 0,
@@ -206,7 +211,7 @@ final class session_repository {
         global $DB;
 
         $allowedtech = ['pending', 'passed', 'failed'];
-        $allowedidentity = ['pending', 'passed', 'failed', 'notrequired'];
+        $allowedidentity = ['pending', 'passed', 'needs_review', 'failed_allowed', 'failed', 'notrequired'];
         if (!in_array($techcheckstatus, $allowedtech, true)) {
             throw new \coding_exception('Invalid technical-check status: ' . $techcheckstatus);
         }
@@ -241,7 +246,8 @@ final class session_repository {
     public function update_status(int $sessionid, string $status): void {
         global $DB;
 
-        $allowed = ['created', 'precheck', 'active', 'interrupted', 'completed', 'failed', 'abandoned', 'expired'];
+        $allowed = ['created', 'precheck', 'active', 'interrupted', 'processing', 'completed', 'failed',
+            'abandoned', 'expired'];
         if (!in_array($status, $allowed, true)) {
             throw new \coding_exception('Invalid ProctorCore session status: ' . $status);
         }
@@ -470,6 +476,79 @@ final class session_repository {
         ]);
 
         return $this->get_by_id($sessionid);
+    }
+
+    /**
+     * Persists the identity decision that governed admission to the attempt.
+     *
+     * @param int $sessionid Local session id.
+     * @param string $status Identity outcome.
+     * @param float|null $score Cosine similarity, when verification was performed.
+     * @param float $threshold Effective threshold.
+     * @param string $policy Effective mismatch policy.
+     * @param bool $reviewrequired Whether manual review is required.
+     * @return void
+     */
+    public function record_identity_decision(
+        int $sessionid,
+        string $status,
+        ?float $score,
+        float $threshold,
+        string $policy,
+        bool $reviewrequired
+    ): void {
+        global $DB;
+
+        $allowedstatuses = ['pending', 'passed', 'needs_review', 'failed_allowed', 'failed', 'notrequired'];
+        $allowedpolicies = ['block', 'review', 'fail'];
+        if (!in_array($status, $allowedstatuses, true)) {
+            throw new \coding_exception('Invalid identity decision status: ' . $status);
+        }
+        if (!in_array($policy, $allowedpolicies, true)) {
+            throw new \coding_exception('Invalid identity mismatch policy: ' . $policy);
+        }
+
+        $DB->update_record(self::TABLE, (object) [
+            'id' => $sessionid,
+            'identitystatus' => $status,
+            'identityscore' => $score === null ? null : min(1.0, max(0.0, $score)),
+            'identitythreshold' => min(1.0, max(0.0, $threshold)),
+            'identitypolicy' => $policy,
+            'reviewrequired' => $reviewrequired ? 1 : 0,
+            'timemodified' => time(),
+        ]);
+    }
+
+    /**
+     * Updates evidence processing independently from the quiz lifecycle.
+     *
+     * @param int $sessionid Local session id.
+     * @param string $status Media processing state.
+     * @param array $metadata Optional diagnostic metadata.
+     * @return void
+     */
+    public function update_media_status(int $sessionid, string $status, array $metadata = []): void {
+        global $DB;
+
+        $allowed = ['pending', 'recording', 'finalizing', 'ready', 'partial', 'failed'];
+        if (!in_array($status, $allowed, true)) {
+            throw new \coding_exception('Invalid media processing status: ' . $status);
+        }
+        $session = $this->get_by_id($sessionid);
+        $update = (object) [
+            'id' => $sessionid,
+            'mediastatus' => $status,
+            'timemodified' => time(),
+        ];
+        if ($metadata) {
+            $current = $this->decode_metadata($session->servermetadata);
+            $current['mediaProcessing'] = array_replace_recursive(
+                is_array($current['mediaProcessing'] ?? null) ? $current['mediaProcessing'] : [],
+                $metadata
+            );
+            $update->servermetadata = $this->encode_metadata($current);
+        }
+        $DB->update_record(self::TABLE, $update);
     }
 
     /**

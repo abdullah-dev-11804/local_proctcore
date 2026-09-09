@@ -26,6 +26,7 @@ final class report_renderer {
         $status = self::status((string) $session->status);
         $identity = self::status((string) $session->identitystatus);
         $technical = self::status((string) $session->techcheckstatus);
+        $media = self::status((string) ($session->mediastatus ?? 'pending'));
 
         $violations = [];
         foreach ($report['violations'] as $violation) {
@@ -118,6 +119,16 @@ final class report_renderer {
             'identityclass' => $identity['class'],
             'technicaltext' => $technical['text'],
             'technicalclass' => $technical['class'],
+            'mediatext' => $media['text'],
+            'mediaclass' => $media['class'],
+            'identityscore' => $session->identityscore !== null
+                ? format_float((float) $session->identityscore, 4)
+                : '—',
+            'identitythreshold' => $session->identitythreshold !== null
+                ? format_float((float) $session->identitythreshold, 4)
+                : '—',
+            'identitypolicy' => self::humanise((string) ($session->identitypolicy ?? '')),
+            'reviewrequired' => self::yesno(!empty($session->reviewrequired)),
             'risk' => $session->risk_score !== null ? format_float((float) $session->risk_score, 2) : '—',
             'violationcount' => count($violations),
             'snapshotcount' => (int) $session->snapshotcount,
@@ -127,6 +138,8 @@ final class report_renderer {
             'hassnapshots' => !empty($snapshotgroups),
             'videos' => $videos,
             'hasvideos' => !empty($videos),
+            'evidenceprocessing' => empty($videos)
+                && in_array((string) ($session->mediastatus ?? 'pending'), ['pending', 'recording', 'finalizing'], true),
             'fields' => $fields,
             'hasfields' => !empty($fields),
             'checkitems' => $checkitems,
@@ -170,6 +183,7 @@ final class report_renderer {
                     : get_string('report:pending', 'local_proctorcore'),
                 'resulttext' => $result['text'],
                 'resultclass' => $result['class'],
+                'mediastatus' => self::humanise((string) ($record->mediastatus ?? 'pending')),
                 'violationcount' => (int) $record->violationcount,
                 'detailurl' => (new \moodle_url('/local/proctorcore/reports.php', [
                     'sessionid' => (int) $record->id,
@@ -216,11 +230,12 @@ final class report_renderer {
     private static function status(string $value): array {
         $normal = strtolower(trim($value));
         $class = 'badge-secondary';
-        if (in_array($normal, ['passed', 'completed', 'active'], true)) {
+        if (in_array($normal, ['passed', 'completed', 'active', 'ready'], true)) {
             $class = 'badge-success';
-        } else if (in_array($normal, ['failed', 'abandoned', 'expired'], true)) {
+        } else if (in_array($normal, ['failed', 'failed_allowed', 'abandoned', 'expired'], true)) {
             $class = 'badge-danger';
-        } else if (in_array($normal, ['pending', 'unknown', 'created', 'precheck', 'interrupted'], true)) {
+        } else if (in_array($normal, ['pending', 'unknown', 'created', 'precheck', 'interrupted', 'recording',
+                'finalizing', 'needs_review', 'partial'], true)) {
             $class = 'badge-warning';
         }
         return ['text' => self::humanise($normal), 'class' => $class];

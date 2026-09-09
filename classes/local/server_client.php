@@ -314,6 +314,30 @@ final class server_client {
         return $this->request('POST', '/api/v1/sessions/' . rawurlencode($serversessionid) . '/fail', $payload);
     }
 
+    /** Places all session evidence under a server-side retention hold. */
+    public function hold_evidence(string $serversessionid, string $reason): array {
+        return $this->request('POST', '/api/v1/sessions/' . rawurlencode($serversessionid) . '/evidence/hold', [
+            'companyId' => $this->companyid,
+            'reason' => $reason,
+        ]);
+    }
+
+    /** Releases a server-side retention hold. */
+    public function release_evidence(string $serversessionid, string $reason): array {
+        return $this->request('POST', '/api/v1/sessions/' . rawurlencode($serversessionid) . '/evidence/release', [
+            'companyId' => $this->companyid,
+            'reason' => $reason,
+        ]);
+    }
+
+    /** Reconciles indexed assets with object storage and optionally resends webhooks. */
+    public function reconcile_session(string $serversessionid, bool $resendwebhooks = false): array {
+        return $this->request('POST', '/api/v1/sessions/' . rawurlencode($serversessionid) . '/reconcile', [
+            'companyId' => $this->companyid,
+            'resendWebhooks' => $resendwebhooks,
+        ]);
+    }
+
     /**
      * Performs a JSON API request.
      *

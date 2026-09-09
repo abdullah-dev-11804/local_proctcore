@@ -31,7 +31,7 @@ function local_proctorcore_is_attempt_allowed(int $attemptid, int $userid): bool
 
     return in_array($session->status, ['active', 'completed'], true)
         && $session->techcheckstatus === 'passed'
-        && in_array($session->identitystatus, ['passed', 'notrequired'], true);
+        && in_array($session->identitystatus, ['passed', 'needs_review', 'failed_allowed', 'notrequired'], true);
 }
 
 /**
@@ -156,6 +156,7 @@ function local_proctorcore_require_violation_monitor(int $sessionid): void {
         'endpoint' => (new moodle_url('/local/proctorcore/monitor.php'))->out(false),
         'sesskey' => sesskey(),
         'intervalMs' => (int) $config->monitorintervalms,
+        'requestTimeoutMs' => min(15000, max(2000, (int) $config->requesttimeout * 1000)),
         'strings' => [
             'failed' => get_string('violation:monitorfailed', 'local_proctorcore'),
             'invalidResponse' => get_string('capture:invalidresponse', 'local_proctorcore'),

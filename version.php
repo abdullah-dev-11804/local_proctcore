@@ -9,7 +9,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_proctorcore';
-$plugin->version = 2026080700;
+$plugin->version = 2026091000;
 $plugin->requires = 2022041900; // Moodle 4.0+.
-$plugin->maturity = MATURITY_ALPHA;
-$plugin->release = '0.11.0 - First-exam face enrollment workflow';
+$plugin->maturity = MATURITY_BETA;
+$plugin->release = '0.12.0 - Day 1 production hardening';

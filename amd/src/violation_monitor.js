@@ -12,19 +12,40 @@ define([], function() {
     let timer = null;
     let requestRunning = false;
     let lastBlurAt = 0;
+    let stopped = false;
+    let consecutiveErrors = 0;
+    let droppedSamples = 0;
+    let completedSamples = 0;
+    let lastLatencyMs = null;
+    let activeController = null;
 
     const request = async(payload, keepalive = false) => {
-        const response = await fetch(config.endpoint, {
-            method: 'POST',
-            credentials: 'same-origin',
-            cache: 'no-store',
-            keepalive: Boolean(keepalive),
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(Object.assign({
-                sessionId: Number(config.sessionId),
-                sesskey: config.sesskey,
-            }, payload)),
-        });
+        const controller = new AbortController();
+        activeController = controller;
+        const timeout = window.setTimeout(
+            () => controller.abort(),
+            Math.max(2000, Number(config.requestTimeoutMs || 8000))
+        );
+        let response;
+        try {
+            response = await fetch(config.endpoint, {
+                method: 'POST',
+                credentials: 'same-origin',
+                cache: 'no-store',
+                keepalive: Boolean(keepalive),
+                signal: controller.signal,
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(Object.assign({
+                    sessionId: Number(config.sessionId),
+                    sesskey: config.sesskey,
+                }, payload)),
+            });
+        } finally {
+            window.clearTimeout(timeout);
+            if (activeController === controller) {
+                activeController = null;
+            }
+        }
         let data = {};
         try {
             data = await response.json();
@@ -69,13 +90,18 @@ define([], function() {
                     violationId: Number(violation.id),
                     violationType: violation.type,
                     severity: Number(violation.severity || 1),
+                    occurredAt: Number(violation.occurredAt || Math.floor(Date.now() / 1000)),
                 },
             }));
         });
     };
 
     const analyse = async() => {
-        if (requestRunning || document.hidden || !navigator.onLine) {
+        if (requestRunning) {
+            droppedSamples += 1;
+            return;
+        }
+        if (document.hidden || !navigator.onLine) {
             return;
         }
         const image = frameData();
@@ -83,14 +109,44 @@ define([], function() {
             return;
         }
         requestRunning = true;
+        const started = performance.now();
         try {
-            const data = await request({action: 'frame', frameImage: image});
+            const data = await request({
+                action: 'frame',
+                frameImage: image,
+                clientTelemetry: {
+                    completedSamples,
+                    droppedSamples,
+                    consecutiveErrors,
+                    lastLatencyMs,
+                },
+            });
+            lastLatencyMs = Math.round(performance.now() - started);
+            completedSamples += 1;
+            consecutiveErrors = 0;
             dispatchViolations(data);
         } catch (error) {
+            lastLatencyMs = Math.round(performance.now() - started);
+            consecutiveErrors += 1;
             window.console.warn('ProctorCore frame analysis failed:', error);
         } finally {
             requestRunning = false;
         }
+    };
+
+    const schedule = delay => {
+        if (stopped) {
+            return;
+        }
+        if (timer) {
+            window.clearTimeout(timer);
+        }
+        timer = window.setTimeout(async() => {
+            await analyse();
+            const interval = Math.max(1500, Number(config.intervalMs || 3000));
+            const multiplier = Math.min(8, Math.pow(2, consecutiveErrors));
+            schedule(interval * multiplier);
+        }, Math.max(0, delay));
     };
 
     const browserEvent = async(type, metadata = {}, keepalive = false) => {
@@ -131,13 +187,17 @@ define([], function() {
             }
             bindEvents();
             const interval = Math.max(1500, Number(config.intervalMs || 3000));
-            timer = window.setInterval(analyse, interval);
+            stopped = false;
+            schedule(1200);
             window.addEventListener('beforeunload', () => {
+                stopped = true;
                 if (timer) {
-                    window.clearInterval(timer);
+                    window.clearTimeout(timer);
+                }
+                if (activeController) {
+                    activeController.abort();
                 }
             }, {once: true});
-            window.setTimeout(analyse, 1200);
         },
     };
 });

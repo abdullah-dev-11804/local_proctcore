@@ -123,6 +123,9 @@ final class webhook_processor {
                 try {
                     if ($eventtype === 'asset.captured') {
                         $applied = $this->apply_asset_event($session, $event);
+                        if (in_array((string) ($session->mediastatus ?? 'pending'), ['pending', 'recording'], true)) {
+                            $this->sessions->update_media_status((int) $session->id, 'finalizing');
+                        }
                         $updatedsession = $this->sessions->get_by_id((int) $session->id);
                     } else {
                         $updatedsession = $this->apply_final_event($session, $event);
@@ -440,7 +443,17 @@ final class webhook_processor {
             $event
         );
 
-        return $updated;
+        $servermediastatus = strtolower((string) ($event['mediaStatus'] ?? 'completed'));
+        $mediastatus = in_array($servermediastatus, ['failed', 'dead_letter'], true)
+            ? 'failed'
+            : ($servermediastatus === 'partial' ? 'partial' : 'ready');
+        $this->sessions->update_media_status((int) $updated->id, $mediastatus, [
+            'serverStatus' => $servermediastatus,
+            'assetCount' => max(0, (int) ($event['assetCount'] ?? 0)),
+            'finalizedAt' => $completedat,
+        ]);
+
+        return $this->sessions->get_by_id((int) $updated->id);
     }
 
     /**
@@ -454,7 +467,7 @@ final class webhook_processor {
         $type = strtolower(trim($type));
         $reason = strtolower(trim($reason));
 
-        if (in_array($type, ['video', 'video_clip', 'recording', 'recording_segment', 'clip'], true)) {
+        if (in_array($type, ['video', 'video_clip', 'recording', 'full_recording', 'recording_segment', 'clip'], true)) {
             return asset_repository::TYPE_VIDEO_CLIP;
         }
         if (in_array($type, ['report', 'pdf_report', 'pdf'], true)) {

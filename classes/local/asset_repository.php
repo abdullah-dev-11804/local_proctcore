@@ -240,6 +240,20 @@ final class asset_repository {
         ]);
     }
 
+    /** Updates one asset's availability without affecting sibling evidence. */
+    public function set_status(int $id, string $status): void {
+        global $DB;
+        if (!in_array($status, ['active', 'missing', 'deleted'], true)) {
+            throw new \coding_exception('Invalid ProctorCore asset status: ' . $status);
+        }
+        $DB->update_record(self::TABLE, (object) [
+            'id' => $id,
+            'status' => $status,
+            'deletedat' => $status === 'deleted' ? time() : null,
+            'timemodified' => time(),
+        ]);
+    }
+
     /**
      * Applies final session retention timestamps to all active assets.
      *

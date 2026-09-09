@@ -73,6 +73,11 @@ final class face_enrollment_repository {
             'resetreason' => null,
             'qualityjson' => $this->encode($quality),
             'servermetadata' => $this->encode($servermetadata),
+            'deletionstatus' => 'none',
+            'deletionattempts' => 0,
+            'deletionrequestedat' => null,
+            'deletedat' => null,
+            'deletionerror' => null,
             'timemodified' => $now,
             'usermodified' => $usermodified,
         ];
@@ -138,9 +143,59 @@ final class face_enrollment_repository {
         $record->resetat = time();
         $record->resetby = $actoruserid;
         $record->resetreason = clean_param($reason, PARAM_TEXT);
+        $record->deletionstatus = 'completed';
+        $record->deletedat = time();
+        $record->deletionerror = null;
         $record->timemodified = time();
         $record->usermodified = $actoruserid;
         $DB->update_record(self::TABLE, $record);
+    }
+
+    /** Records a deletion request before contacting the proctoring server. */
+    public function request_deletion(int $userid, ?int $actoruserid, string $reason): ?\stdClass {
+        global $DB;
+        $record = $DB->get_record(self::TABLE, ['userid' => $userid]);
+        if (!$record) {
+            return null;
+        }
+        $record->deletionstatus = 'pending';
+        $record->deletionattempts = max(0, (int) ($record->deletionattempts ?? 0));
+        $record->deletionrequestedat = (int) ($record->deletionrequestedat ?? 0) ?: time();
+        $record->deletionerror = null;
+        $record->resetreason = clean_param($reason, PARAM_TEXT);
+        $record->resetby = $actoruserid;
+        $record->timemodified = time();
+        $record->usermodified = $actoruserid;
+        $DB->update_record(self::TABLE, $record);
+        return $DB->get_record(self::TABLE, ['id' => (int) $record->id], '*', MUST_EXIST);
+    }
+
+    /** Records a failed deletion so cron can retry it. */
+    public function mark_deletion_failed(int $userid, string $error): void {
+        global $DB;
+        $record = $DB->get_record(self::TABLE, ['userid' => $userid], '*', IGNORE_MISSING);
+        if (!$record) {
+            return;
+        }
+        $record->deletionstatus = 'retry';
+        $record->deletionattempts = max(0, (int) ($record->deletionattempts ?? 0)) + 1;
+        $record->deletionerror = \core_text::substr(clean_param($error, PARAM_TEXT), 0, 2000);
+        $record->timemodified = time();
+        $DB->update_record(self::TABLE, $record);
+    }
+
+    /** @return \stdClass[] Pending deletion rows eligible for retry. */
+    public function get_deletion_candidates(int $limit = 100): array {
+        global $DB;
+        return $DB->get_records_select(
+            self::TABLE,
+            "deletionstatus IN (:pending, :retry) AND deletionattempts < :maxattempts",
+            ['pending' => 'pending', 'retry' => 'retry', 'maxattempts' => 12],
+            'deletionrequestedat ASC',
+            '*',
+            0,
+            max(1, $limit)
+        );
     }
 
     /** @return string */

@@ -47,6 +47,8 @@ try {
                 (int) $USER->id,
                 clean_param((string) ($data['reason'] ?? ''), PARAM_ALPHANUMEXT),
                 $violationid,
+                clean_param((string) ($data['violationType'] ?? ''), PARAM_ALPHANUMEXT),
+                isset($data['occurredAt']) ? (int) $data['occurredAt'] : null,
                 (string) ($data['snapshotImage'] ?? '')
             );
             break;

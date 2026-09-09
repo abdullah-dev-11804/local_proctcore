@@ -23,6 +23,15 @@ $tasks = [
         'dayofweek' => '*',
     ],
     [
+        'classname' => 'local_proctorcore\\task\\retry_reference_deletions_task',
+        'blocking' => 0,
+        'minute' => '*/10',
+        'hour' => '*',
+        'day' => '*',
+        'month' => '*',
+        'dayofweek' => '*',
+    ],
+    [
         'classname' => 'local_proctorcore\\task\\cleanup_retention_task',
         'blocking' => 0,
         'minute' => 'R',

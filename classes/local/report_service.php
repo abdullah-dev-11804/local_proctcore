@@ -85,7 +85,7 @@ final class report_service {
         if ($scope['mode'] === 'own') {
             $where[] = 's.userid = :scopeuserid';
             $params['scopeuserid'] = $viewerid;
-        } else if ($scope['mode'] === 'companies') {
+        } else if (in_array($scope['mode'], ['companies', 'teacher'], true)) {
             if (!$scope['companyids']) {
                 return ['records' => [], 'total' => 0, 'page' => $page, 'perpage' => $perpage];
             }
@@ -121,7 +121,8 @@ final class report_service {
         $total = (int) $DB->count_records_sql("SELECT COUNT(1) {$fromsql} {$wheresql}", $params);
         $sql = "SELECT s.id, s.companyid, s.courseid, s.cmid, s.quizid, s.attemptid, s.userid,
                        s.server_sessionid, s.status, s.result, s.identitystatus,
-                       s.techcheckstatus, s.violationcount, s.snapshotcount,
+                       s.identityscore, s.identitythreshold, s.identitypolicy, s.reviewrequired,
+                       s.techcheckstatus, s.mediastatus, s.violationcount, s.snapshotcount,
                        s.startedat, s.endedat, s.reportexpiresat, s.timemodified,
                        u.firstname, u.lastname, u.firstnamephonetic, u.lastnamephonetic,
                        u.middlename, u.alternatename, u.email,
@@ -163,6 +164,19 @@ final class report_service {
             return true;
         }
 
+        $systemcontext = \context_system::instance();
+        if (has_capability('local/proctorcore:viewallreports', $systemcontext, $viewerid)) {
+            return true;
+        }
+
+        // On IOMAD, activity-level report permission never bypasses company
+        // isolation. This matters when a Moodle course is shared by tenants.
+        $companyid = (int) $session->companyid;
+        if ($this->tenants->is_iomad_available()
+                && ($companyid <= 0 || !$this->tenants->user_belongs_to_company($viewerid, $companyid))) {
+            return false;
+        }
+
         // A teacher who can view Moodle Quiz reports for this exact activity may
         // also view the linked ProctorCore report. This keeps teacher access
         // limited to quizzes they are authorised to manage or report on.
@@ -170,15 +184,10 @@ final class report_service {
             return true;
         }
 
-        $systemcontext = \context_system::instance();
-        if (has_capability('local/proctorcore:viewallreports', $systemcontext, $viewerid)) {
-            return true;
-        }
         if (!has_capability('local/proctorcore:viewcompanyreports', $systemcontext, $viewerid)) {
             return false;
         }
 
-        $companyid = (int) $session->companyid;
         if (!$this->tenants->is_iomad_available()) {
             return $companyid === 0;
         }
@@ -465,7 +474,10 @@ final class report_service {
         // native Quiz report permission in that context may list only those
         // filtered reports; they never receive an unrestricted global list.
         if ($this->can_view_filtered_quiz_reports($viewerid, $filters)) {
-            return ['mode' => 'teacher', 'companyids' => []];
+            $ids = $this->tenants->is_iomad_available()
+                ? $this->tenants->get_user_company_ids($viewerid)
+                : [0];
+            return ['mode' => 'teacher', 'companyids' => $ids];
         }
 
         return ['mode' => 'own', 'companyids' => []];

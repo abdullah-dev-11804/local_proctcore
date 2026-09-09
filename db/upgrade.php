@@ -120,5 +120,73 @@ function xmldb_local_proctorcore_upgrade(int $oldversion): bool {
         upgrade_plugin_savepoint(true, 2026080700, 'local', 'proctorcore');
     }
 
+    if ($oldversion < 2026090900) {
+        $addfield = static function(xmldb_table $table, xmldb_field $field) use ($dbman): void {
+            if (!$dbman->field_exists($table, $field)) {
+                $dbman->add_field($table, $field);
+            }
+        };
+
+        $companycfg = new xmldb_table('local_proctorcore_companycfg');
+        $mismatchfield = new xmldb_field(
+            'identitymismatchmode', XMLDB_TYPE_CHAR, '16', null, XMLDB_NOTNULL, null, 'review', 'appealperioddays'
+        );
+        if ($dbman->field_exists($companycfg, $mismatchfield)) {
+            $dbman->change_field_default($companycfg, $mismatchfield);
+        }
+        $addfield($companycfg, new xmldb_field(
+            'identitythreshold', XMLDB_TYPE_NUMBER, '10, 4', null, null, null, null, 'identitymismatchmode'
+        ));
+
+        $faceenrol = new xmldb_table('local_proctorcore_faceenrol');
+        $addfield($faceenrol, new xmldb_field(
+            'deletionstatus', XMLDB_TYPE_CHAR, '32', null, XMLDB_NOTNULL, null, 'none', 'servermetadata'
+        ));
+        $addfield($faceenrol, new xmldb_field(
+            'deletionattempts', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'deletionstatus'
+        ));
+        $addfield($faceenrol, new xmldb_field(
+            'deletionrequestedat', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'deletionattempts'
+        ));
+        $addfield($faceenrol, new xmldb_field(
+            'deletedat', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'deletionrequestedat'
+        ));
+        $addfield($faceenrol, new xmldb_field(
+            'deletionerror', XMLDB_TYPE_TEXT, null, null, null, null, null, 'deletedat'
+        ));
+
+        $quizcfg = new xmldb_table('local_proctorcore_quizcfg');
+        $addfield($quizcfg, new xmldb_field(
+            'identitymismatchmode', XMLDB_TYPE_CHAR, '16', null, null, null, null, 'settingsjson'
+        ));
+        $addfield($quizcfg, new xmldb_field(
+            'identitythreshold', XMLDB_TYPE_NUMBER, '10, 4', null, null, null, null, 'identitymismatchmode'
+        ));
+
+        $sessions = new xmldb_table('local_proctorcore_sessions');
+        $addfield($sessions, new xmldb_field(
+            'identityscore', XMLDB_TYPE_NUMBER, '10, 4', null, null, null, null, 'identitystatus'
+        ));
+        $addfield($sessions, new xmldb_field(
+            'identitythreshold', XMLDB_TYPE_NUMBER, '10, 4', null, null, null, null, 'identityscore'
+        ));
+        $addfield($sessions, new xmldb_field(
+            'identitypolicy', XMLDB_TYPE_CHAR, '16', null, null, null, null, 'identitythreshold'
+        ));
+        $addfield($sessions, new xmldb_field(
+            'reviewrequired', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'identitypolicy'
+        ));
+        $addfield($sessions, new xmldb_field(
+            'mediastatus', XMLDB_TYPE_CHAR, '32', null, XMLDB_NOTNULL, null, 'pending', 'techcheckstatus'
+        ));
+
+        upgrade_plugin_savepoint(true, 2026090900, 'local', 'proctorcore');
+    }
+
+    if ($oldversion < 2026091000) {
+        // Day 1 recording, monitoring, report, retention, and tenant hardening.
+        upgrade_plugin_savepoint(true, 2026091000, 'local', 'proctorcore');
+    }
+
     return true;
 }

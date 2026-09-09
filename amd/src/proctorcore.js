@@ -558,13 +558,17 @@ define([], function() {
         }));
     };
 
-    const requestSnapshot = (reason, violationId = null, keepalive = false) => {
+    const requestSnapshot = (reason, violationId = null, keepalive = false, violation = {}) => {
         if (captureMode === 'localtest') {
             return captureLocalSnapshot(reason, violationId);
         }
         const payload = {reason: reason};
         if (violationId) {
             payload.violationId = Number(violationId);
+        }
+        if (reason === 'violation') {
+            payload.violationType = violation.violationType || 'violation';
+            payload.occurredAt = Number(violation.occurredAt || Math.floor(Date.now() / 1000));
         }
         const snapshotImage = capturePanelDataUrl(0.85);
         if (snapshotImage) {
@@ -676,7 +680,7 @@ define([], function() {
     const bindViolationEvents = () => {
         window.addEventListener('proctorcore:violation', event => {
             const detail = event.detail || {};
-            requestSnapshot('violation', detail.violationId || null).catch(error => {
+            requestSnapshot('violation', detail.violationId || null, false, detail).catch(error => {
                 window.console.warn('ProctorCore violation snapshot failed:', error);
             });
         });
@@ -725,8 +729,12 @@ define([], function() {
         if (micPublication && micPublication.audioTrack && micPublication.audioTrack.mediaStreamTrack) {
             stream.addTrack(micPublication.audioTrack.mediaStreamTrack);
         }
-        startServerRecorder(stream, bootstrap.chunkMilliseconds || 5000);
-        return apiRequest('start', {reason: 'attempt_page_connected'});
+        const started = await apiRequest('start', {reason: 'attempt_page_connected'});
+        localSegment = Number(started.segment) || 1;
+        if (started.fallback || started.provider !== 'livekit_egress') {
+            startServerRecorder(stream, bootstrap.chunkMilliseconds || 5000);
+        }
+        return started;
     };
 
     const connectLocal = async bootstrap => {

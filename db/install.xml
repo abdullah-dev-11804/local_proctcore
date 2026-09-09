@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="local/proctorcore/db" VERSION="2026080700" COMMENT="XMLDB file for local_proctorcore"
+<XMLDB PATH="local/proctorcore/db" VERSION="2026090900" COMMENT="XMLDB file for local_proctorcore"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd">
   <TABLES>
@@ -13,7 +13,8 @@
         <FIELD NAME="reportretentiondays" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="183"/>
         <FIELD NAME="videoretentiondays" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="30"/>
         <FIELD NAME="appealperioddays" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="14"/>
-        <FIELD NAME="identitymismatchmode" TYPE="char" LENGTH="16" NOTNULL="true" DEFAULT="block"/>
+        <FIELD NAME="identitymismatchmode" TYPE="char" LENGTH="16" NOTNULL="true" DEFAULT="review"/>
+        <FIELD NAME="identitythreshold" TYPE="number" LENGTH="10" DECIMALS="4" NOTNULL="false"/>
         <FIELD NAME="allowedlanguages" TYPE="char" LENGTH="64" NOTNULL="true" DEFAULT="en,ru,kk"/>
         <FIELD NAME="featureflags" TYPE="text" NOTNULL="false"/>
         <FIELD NAME="instructions" TYPE="text" NOTNULL="false"/>
@@ -47,6 +48,11 @@
         <FIELD NAME="resetreason" TYPE="text" NOTNULL="false"/>
         <FIELD NAME="qualityjson" TYPE="text" NOTNULL="false"/>
         <FIELD NAME="servermetadata" TYPE="text" NOTNULL="false"/>
+        <FIELD NAME="deletionstatus" TYPE="char" LENGTH="32" NOTNULL="true" DEFAULT="none"/>
+        <FIELD NAME="deletionattempts" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="deletionrequestedat" TYPE="int" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="deletedat" TYPE="int" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="deletionerror" TYPE="text" NOTNULL="false"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
         <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="false"/>
@@ -79,6 +85,8 @@
         <FIELD NAME="resumewindowsecs" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="600"/>
         <FIELD NAME="ruleshtml" TYPE="text" NOTNULL="false"/>
         <FIELD NAME="settingsjson" TYPE="text" NOTNULL="false"/>
+        <FIELD NAME="identitymismatchmode" TYPE="char" LENGTH="16" NOTNULL="false"/>
+        <FIELD NAME="identitythreshold" TYPE="number" LENGTH="10" DECIMALS="4" NOTNULL="false"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
         <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="false"/>
@@ -135,7 +143,12 @@
         <FIELD NAME="status" TYPE="char" LENGTH="32" NOTNULL="true" DEFAULT="created"/>
         <FIELD NAME="result" TYPE="char" LENGTH="32" NOTNULL="true" DEFAULT="unknown"/>
         <FIELD NAME="identitystatus" TYPE="char" LENGTH="32" NOTNULL="true" DEFAULT="pending"/>
+        <FIELD NAME="identityscore" TYPE="number" LENGTH="10" DECIMALS="4" NOTNULL="false"/>
+        <FIELD NAME="identitythreshold" TYPE="number" LENGTH="10" DECIMALS="4" NOTNULL="false"/>
+        <FIELD NAME="identitypolicy" TYPE="char" LENGTH="16" NOTNULL="false"/>
+        <FIELD NAME="reviewrequired" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0"/>
         <FIELD NAME="techcheckstatus" TYPE="char" LENGTH="32" NOTNULL="true" DEFAULT="pending"/>
+        <FIELD NAME="mediastatus" TYPE="char" LENGTH="32" NOTNULL="true" DEFAULT="pending"/>
         <FIELD NAME="appealstatus" TYPE="char" LENGTH="32" NOTNULL="true" DEFAULT="none"/>
         <FIELD NAME="risk_score" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="false"/>
         <FIELD NAME="violationcount" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>

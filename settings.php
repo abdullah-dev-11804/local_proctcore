@@ -223,7 +223,7 @@ if ($hassiteconfig) {
         'local_proctorcore/identitymismatchmode',
         get_string('settings:identitymismatchmode', 'local_proctorcore'),
         get_string('settings:identitymismatchmode_desc', 'local_proctorcore'),
-        'block',
+        'review',
         [
             'block' => get_string('settings:identitymismatchmode_block', 'local_proctorcore'),
             'review' => get_string('settings:identitymismatchmode_review', 'local_proctorcore'),
@@ -267,6 +267,14 @@ if ($hassiteconfig) {
         get_string('settings:lookawayseconds', 'local_proctorcore'),
         get_string('settings:lookawayseconds_desc', 'local_proctorcore'),
         5,
+        PARAM_INT
+    ));
+
+    $settings->add(new admin_setting_configtext(
+        'local_proctorcore/spoofseconds',
+        get_string('settings:spoofseconds', 'local_proctorcore'),
+        get_string('settings:spoofseconds_desc', 'local_proctorcore'),
+        2,
         PARAM_INT
     ));
 
@@ -347,4 +355,10 @@ if ($hassiteconfig) {
     ));
 
     $ADMIN->add('localplugins', $settings);
+    $ADMIN->add('localplugins', new admin_externalpage(
+        'local_proctorcore_company_policy',
+        get_string('companypolicy:title', 'local_proctorcore'),
+        new moodle_url('/local/proctorcore/company_policy.php'),
+        'local/proctorcore:manage'
+    ));
 }

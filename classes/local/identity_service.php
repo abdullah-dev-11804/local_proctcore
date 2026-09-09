@@ -47,7 +47,7 @@ final class identity_service {
         $this->require_precheck_token($quizid, $userid, $token);
         $quiz = $DB->get_record('quiz', ['id' => $quizid], 'id,course', MUST_EXIST);
         $companyid = (new tenant_resolver())->resolve_company_id($userid, (int) $quiz->course);
-        $config = (new company_config_repository())->get_effective_config($companyid);
+        $config = (new company_config_repository())->get_effective_config($companyid, $quizid);
         if (empty($config->identityenabled)) {
             $result = [
                 'passed' => true,
@@ -159,8 +159,7 @@ final class identity_service {
             $passed = $matched;
             $status = $matched ? 'matched' : $rawstatus;
             $belowthreshold = $score !== null && $score < $threshold;
-            $hardidentitymismatch = $belowthreshold && in_array($rawstatus, ['low_confidence', 'mismatch'], true);
-            if (!$matched && !$qualityretry && !$hardidentitymismatch) {
+            if (!$matched && !$qualityretry) {
                 if ($mismatchmode === 'review') {
                     $passed = true;
                     $status = 'needs_review';
@@ -261,9 +260,21 @@ final class identity_service {
             throw new \moodle_exception('identity:notpassed', 'local_proctorcore');
         }
 
-        $sessions->update_check_statuses($sessionid, (string) $session->techcheckstatus, 'passed', [
+        $identitystatus = (string) ($result['status'] ?? 'passed');
+        if ($identitystatus === 'enrolled' || $identitystatus === 'matched') {
+            $identitystatus = 'passed';
+        }
+        $sessions->update_check_statuses($sessionid, (string) $session->techcheckstatus, $identitystatus, [
             'identity' => $result,
         ]);
+        $sessions->record_identity_decision(
+            $sessionid,
+            $identitystatus,
+            $result['score'] ?? null,
+            (float) ($result['threshold'] ?? 0.85),
+            (string) ($result['mismatchMode'] ?? 'review'),
+            !empty($result['manualReviewRequired'])
+        );
 
         if (($result['status'] ?? '') === 'failed_allowed') {
             $this->create_identity_violation($session, $result);
@@ -351,11 +362,17 @@ final class identity_service {
         }
 
         $companyid = (int) $enrollment->companyid;
-        $serverresponse = [];
+        $repository->request_deletion($userid, $actoruserid, $reason);
         try {
             $serverresponse = (new server_client($companyid))->reset_face_reference($userid, $reason);
         } catch (\Throwable $exception) {
-            debugging('ProctorCore face reference erasure failed: ' . $exception->getMessage(), DEBUG_DEVELOPER);
+            $repository->mark_deletion_failed($userid, $exception->getMessage());
+            (new audit_logger())->log(
+                'identity.reference_erasure_pending', $companyid, null, $userid,
+                ['reason' => $reason, 'error' => clean_param($exception->getMessage(), PARAM_TEXT)],
+                $actoruserid, 'user', $userid
+            );
+            return;
         }
 
         $repository->mark_deleted($userid, $actoruserid, $reason);
@@ -367,6 +384,7 @@ final class identity_service {
             [
                 'reason' => $reason,
                 'serverResponse' => $serverresponse,
+                'deletionReceipt' => $serverresponse['receipt'] ?? $serverresponse,
             ],
             $actoruserid,
             'user',

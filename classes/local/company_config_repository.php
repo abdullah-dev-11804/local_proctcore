@@ -24,7 +24,7 @@ final class company_config_repository {
      * @param int $companyid IOMAD company id, or 0 for global Moodle scope.
      * @return \stdClass
      */
-    public function get_effective_config(int $companyid): \stdClass {
+    public function get_effective_config(int $companyid, ?int $quizid = null): \stdClass {
         global $DB;
 
         $global = (object) [
@@ -55,13 +55,14 @@ final class company_config_repository {
             'identityenrollmentcentertolerancex' => min(0.5, max(0.01, (float) $this->global_config('identityenrollmentcentertolerancex', 0.18))),
             'identityenrollmentcentertolerancey' => min(0.5, max(0.01, (float) $this->global_config('identityenrollmentcentertolerancey', 0.23))),
             'identitymismatchmode' => $this->normalise_mismatch_mode(
-                (string) $this->global_config('identitymismatchmode', 'block')
+                (string) $this->global_config('identitymismatchmode', 'review')
             ),
             'monitoringenabled' => (bool) $this->global_config('monitoringenabled', 1),
             'monitorintervalms' => min(30000, max(1500, (int) $this->global_config('monitorintervalms', 3000))),
             'nofaceseconds' => min(60, max(1, (int) $this->global_config('nofaceseconds', 3))),
             'multiplefaceseconds' => min(60, max(1, (int) $this->global_config('multiplefaceseconds', 3))),
             'lookawayseconds' => min(120, max(1, (int) $this->global_config('lookawayseconds', 5))),
+            'spoofseconds' => min(30, max(1, (int) $this->global_config('spoofseconds', 2))),
             'violationcooldownseconds' => min(600, max(5, (int) $this->global_config('violationcooldownseconds', 30))),
             'identityrecheckseconds' => min(3600, max(15, (int) $this->global_config('identityrecheckseconds', 60))),
             'reportretentiondays' => max(183, (int) $this->global_config('reportretentiondays', 183)),
@@ -73,7 +74,7 @@ final class company_config_repository {
         ];
 
         if ($companyid <= 0 || !$DB->record_exists(self::TABLE, ['companyid' => $companyid])) {
-            return $global;
+            return $this->apply_quiz_override($global, $quizid, $companyid);
         }
 
         $company = $DB->get_record(self::TABLE, ['companyid' => $companyid], '*', MUST_EXIST);
@@ -85,11 +86,14 @@ final class company_config_repository {
         if (property_exists($company, 'identitymismatchmode') && trim((string) $company->identitymismatchmode) !== '') {
             $global->identitymismatchmode = $this->normalise_mismatch_mode((string) $company->identitymismatchmode);
         }
+        if (property_exists($company, 'identitythreshold') && $company->identitythreshold !== null) {
+            $global->identitythreshold = min(1.0, max(0.85, (float) $company->identitythreshold));
+        }
         $global->allowedlanguages = (string) $company->allowedlanguages;
         $global->featureflags = $company->featureflags;
         $global->instructions = $company->instructions;
 
-        return $global;
+        return $this->apply_quiz_override($global, $quizid, $companyid);
     }
 
     /**
@@ -115,6 +119,52 @@ final class company_config_repository {
     }
 
     /**
+     * Saves company-owned identity and retention policy values.
+     *
+     * @param int $companyid IOMAD company id.
+     * @param array $values Validated policy values.
+     * @param int $userid Administrator making the change.
+     * @return \stdClass Saved row.
+     */
+    public function save_company_policy(int $companyid, array $values, int $userid): \stdClass {
+        global $DB;
+
+        if ($companyid <= 0) {
+            throw new \coding_exception('A positive IOMAD company id is required.');
+        }
+        $mode = $this->normalise_mismatch_mode((string) ($values['identitymismatchmode'] ?? 'review'));
+        $threshold = min(1.0, max(0.85, (float) ($values['identitythreshold'] ?? 0.85)));
+        $now = time();
+        $record = $DB->get_record(self::TABLE, ['companyid' => $companyid]);
+        if (!$record) {
+            $record = (object) [
+                'companyid' => $companyid,
+                'enabled' => 1,
+                'serverbaseurl' => null,
+                'webhooksecretref' => null,
+                'allowedlanguages' => 'en,ru,kk',
+                'featureflags' => null,
+                'instructions' => null,
+                'timecreated' => $now,
+            ];
+        }
+        $record->identitymismatchmode = $mode;
+        $record->identitythreshold = $threshold;
+        $record->reportretentiondays = max(183, (int) ($values['reportretentiondays'] ?? 183));
+        $record->videoretentiondays = max(1, (int) ($values['videoretentiondays'] ?? 30));
+        $record->appealperioddays = max(1, (int) ($values['appealperioddays'] ?? 14));
+        $record->timemodified = $now;
+        $record->usermodified = $userid > 0 ? $userid : null;
+
+        if (!empty($record->id)) {
+            $DB->update_record(self::TABLE, $record);
+        } else {
+            $record->id = $DB->insert_record(self::TABLE, $record);
+        }
+        return $record;
+    }
+
+    /**
      * Reads a global setting without confusing an explicit zero with a missing value.
      *
      * @param string $name Setting name.
@@ -130,6 +180,36 @@ final class company_config_repository {
     private function normalise_mismatch_mode(string $mode): string {
         $mode = clean_param($mode, PARAM_ALPHANUMEXT);
         return in_array($mode, ['block', 'review', 'fail'], true) ? $mode : 'review';
+    }
+
+    /** Apply the most-specific Quiz override after company/global policy. */
+    private function apply_quiz_override(\stdClass $config, ?int $quizid, int $companyid): \stdClass {
+        global $DB;
+
+        if (!$quizid) {
+            return $config;
+        }
+        $quizconfig = $DB->get_record('local_proctorcore_quizcfg', [
+            'companyid' => $companyid,
+            'quizid' => $quizid,
+        ]);
+        if (!$quizconfig && $companyid !== 0) {
+            $quizconfig = $DB->get_record('local_proctorcore_quizcfg', [
+                'companyid' => 0,
+                'quizid' => $quizid,
+            ]);
+        }
+        if (!$quizconfig) {
+            return $config;
+        }
+        if (property_exists($quizconfig, 'identitymismatchmode')
+                && trim((string) $quizconfig->identitymismatchmode) !== '') {
+            $config->identitymismatchmode = $this->normalise_mismatch_mode((string) $quizconfig->identitymismatchmode);
+        }
+        if (property_exists($quizconfig, 'identitythreshold') && $quizconfig->identitythreshold !== null) {
+            $config->identitythreshold = min(1.0, max(0.85, (float) $quizconfig->identitythreshold));
+        }
+        return $config;
     }
 
 }

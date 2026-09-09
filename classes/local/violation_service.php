@@ -22,9 +22,10 @@ final class violation_service {
      * @param int $sessionid Session id.
      * @param int $userid Current user id.
      * @param string $framedata Data URL/base64 JPEG.
+     * @param array $clienttelemetry Browser sampling telemetry.
      * @return array
      */
-    public function analyse_frame(int $sessionid, int $userid, string $framedata): array {
+    public function analyse_frame(int $sessionid, int $userid, string $framedata, array $clienttelemetry = []): array {
         $sessions = new session_repository();
         $session = $sessions->get_by_id($sessionid);
         $this->require_active_owner($session, $userid);
@@ -58,6 +59,16 @@ final class violation_service {
         $monitor = $this->update_condition(
             $session,
             $monitor,
+            'spoof_detected',
+            !empty($analysis['spoofDetected']) && ((int) ($analysis['faceCount'] ?? 0)) === 1,
+            (int) $config->spoofseconds,
+            5,
+            $analysis,
+            $events
+        );
+        $monitor = $this->update_condition(
+            $session,
+            $monitor,
             'multiple_faces',
             ((int) ($analysis['faceCount'] ?? 0)) > 1,
             (int) $config->multiplefaceseconds,
@@ -78,6 +89,15 @@ final class violation_service {
 
         $monitor['lastAnalysisAt'] = $now;
         $monitor['lastAnalysis'] = $analysis;
+        $monitor['clientTelemetry'] = [
+            'completedSamples' => max(0, (int) ($clienttelemetry['completedSamples'] ?? 0)),
+            'droppedSamples' => max(0, (int) ($clienttelemetry['droppedSamples'] ?? 0)),
+            'consecutiveErrors' => max(0, (int) ($clienttelemetry['consecutiveErrors'] ?? 0)),
+            'lastLatencyMs' => isset($clienttelemetry['lastLatencyMs'])
+                ? max(0, (int) $clienttelemetry['lastLatencyMs'])
+                : null,
+            'receivedAt' => $now,
+        ];
         $sessions->merge_server_metadata($sessionid, ['monitor' => $monitor]);
 
         return [
@@ -87,6 +107,10 @@ final class violation_service {
                 'faceCount' => (int) ($analysis['faceCount'] ?? 0),
                 'lookingAway' => !empty($analysis['lookingAway']),
                 'yaw' => isset($analysis['yaw']) ? (float) $analysis['yaw'] : null,
+                'spoofDetected' => !empty($analysis['spoofDetected']),
+                'antispoofScore' => isset($analysis['antispoofScore'])
+                    ? (float) $analysis['antispoofScore']
+                    : null,
                 'identityResult' => (string) ($analysis['identityResult'] ?? 'not_checked'),
                 'similarityScore' => isset($analysis['similarityScore'])
                     ? (float) $analysis['similarityScore']
