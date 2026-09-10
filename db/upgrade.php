@@ -198,5 +198,10 @@ function xmldb_local_proctorcore_upgrade(int $oldversion): bool {
         upgrade_plugin_savepoint(true, 2026091100, 'local', 'proctorcore');
     }
 
+    if ($oldversion < 2026091101) {
+        // Keep the access-rule deployment compatible during rolling upgrades.
+        upgrade_plugin_savepoint(true, 2026091101, 'local', 'proctorcore');
+    }
+
     return true;
 }
