@@ -394,14 +394,15 @@ final class identity_service {
 
     /** @return array */
     private function public_result(array $result): array {
-        $messagekey = 'identity:failed';
+        $message = get_string('identity:failed', 'local_proctorcore');
         if (!empty($result['passed'])) {
             $messagekey = ($result['status'] ?? '') === 'enrolled' ? 'identity:enrolled' : 'identity:passed';
             if (($result['status'] ?? '') === 'needs_review') {
                 $messagekey = 'identity:needsreview';
             }
+            $message = get_string($messagekey, 'local_proctorcore');
         } else {
-            $messagekey = $this->failure_message_key((string) ($result['status'] ?? ''), (string) ($result['reason'] ?? ''));
+            $message = $this->failure_message($result);
         }
         return [
             'ok' => true,
@@ -411,8 +412,49 @@ final class identity_service {
             'threshold' => $result['threshold'],
             'livenessPassed' => !empty($result['livenessPassed']),
             'enrollment' => ($result['mode'] ?? '') === 'enroll',
-            'message' => get_string($messagekey, 'local_proctorcore'),
+            'message' => $message,
         ];
+    }
+
+    /**
+     * Builds actionable guidance without exposing raw diagnostic payloads.
+     *
+     * @param array $result Normalised identity result.
+     * @return string
+     */
+    private function failure_message(array $result): string {
+        $status = (string) ($result['status'] ?? '');
+        $reason = (string) ($result['reason'] ?? '');
+        $normalisedreason = preg_replace('/^identity_/', '', clean_param($reason !== '' ? $reason : $status,
+            PARAM_ALPHANUMEXT));
+
+        if (($result['mode'] ?? '') === 'enroll' && $normalisedreason === 'low_face_confidence') {
+            $quality = is_array($result['quality'] ?? null) ? $result['quality'] : [];
+            $required = $quality['requirements']['minFaceConfidence'] ?? null;
+            $bestconfidence = null;
+            foreach (($quality['rejectedFrames'] ?? []) as $frame) {
+                if (!is_array($frame) || ($frame['reason'] ?? '') !== 'low_face_confidence'
+                        || !is_numeric($frame['confidence'] ?? null)) {
+                    continue;
+                }
+                $confidence = (float) $frame['confidence'];
+                $bestconfidence = $bestconfidence === null ? $confidence : max($bestconfidence, $confidence);
+            }
+            if ($bestconfidence !== null && is_numeric($required)) {
+                return get_string('identity:faillowfaceconfidenceenroll', 'local_proctorcore', (object) [
+                    'detected' => (int) round($bestconfidence * 100),
+                    'required' => (int) round((float) $required * 100),
+                ]) . ' ' . get_string('identity:referencenotsaved', 'local_proctorcore');
+            }
+            return get_string('identity:faillowfaceconfidenceenrollgeneric', 'local_proctorcore') . ' ' .
+                get_string('identity:referencenotsaved', 'local_proctorcore');
+        }
+
+        $message = get_string($this->failure_message_key($status, $reason), 'local_proctorcore');
+        if (($result['mode'] ?? '') === 'enroll') {
+            $message .= ' ' . get_string('identity:referencenotsaved', 'local_proctorcore');
+        }
+        return $message;
     }
 
     /**

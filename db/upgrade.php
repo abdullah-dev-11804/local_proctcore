@@ -208,5 +208,10 @@ function xmldb_local_proctorcore_upgrade(int $oldversion): bool {
         upgrade_plugin_savepoint(true, 2026091102, 'local', 'proctorcore');
     }
 
+    if ($oldversion < 2026091103) {
+        // Add precise candidate guidance for rejected identity captures.
+        upgrade_plugin_savepoint(true, 2026091103, 'local', 'proctorcore');
+    }
+
     return true;
 }
