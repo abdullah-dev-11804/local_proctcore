@@ -178,19 +178,28 @@ function local_proctorcore_render_identity_panel(
     string $fullname = '',
     bool $enrollmentrequired = false
 ): string {
-    $content = html_writer::tag('h4', get_string('identity:title', 'local_proctorcore'), [
-        'class' => 'local-proctorcore-identity-title',
-    ]);
+    $heading = html_writer::div('', 'local-proctorcore-identity-state-icon', ['aria-hidden' => 'true']);
+    $heading .= html_writer::div(
+        html_writer::tag('h4', get_string('identity:title', 'local_proctorcore'), [
+            'class' => 'local-proctorcore-identity-title',
+        ]) .
+        html_writer::div(
+            get_string('identity:instructions', 'local_proctorcore'),
+            'local-proctorcore-identity-instructions'
+        ),
+        'local-proctorcore-identity-heading-copy'
+    );
+    $content = html_writer::div($heading, 'local-proctorcore-identity-heading');
     if ($enrollmentrequired) {
         $safeid = clean_param($panelid . '-confirm', PARAM_ALPHANUMEXT);
-        $content .= html_writer::tag('h5', get_string('identity:enrollmenttitle', 'local_proctorcore'), [
+        $enrollment = html_writer::tag('h5', get_string('identity:enrollmenttitle', 'local_proctorcore'), [
             'class' => 'local-proctorcore-identity-enrollment-title',
         ]);
-        $content .= html_writer::div(
+        $enrollment .= html_writer::div(
             get_string('identity:enrollmentnotice', 'local_proctorcore'),
             'local-proctorcore-identity-notice'
         );
-        $content .= html_writer::div(
+        $enrollment .= html_writer::div(
             html_writer::empty_tag('input', [
                 'type' => 'checkbox',
                 'id' => $safeid,
@@ -203,12 +212,9 @@ function local_proctorcore_render_identity_panel(
             ),
             'local-proctorcore-identity-confirm'
         );
+        $content .= html_writer::div($enrollment, 'local-proctorcore-identity-enrollment');
     }
-    $content .= html_writer::div(
-        get_string('identity:instructions', 'local_proctorcore'),
-        'local-proctorcore-identity-instructions'
-    );
-    $content .= html_writer::div(
+    $status = html_writer::div(
         get_string('identity:waiting', 'local_proctorcore'),
         'local-proctorcore-identity-status',
         [
@@ -217,12 +223,13 @@ function local_proctorcore_render_identity_panel(
             'aria-live' => 'polite',
         ]
     );
-    $content .= html_writer::tag('button', get_string('identity:start', 'local_proctorcore'), [
+    $action = html_writer::tag('button', get_string('identity:start', 'local_proctorcore'), [
         'type' => 'button',
-        'class' => 'btn btn-primary btn-sm',
+        'class' => 'btn btn-primary local-proctorcore-identity-start',
         'data-identity-start' => '1',
         'disabled' => 'disabled',
     ]);
+    $content .= html_writer::div($status . $action, 'local-proctorcore-identity-actionbar');
 
     return html_writer::div($content, 'local-proctorcore-identity is-waiting', [
         'id' => $panelid,
@@ -272,14 +279,12 @@ function local_proctorcore_render_precheck_panel(
         ? get_string('precheck:previewnote', 'local_proctorcore')
         : get_string('precheck:candidatenote', 'local_proctorcore');
 
-    $content = '';
-    if ($preview) {
-        $content .= html_writer::tag('h3', get_string('precheck:title', 'local_proctorcore'), [
+    $content = html_writer::div(
+        html_writer::tag('h3', get_string('precheck:title', 'local_proctorcore'), [
             'class' => 'local-proctorcore-precheck-title',
-        ]);
-    }
-
-    $content .= html_writer::div($note, 'local-proctorcore-precheck-rules');
+        ]) . html_writer::div($note, 'local-proctorcore-precheck-rules'),
+        'local-proctorcore-precheck-heading'
+    );
 
     $previewhtml = html_writer::start_div('local-proctorcore-precheck-preview');
     $previewhtml .= html_writer::tag('video', '', [
@@ -294,6 +299,33 @@ function local_proctorcore_render_precheck_panel(
         'local-proctorcore-precheck-placeholder',
         ['data-precheck-video-placeholder' => '1']
     );
+    $previewhtml .= html_writer::div('', 'local-proctorcore-camera-guide', [
+        'aria-hidden' => 'true',
+    ]);
+    $previewhtml .= html_writer::div('', 'local-proctorcore-precheck-freeze', [
+        'data-precheck-freeze' => '1',
+        'aria-hidden' => 'true',
+    ]);
+    $processing = html_writer::div('', 'local-proctorcore-processing-spinner', [
+        'aria-hidden' => 'true',
+    ]);
+    $processing .= html_writer::div('', 'local-proctorcore-processing-check', [
+        'aria-hidden' => 'true',
+    ]);
+    $processing .= html_writer::div('', 'local-proctorcore-processing-title', [
+        'data-precheck-processing-text' => '1',
+    ]);
+    $previewhtml .= html_writer::div($processing, 'local-proctorcore-precheck-processing', [
+        'data-precheck-processing' => '1',
+        'role' => 'status',
+        'aria-live' => 'polite',
+        'aria-hidden' => 'true',
+    ]);
+    $previewhtml .= html_writer::div(
+        html_writer::span('', 'local-proctorcore-camera-live-dot', ['aria-hidden' => 'true']) .
+        html_writer::span(get_string('precheck:camerapreview', 'local_proctorcore')),
+        'local-proctorcore-camera-live'
+    );
     $previewhtml .= html_writer::end_div();
 
     $checklisthtml = html_writer::div($rows, 'local-proctorcore-precheck-list');
@@ -302,19 +334,20 @@ function local_proctorcore_render_precheck_panel(
         'local-proctorcore-precheck-body'
     );
 
-    $content .= html_writer::div('', 'local-proctorcore-precheck-summary', [
+    $summary = html_writer::div('', 'local-proctorcore-precheck-summary', [
         'data-precheck-summary' => '1',
         'role' => 'status',
         'aria-live' => 'polite',
     ]);
-    $content .= html_writer::div(
+    $actions = html_writer::div(
         html_writer::tag('button', get_string('precheck:retry', 'local_proctorcore'), [
             'type' => 'button',
-            'class' => 'btn btn-secondary btn-sm',
+            'class' => 'btn btn-secondary local-proctorcore-precheck-retry',
             'data-precheck-retry' => '1',
         ]),
         'local-proctorcore-precheck-actions'
     );
+    $content .= html_writer::div($summary . $actions, 'local-proctorcore-precheck-footer');
 
     return html_writer::div($content, 'local-proctorcore-precheck quizaccess-proctoring-widget', [
         'id' => $panelid,

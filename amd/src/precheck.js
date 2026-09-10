@@ -7,6 +7,7 @@
  */
 define([], function() {
     let currentStream = null;
+    let activePanel = null;
 
     const bool = value => value === true || value === 1 || value === '1';
 
@@ -42,12 +43,54 @@ define([], function() {
         if (value) {
             value.textContent = message;
         }
+        const rows = Array.from(panel.querySelectorAll('[data-precheck-row]'));
+        const passed = rows.filter(item => item.classList.contains('is-passed')).length;
+        panel.style.setProperty('--precheck-progress', `${rows.length ? (passed / rows.length) * 100 : 0}%`);
     };
 
     const stopStream = () => {
         if (currentStream) {
             currentStream.getTracks().forEach(track => track.stop());
             currentStream = null;
+        }
+        if (activePanel) {
+            const video = activePanel.querySelector('[data-precheck-video]');
+            if (video) {
+                video.srcObject = null;
+            }
+        }
+    };
+
+    const setProcessing = (panel, active, message = '', complete = false) => {
+        const overlay = panel.querySelector('[data-precheck-processing]');
+        const text = panel.querySelector('[data-precheck-processing-text]');
+        const video = panel.querySelector('[data-precheck-video]');
+        const freeze = panel.querySelector('[data-precheck-freeze]');
+
+        if (active) {
+            if (freeze) {
+                try {
+                    freeze.style.backgroundImage = `url("${captureJpeg(0.92, 1280)}")`;
+                } catch (error) {
+                    freeze.style.backgroundImage = '';
+                }
+            }
+            if (video) {
+                video.pause();
+            }
+            panel.classList.add('is-processing');
+            panel.classList.toggle('is-processing-complete', complete);
+        } else {
+            panel.classList.remove('is-processing', 'is-processing-complete');
+            if (video && video.srcObject) {
+                video.play().catch(() => {});
+            }
+        }
+        if (text) {
+            text.textContent = message;
+        }
+        if (overlay) {
+            overlay.setAttribute('aria-hidden', active ? 'false' : 'true');
         }
     };
 
@@ -174,7 +217,11 @@ define([], function() {
 
         enableSubmit(panel, false);
         setField('proctorcore_preflight_passed', 0);
+        setProcessing(panel, false);
         stopStream();
+        panel.classList.remove('is-passed', 'is-failed');
+        panel.classList.add('is-running');
+        panel.style.setProperty('--precheck-progress', '0%');
 
         const summary = panel.querySelector('[data-precheck-summary]');
         if (summary) {
@@ -259,7 +306,11 @@ define([], function() {
                     throw new Error(strings.mediaUnsupported);
                 }
                 currentStream = await navigator.mediaDevices.getUserMedia({
-                    video: required.camera,
+                    video: required.camera ? {
+                        width: {ideal: 1920},
+                        height: {ideal: 1080},
+                        facingMode: 'user',
+                    } : false,
                     audio: required.microphone,
                 });
                 const videoTrack = currentStream.getVideoTracks()[0] || null;
@@ -325,6 +376,8 @@ define([], function() {
         }
 
         const passed = Object.values(results).every(Boolean);
+        panel.classList.remove('is-running');
+        panel.classList.add(passed ? 'is-passed' : 'is-failed');
         setField('proctorcore_preflight_passed', passed ? 1 : 0);
         if (summary) {
             summary.className = `local-proctorcore-precheck-summary is-${passed ? 'passed' : 'failed'}`;
@@ -355,12 +408,17 @@ define([], function() {
             if (retry) {
                 retry.addEventListener('click', () => run(config, panel));
             }
+            activePanel = panel;
             window.ProctorCorePrecheck = {
                 lastResult: null,
                 getStream: () => currentStream,
                 getVideoElement: () => panel.querySelector('[data-precheck-video]'),
                 captureJpeg: captureJpeg,
                 stop: stopStream,
+                freeze: message => setProcessing(panel, true, message, false),
+                complete: message => setProcessing(panel, true, message, true),
+                resume: () => setProcessing(panel, false),
+                run: () => run(config, panel),
             };
             window.addEventListener('beforeunload', stopStream, {once: true});
             run(config, panel);

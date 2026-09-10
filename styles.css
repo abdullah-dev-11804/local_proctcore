@@ -1,33 +1,49 @@
 .local-proctorcore-precheck {
-    margin: .25rem 0 1rem;
-    max-width: 760px;
+    --proctor-accent: #187653;
+    --proctor-ink: #172b3a;
+    --proctor-muted: #5f6f7b;
+    --precheck-progress: 0%;
+    margin: .5rem 0 1.25rem 50%;
+    max-width: calc(100vw - 2rem);
+    transform: translateX(-50%);
+    width: min(80vw, 1600px);
+}
+
+.local-proctorcore-precheck-heading {
+    align-items: end;
+    display: flex;
+    gap: 1.5rem;
+    justify-content: space-between;
+    margin-bottom: .9rem;
 }
 
 .local-proctorcore-precheck-title {
-    margin: 0 0 .75rem;
+    color: var(--proctor-ink);
+    font-size: 1.65rem;
+    font-weight: 700;
+    letter-spacing: 0;
+    line-height: 1.2;
+    margin: 0;
 }
 
 .local-proctorcore-precheck-rules {
-    background: #f8f9fa;
-    border-left: 4px solid #0f6cbf;
-    border-radius: .25rem;
-    color: #343a40;
-    margin-bottom: 1rem;
-    padding: .75rem 1rem;
+    color: var(--proctor-muted);
+    font-size: .9rem;
+    line-height: 1.45;
+    max-width: 44rem;
+    text-align: right;
 }
 
 .local-proctorcore-precheck-body {
-    align-items: start;
-    display: grid;
-    gap: 1rem;
-    grid-template-columns: minmax(240px, 320px) minmax(280px, 1fr);
+    display: block;
 }
 
 .local-proctorcore-precheck-preview {
-    aspect-ratio: 4 / 3;
-    background: #000;
+    aspect-ratio: 16 / 9;
+    background: #111820;
+    border: 1px solid #263844;
     border-radius: .5rem;
-    max-width: 320px;
+    box-shadow: 0 1rem 2.5rem rgba(17, 32, 43, .16);
     overflow: hidden;
     position: relative;
     width: 100%;
@@ -39,6 +55,11 @@
     object-fit: cover;
     transform: scaleX(-1);
     width: 100%;
+}
+
+.local-proctorcore-precheck.is-processing .local-proctorcore-precheck-video {
+    filter: blur(12px) saturate(.72);
+    transform: scaleX(-1) scale(1.04);
 }
 
 .local-proctorcore-precheck-placeholder {
@@ -56,80 +77,249 @@
     display: none;
 }
 
+.local-proctorcore-camera-guide {
+    border: 2px solid rgba(255, 255, 255, .72);
+    border-radius: 48% 48% 44% 44%;
+    box-shadow: 0 0 0 999px rgba(8, 18, 25, .13);
+    height: 58%;
+    left: 50%;
+    opacity: .75;
+    pointer-events: none;
+    position: absolute;
+    top: 48%;
+    transform: translate(-50%, -50%);
+    transition: opacity .2s ease;
+    width: 31%;
+    z-index: 2;
+}
+
+.local-proctorcore-precheck.is-processing .local-proctorcore-camera-guide {
+    opacity: 0;
+}
+
+.local-proctorcore-camera-live {
+    align-items: center;
+    background: rgba(12, 23, 30, .78);
+    border: 1px solid rgba(255, 255, 255, .2);
+    border-radius: 1rem;
+    color: #fff;
+    display: flex;
+    font-size: .78rem;
+    font-weight: 600;
+    gap: .45rem;
+    left: 1rem;
+    padding: .35rem .65rem;
+    position: absolute;
+    top: 1rem;
+    z-index: 4;
+}
+
+.local-proctorcore-camera-live-dot {
+    background: #29c985;
+    border-radius: 50%;
+    box-shadow: 0 0 0 .2rem rgba(41, 201, 133, .18);
+    height: .5rem;
+    width: .5rem;
+}
+
+.local-proctorcore-precheck.is-processing .local-proctorcore-camera-live {
+    display: none;
+}
+
+.local-proctorcore-precheck-freeze {
+    background-position: center;
+    background-size: cover;
+    filter: blur(12px) saturate(.7);
+    inset: -1rem;
+    opacity: 0;
+    position: absolute;
+    transform: scaleX(-1) scale(1.05);
+    transition: opacity .2s ease;
+    z-index: 3;
+}
+
+.local-proctorcore-precheck.is-processing .local-proctorcore-precheck-freeze {
+    opacity: 1;
+}
+
+.local-proctorcore-precheck-processing {
+    align-items: center;
+    background: linear-gradient(145deg, rgba(13, 28, 36, .7), rgba(24, 74, 62, .76));
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    gap: .9rem;
+    inset: 0;
+    justify-content: center;
+    opacity: 0;
+    padding: 1.5rem;
+    pointer-events: none;
+    position: absolute;
+    text-align: center;
+    transition: opacity .2s ease;
+    z-index: 5;
+}
+
+.local-proctorcore-precheck.is-processing .local-proctorcore-precheck-processing {
+    opacity: 1;
+}
+
+.local-proctorcore-processing-spinner {
+    animation: local-proctorcore-spin .8s linear infinite;
+    border: 3px solid rgba(255, 255, 255, .35);
+    border-radius: 50%;
+    border-top-color: #fff;
+    height: 3rem;
+    width: 3rem;
+}
+
+.local-proctorcore-processing-check {
+    border-bottom: 3px solid #fff;
+    border-right: 3px solid #fff;
+    display: none;
+    height: 1.8rem;
+    transform: rotate(45deg);
+    width: .95rem;
+}
+
+.local-proctorcore-precheck.is-processing-complete .local-proctorcore-processing-spinner {
+    display: none;
+}
+
+.local-proctorcore-precheck.is-processing-complete .local-proctorcore-processing-check {
+    display: block;
+}
+
+.local-proctorcore-processing-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: 0;
+    max-width: 34rem;
+}
+
+@keyframes local-proctorcore-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 .local-proctorcore-precheck-list {
     display: grid;
-    gap: .4rem;
+    gap: .55rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin-top: .9rem;
 }
 
 .local-proctorcore-precheck-row {
     align-items: center;
-    background: #f1f3f5;
-    border-radius: .25rem;
+    background: #f4f6f7;
+    border: 1px solid #e1e6e9;
+    border-radius: .35rem;
     display: flex;
     gap: .5rem;
-    min-height: 2.35rem;
-    padding: .5rem .75rem;
+    min-height: 3.25rem;
+    padding: .55rem .7rem;
 }
 
 .local-proctorcore-precheck-icon {
-    background: #adb5bd;
+    border: 2px solid #9aa6ae;
     border-radius: 50%;
-    display: inline-block;
+    display: grid;
     flex: 0 0 auto;
-    height: .85rem;
-    width: .85rem;
+    height: 1.1rem;
+    place-items: center;
+    width: 1.1rem;
 }
 
 .local-proctorcore-precheck-label {
-    color: #212529;
-    font-weight: 500;
+    color: var(--proctor-ink);
+    font-size: .84rem;
+    font-weight: 650;
 }
 
 .local-proctorcore-precheck-value {
     color: #495057;
-    font-size: .85rem;
+    font-size: .72rem;
     font-weight: 400;
     margin-left: auto;
-    max-width: 58%;
+    max-width: 52%;
     text-align: right;
 }
 
 .local-proctorcore-precheck-row.is-running {
-    background: #fff3cd;
+    background: #fff8e7;
+    border-color: #f0d589;
 }
 
 .local-proctorcore-precheck-row.is-running .local-proctorcore-precheck-icon {
-    background: #d39e00;
+    animation: local-proctorcore-spin .8s linear infinite;
+    border-color: #d09400;
+    border-top-color: transparent;
 }
 
 .local-proctorcore-precheck-row.is-passed {
-    background: #e6f4ea;
+    background: #eaf7f1;
+    border-color: #addcc8;
 }
 
 .local-proctorcore-precheck-row.is-passed .local-proctorcore-precheck-icon {
-    background: #2e7d32;
+    background: #187653;
+    border-color: #187653;
+}
+
+.local-proctorcore-precheck-row.is-passed .local-proctorcore-precheck-icon::after {
+    border-bottom: 2px solid #fff;
+    border-right: 2px solid #fff;
+    content: '';
+    height: .48rem;
+    transform: rotate(45deg) translate(-1px, -1px);
+    width: .25rem;
 }
 
 .local-proctorcore-precheck-row.is-passed .local-proctorcore-precheck-value {
-    color: #2e7d32;
+    color: #126342;
 }
 
 .local-proctorcore-precheck-row.is-failed {
-    background: #fdecea;
+    background: #fff1ef;
+    border-color: #efbeb8;
 }
 
 .local-proctorcore-precheck-row.is-failed .local-proctorcore-precheck-icon {
-    background: #c62828;
+    background: #b53b31;
+    border-color: #b53b31;
 }
 
 .local-proctorcore-precheck-row.is-failed .local-proctorcore-precheck-value {
-    color: #c62828;
+    color: #9f2f27;
+}
+
+.local-proctorcore-precheck-footer {
+    align-items: center;
+    border-top: 3px solid #e1e6e9;
+    display: flex;
+    justify-content: space-between;
+    margin-top: .85rem;
+    padding-top: .8rem;
+    position: relative;
+}
+
+.local-proctorcore-precheck-footer::before {
+    background: var(--proctor-accent);
+    content: '';
+    height: 3px;
+    left: 0;
+    position: absolute;
+    top: -3px;
+    transition: width .25s ease;
+    width: var(--precheck-progress);
 }
 
 .local-proctorcore-precheck-summary {
+    color: var(--proctor-muted);
     font-size: .9rem;
-    margin-top: .75rem;
-    min-height: 1.2em;
+    font-weight: 600;
+    min-height: 1.35em;
 }
 
 .local-proctorcore-precheck-summary.is-passed {
@@ -141,7 +331,11 @@
 }
 
 .local-proctorcore-precheck-actions {
-    margin-top: .65rem;
+    margin-left: 1rem;
+}
+
+.local-proctorcore-precheck-retry {
+    min-height: 2.5rem;
 }
 
 .local-proctorcore-preview-health {
@@ -161,16 +355,58 @@
 }
 
 @media (max-width: 700px) {
-    .local-proctorcore-precheck-body {
+    .local-proctorcore-precheck {
+        margin-left: 50%;
+        max-width: calc(100vw - 1rem);
+        width: calc(100vw - 1rem);
+    }
+
+    .local-proctorcore-precheck-heading {
+        align-items: start;
+        display: block;
+    }
+
+    .local-proctorcore-precheck-rules {
+        margin-top: .4rem;
+        text-align: left;
+    }
+
+    .local-proctorcore-precheck-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .local-proctorcore-camera-guide {
+        height: 64%;
+        width: 38%;
+    }
+
+    .local-proctorcore-precheck-footer {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .local-proctorcore-precheck-actions {
+        margin: .75rem 0 0;
+    }
+
+    .local-proctorcore-precheck-retry {
+        width: 100%;
+    }
+}
+
+@media (max-width: 460px) {
+    .local-proctorcore-precheck-preview {
+        aspect-ratio: 3 / 4;
+        max-height: 62vh;
+    }
+
+    .local-proctorcore-precheck-list {
         grid-template-columns: 1fr;
     }
 
-    .local-proctorcore-precheck-preview {
-        max-width: 100%;
-    }
-
-    .local-proctorcore-precheck-value {
-        max-width: 52%;
+    .local-proctorcore-camera-guide {
+        height: 58%;
+        width: 62%;
     }
 }
 
@@ -335,49 +571,158 @@
 
 /* Section 1.2 identity challenge. */
 .local-proctorcore-identity {
-    margin-top: 1rem;
-    padding: 1rem;
-    border: 1px solid #d9dee3;
-    border-left: 4px solid #6c757d;
-    border-radius: .35rem;
     background: #fff;
+    border: 1px solid #dce3e6;
+    border-radius: .5rem;
+    box-shadow: 0 .35rem 1.25rem rgba(18, 40, 53, .07);
+    margin: 1rem 0 1.5rem 50%;
+    max-width: calc(100vw - 2rem);
+    overflow: hidden;
+    transform: translateX(-50%);
+    width: min(80vw, 1600px);
 }
 .local-proctorcore-identity.is-ready,
 .local-proctorcore-identity.is-running {
-    border-left-color: #0f6cbf;
+    border-color: #8fc7b2;
 }
 .local-proctorcore-identity.is-passed {
-    border-left-color: #198754;
-    background: #f1faf5;
+    border-color: #79c5a7;
 }
 .local-proctorcore-identity.is-failed {
-    border-left-color: #dc3545;
-    background: #fff5f5;
+    border-color: #e3a39d;
+}
+.local-proctorcore-identity-heading {
+    align-items: center;
+    display: flex;
+    gap: .9rem;
+    padding: 1rem 1.1rem;
+}
+.local-proctorcore-identity-state-icon {
+    border: 2px solid #93a0a8;
+    border-radius: 50%;
+    flex: 0 0 auto;
+    height: 2.2rem;
+    position: relative;
+    width: 2.2rem;
+}
+.local-proctorcore-identity.is-ready .local-proctorcore-identity-state-icon,
+.local-proctorcore-identity.is-running .local-proctorcore-identity-state-icon {
+    border-color: #187653;
+}
+.local-proctorcore-identity.is-running .local-proctorcore-identity-state-icon {
+    animation: local-proctorcore-spin .8s linear infinite;
+    border-top-color: transparent;
+}
+.local-proctorcore-identity.is-passed .local-proctorcore-identity-state-icon {
+    background: #187653;
+    border-color: #187653;
+}
+.local-proctorcore-identity.is-passed .local-proctorcore-identity-state-icon::after {
+    border-bottom: 3px solid #fff;
+    border-right: 3px solid #fff;
+    content: '';
+    height: .85rem;
+    left: .72rem;
+    position: absolute;
+    top: .42rem;
+    transform: rotate(45deg);
+    width: .45rem;
+}
+.local-proctorcore-identity.is-failed .local-proctorcore-identity-state-icon {
+    border-color: #b53b31;
+}
+.local-proctorcore-identity-heading-copy {
+    min-width: 0;
 }
 .local-proctorcore-identity-title {
-    margin: 0 0 .35rem;
+    color: #172b3a;
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 0;
+    margin: 0 0 .2rem;
 }
 .local-proctorcore-identity-enrollment-title {
-    margin: .25rem 0 .35rem;
-    font-size: 1rem;
+    color: #172b3a;
+    font-size: .95rem;
+    font-weight: 700;
+    margin: 0 0 .35rem;
+}
+.local-proctorcore-identity-enrollment {
+    background: #f3f7f5;
+    border-bottom: 1px solid #dce3e6;
+    border-top: 1px solid #dce3e6;
+    padding: .9rem 1.1rem;
 }
 .local-proctorcore-identity-notice {
-    margin-bottom: .65rem;
-    color: #495057;
+    color: #53636d;
+    font-size: .88rem;
+    line-height: 1.5;
+    margin-bottom: .7rem;
 }
 .local-proctorcore-identity-confirm {
-    margin-bottom: .65rem;
+    align-items: flex-start;
+    display: flex;
+    gap: .55rem;
 }
 .local-proctorcore-identity-confirm label {
-    display: inline;
+    color: #243a48;
+    display: block;
+    font-size: .9rem;
     font-weight: 600;
+    line-height: 1.4;
+    margin: 0;
+}
+.local-proctorcore-identity-confirm input {
+    flex: 0 0 auto;
+    height: 1.1rem;
+    margin-top: .12rem;
+    width: 1.1rem;
 }
 .local-proctorcore-identity-instructions {
-    margin-bottom: .65rem;
-    color: #495057;
+    color: #60717b;
+    font-size: .86rem;
+    line-height: 1.4;
 }
 .local-proctorcore-identity-status {
-    min-height: 1.5rem;
-    margin-bottom: .65rem;
+    color: #304754;
+    flex: 1 1 auto;
+    line-height: 1.4;
+    min-height: 1.4rem;
     font-weight: 600;
+}
+.local-proctorcore-identity-actionbar {
+    align-items: center;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    padding: .9rem 1.1rem;
+}
+.local-proctorcore-identity-start {
+    flex: 0 0 auto;
+    min-height: 2.65rem;
+    min-width: 12rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .local-proctorcore-processing-spinner,
+    .local-proctorcore-precheck-row.is-running .local-proctorcore-precheck-icon,
+    .local-proctorcore-identity.is-running .local-proctorcore-identity-state-icon {
+        animation: none;
+    }
+}
+
+@media (max-width: 700px) {
+    .local-proctorcore-identity {
+        max-width: calc(100vw - 1rem);
+        width: calc(100vw - 1rem);
+    }
+
+    .local-proctorcore-identity-actionbar {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .local-proctorcore-identity-start {
+        width: 100%;
+    }
 }

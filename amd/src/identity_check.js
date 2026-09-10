@@ -46,7 +46,7 @@ define([], function() {
         if (!window.ProctorCorePrecheck || typeof window.ProctorCorePrecheck.captureJpeg !== 'function') {
             throw new Error('Camera preview is unavailable. Run the equipment check again.');
         }
-        return window.ProctorCorePrecheck.captureJpeg(0.95, 1280);
+        return window.ProctorCorePrecheck.captureJpeg(0.96, 1440);
     };
 
     const captureFrames = async(count, intervalMs) => {
@@ -120,6 +120,11 @@ define([], function() {
             }
 
             update(panel, 'running', config.enrollmentRequired ? config.strings.enrolling : config.strings.comparing);
+            if (window.ProctorCorePrecheck && typeof window.ProctorCorePrecheck.freeze === 'function') {
+                window.ProctorCorePrecheck.freeze(
+                    config.enrollmentRequired ? config.strings.enrolling : config.strings.comparing
+                );
+            }
             const result = await post(config, {center, left, right});
             setField('proctorcore_identity_status', result.result || 'failed');
             setField('proctorcore_identity_score', result.similarityScore ?? '');
@@ -132,13 +137,25 @@ define([], function() {
                 } else if (result.result === 'needs_review') {
                     label = config.strings.needsReview;
                 }
-                update(panel, 'passed', `${label} (${Number(result.similarityScore || 0).toFixed(3)})`);
+                const score = Number(result.similarityScore);
+                const scoreLabel = Number.isFinite(score) && score > 0 ? ` (${score.toFixed(3)})` : '';
+                update(panel, 'passed', `${label}${scoreLabel}`);
+                if (window.ProctorCorePrecheck && typeof window.ProctorCorePrecheck.complete === 'function') {
+                    window.ProctorCorePrecheck.complete(label);
+                    window.ProctorCorePrecheck.stop();
+                }
                 enableSubmit(panel, true);
             } else {
+                if (window.ProctorCorePrecheck && typeof window.ProctorCorePrecheck.resume === 'function') {
+                    window.ProctorCorePrecheck.resume();
+                }
                 update(panel, 'failed', result.message || config.strings.failed);
                 button.disabled = false;
             }
         } catch (error) {
+            if (window.ProctorCorePrecheck && typeof window.ProctorCorePrecheck.resume === 'function') {
+                window.ProctorCorePrecheck.resume();
+            }
             setField('proctorcore_identity_status', 'error');
             update(panel, 'failed', error.message || config.strings.failed);
             button.disabled = false;

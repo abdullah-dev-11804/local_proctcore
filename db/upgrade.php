@@ -188,5 +188,15 @@ function xmldb_local_proctorcore_upgrade(int $oldversion): bool {
         upgrade_plugin_savepoint(true, 2026091000, 'local', 'proctorcore');
     }
 
+    if ($oldversion < 2026091001) {
+        // Keep reports pending until all final-manifest evidence webhooks arrive.
+        upgrade_plugin_savepoint(true, 2026091001, 'local', 'proctorcore');
+    }
+
+    if ($oldversion < 2026091100) {
+        // Candidate precheck and identity interface refresh; no schema changes.
+        upgrade_plugin_savepoint(true, 2026091100, 'local', 'proctorcore');
+    }
+
     return true;
 }

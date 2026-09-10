@@ -123,9 +123,7 @@ final class webhook_processor {
                 try {
                     if ($eventtype === 'asset.captured') {
                         $applied = $this->apply_asset_event($session, $event);
-                        if (in_array((string) ($session->mediastatus ?? 'pending'), ['pending', 'recording'], true)) {
-                            $this->sessions->update_media_status((int) $session->id, 'finalizing');
-                        }
+                        $this->refresh_media_status_after_asset((int) $session->id);
                         $updatedsession = $this->sessions->get_by_id((int) $session->id);
                     } else {
                         $updatedsession = $this->apply_final_event($session, $event);
@@ -444,16 +442,54 @@ final class webhook_processor {
         );
 
         $servermediastatus = strtolower((string) ($event['mediaStatus'] ?? 'completed'));
+        $expectedassets = max(0, (int) ($event['assetCount'] ?? 0));
+        $receivedassets = $this->count_server_assets((int) $updated->id);
         $mediastatus = in_array($servermediastatus, ['failed', 'dead_letter'], true)
             ? 'failed'
-            : ($servermediastatus === 'partial' ? 'partial' : 'ready');
+            : ($servermediastatus === 'partial'
+                ? 'partial'
+                : ($receivedassets >= $expectedassets ? 'ready' : 'finalizing'));
         $this->sessions->update_media_status((int) $updated->id, $mediastatus, [
             'serverStatus' => $servermediastatus,
-            'assetCount' => max(0, (int) ($event['assetCount'] ?? 0)),
+            'assetCount' => $expectedassets,
+            'receivedAssetCount' => $receivedassets,
             'finalizedAt' => $completedat,
         ]);
 
         return $this->sessions->get_by_id((int) $updated->id);
+    }
+
+    /** Keeps reports in Processing evidence until every announced asset arrives. */
+    private function refresh_media_status_after_asset(int $sessionid): void {
+        $session = $this->sessions->get_by_id($sessionid);
+        $metadata = json_decode((string) ($session->servermetadata ?? ''), true);
+        $metadata = is_array($metadata) ? $metadata : [];
+        $final = is_array($metadata['finalWebhook'] ?? null) ? $metadata['finalWebhook'] : [];
+        $expectedassets = isset($final['assetCount']) ? max(0, (int) $final['assetCount']) : null;
+        $receivedassets = $this->count_server_assets($sessionid);
+
+        if ($expectedassets === null || empty($session->endedat)) {
+            $status = 'finalizing';
+        } else {
+            $status = $receivedassets >= $expectedassets ? 'ready' : 'finalizing';
+        }
+        $this->sessions->update_media_status($sessionid, $status, [
+            'assetCount' => $expectedassets,
+            'receivedAssetCount' => $receivedassets,
+        ]);
+    }
+
+    /** Counts active assets announced by the proctoring server, excluding Moodle PDFs. */
+    private function count_server_assets(int $sessionid): int {
+        $count = 0;
+        foreach ($this->assets->get_for_session($sessionid) as $asset) {
+            if (in_array((string) $asset->storage, ['server_b', 'external'], true)
+                    && (string) $asset->status === 'active'
+                    && empty($asset->deletedat)) {
+                $count++;
+            }
+        }
+        return $count;
     }
 
     /**

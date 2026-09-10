@@ -8,8 +8,8 @@ Main Moodle-side control centre and official record keeper for the SENTAL procto
 - `index.php` - Placeholder for the ProctorCore landing/dashboard route.
 - `settings.php` - Holds global admin settings such as Server B URL, webhook secret, and retention defaults.
 - `lib.php` - Exposes shared helper functions for `quizaccess_proctorcore` and other Moodle-side plugins.
-- `webhook.php` - Placeholder for a direct signed Server B webhook endpoint if Moodle web services are not used.
-- `reports.php` - Placeholder for company-scoped report lists and session detail pages.
+- `webhook.php` - Receives signed Proctoring Server webhooks and returns idempotent JSON acknowledgements.
+- `reports.php` - Renders tenant-scoped report lists and detailed session evidence.
 - `appeal.php` - Placeholder for student appeal submission and appeal review entry points.
 - `reset_face.php` - Admin entry point for resetting a user's reusable Server B face reference.
 - `cli/reset_face_reference.php` - CLI helper to reset a user's reusable face reference and force fresh enrollment.
@@ -32,15 +32,15 @@ Main Moodle-side control centre and official record keeper for the SENTAL procto
 - `classes/local/asset_repository.php` - Home for report, video, snapshot, room scan, ID photo, and violation-act references.
 - `classes/local/audit_logger.php` - Home for append-only administrator, coordinator, proctor, and integration audit events.
 - `classes/observer.php` - Minimal Moodle lifecycle observer for account-deletion face-reference cleanup.
-- `classes/task/cleanup_retention_task.php` - Scheduled task that will clear expired evidence links and request external deletion.
-- `classes/external/webhook_receiver.php` - Web-service receiver for signed Server B lifecycle, result, asset, and violation events.
+- `classes/task/cleanup_retention_task.php` - Deletes expired, non-held Moodle and Proctoring Server evidence with retry-safe audit records.
+- `classes/external/webhook_receiver.php` - Web-service receiver for signed lifecycle, result, and asset events.
 - `classes/privacy/provider.php` - Moodle privacy metadata declaration for stored proctoring personal data.
 - `classes/form/appeal_form.php` - Placeholder for the Moodle form used by students to file appeals.
 - `classes/form/participant_fields_form.php` - Placeholder for configuring custom participant fields per company.
-- `classes/output/report_renderer.php` - Placeholder for preparing report summary and evidence display data.
-- `templates/report_summary.mustache` - Placeholder Mustache template for a proctoring report summary block.
-- `amd/src/proctorcore.js` - Placeholder AMD JavaScript module for small page interactions.
-- `tests/session_repository_test.php` - Placeholder PHPUnit test file for session record persistence.
+- `classes/output/report_renderer.php` - Prepares report status, identity policy, violations, snapshots, clips, and retention data for templates.
+- `templates/report_summary.mustache` - Displays a detailed proctoring report and protected evidence links.
+- `amd/src/proctorcore.js` - Runs LiveKit capture, browser recording fallback, snapshots, interruption handling, and finalization.
+- `tests/session_repository_test.php` - Tests policy precedence, threshold floors, and retention defaults.
 
 ## Schema overview
 
@@ -57,7 +57,7 @@ Main Moodle-side control centre and official record keeper for the SENTAL procto
 - `local_proctorcore_webhooks` - Raw inbound Server B events plus processing status for idempotency and troubleshooting.
 - `local_proctorcore_appeals` - Appeal requests, reasons, reviewer decisions, and evidence-hold state linkage.
 - `local_proctorcore_audit` - Append-only administrator, coordinator, proctor, and integration action log.
-# ProctorCore local plugin - release 0.11.0
+# ProctorCore local plugin - release 0.12.1
 
 Technical component: `local_proctorcore`  
 Install location: `local/proctorcore`
@@ -104,8 +104,8 @@ the existing retention task after expiry.
 
 ## Companion plugin
 
-Use the matched `quizaccess_proctorcore` release 0.11.0. It requires
-`local_proctorcore >= 2026080700`.
+Use `quizaccess_proctorcore` release 0.12.0 or newer. It requires
+`local_proctorcore >= 2026091000`.
 
 For private Server B evidence, the development/production Server B must expose
 a Bearer-authenticated `GET /api/v1/assets/{externalId}/content` endpoint. Moodle
