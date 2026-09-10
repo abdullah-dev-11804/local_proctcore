@@ -203,5 +203,10 @@ function xmldb_local_proctorcore_upgrade(int $oldversion): bool {
         upgrade_plugin_savepoint(true, 2026091101, 'local', 'proctorcore');
     }
 
+    if ($oldversion < 2026091102) {
+        // Fit the candidate workflow inside Moodle's quiz preflight dialogue.
+        upgrade_plugin_savepoint(true, 2026091102, 'local', 'proctorcore');
+    }
+
     return true;
 }
