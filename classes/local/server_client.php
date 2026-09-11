@@ -77,6 +77,31 @@ final class server_client {
         ]);
     }
 
+    /** Checks whether SixDRepNet has confirmed the current adaptive pose step. */
+    public function check_liveness_pose(
+        int $userid,
+        string $contextid,
+        string $transactionid,
+        bool $enrollment,
+        string $challengeid,
+        string $challengenonce,
+        int $stepindex,
+        string $imagebytes
+    ): array {
+        return $this->request('POST', '/api/v1/identity/liveness/challenges/pose', [
+            'transactionId' => $transactionid,
+            'companyId' => $this->companyid,
+            'userId' => $userid,
+            'contextId' => $contextid,
+            'enrollment' => $enrollment,
+            'challengeId' => $challengeid,
+            'challengeNonce' => $challengenonce,
+            'stepIndex' => $stepindex,
+            'image' => base64_encode($imagebytes),
+            'qualityPolicy' => $this->identity_quality_policy(),
+        ]);
+    }
+
     /**
      * Verifies a pre-attempt identity challenge with Server B.
      *

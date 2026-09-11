@@ -125,6 +125,11 @@
     border-color: rgba(85, 214, 162, .85);
 }
 
+.local-proctorcore-liveness-prompt.is-confirmed {
+    background: rgba(18, 100, 72, .94);
+    border-color: #74e0b4;
+}
+
 .local-proctorcore-precheck.is-processing .local-proctorcore-precheck-video {
     filter: blur(12px) saturate(.72);
     transform: scaleX(-1) scale(1.04);

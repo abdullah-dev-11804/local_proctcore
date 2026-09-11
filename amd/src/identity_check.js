@@ -143,41 +143,101 @@ define([], function() {
 
         const started = performance.now();
         const duration = Math.max(1000, Number(challenge.durationMs || 4500));
-        let previousAction = '';
+        const lightForElapsed = elapsed => (challenge.illuminationSteps || []).find(
+            step => elapsed >= Number(step.startMs) && elapsed < Number(step.endMs)
+        );
+        const captureEvidenceFrame = () => {
+            const elapsed = Math.round(performance.now() - started);
+            if (evidence.length >= 48 || elapsed > duration + 500) {
+                return;
+            }
+            const light = lightForElapsed(elapsed);
+            illumination.style.setProperty('--liveness-colour', light ? light.hex : '#ffffff');
+            evidence.push({
+                image: captureJpegForLiveness(),
+                capturedAtMs: Number(challenge.issuedAtMs || 0) + elapsed,
+                elapsedMs: elapsed,
+            });
+        };
+        let captureTimer = null;
         try {
-            while (performance.now() - started <= duration) {
-                const elapsed = Math.round(performance.now() - started);
-                const movement = (challenge.movementSteps || []).find(
-                    step => elapsed >= Number(step.startMs) && elapsed < Number(step.endMs)
-                );
-                const action = movement ? movement.action : 'center';
-                if (action !== previousAction) {
+            if (challenge.adaptiveHeadPose && challenge.components && challenge.components.headPose) {
+                captureEvidenceFrame();
+                captureTimer = window.setInterval(captureEvidenceFrame, 300);
+                const steps = challenge.movementSteps || [];
+                const stepTimeout = Math.max(2000, Number(challenge.poseStepTimeoutMs || 3000));
+                for (let index = 0; index < steps.length; index++) {
+                    const action = steps[index].action || 'center';
                     const label = movementLabel(config, action);
                     update(panel, 'running', label);
                     instruction.textContent = label;
+                    hint.textContent = config.strings.holdPosition || '';
                     prompt.className = `local-proctorcore-liveness-prompt is-${action}`;
-                    previousAction = action;
+                    progress.style.width = '0%';
+                    const stepStarted = performance.now();
+                    let reached = false;
+                    await sleep(650);
+                    while (!reached && performance.now() - stepStarted < stepTimeout
+                            && performance.now() - started < duration) {
+                        const stepElapsed = performance.now() - stepStarted;
+                        progress.style.width = `${Math.min(100, (stepElapsed / stepTimeout) * 100)}%`;
+                        const result = await post(config, {
+                            action: 'checkChallengePose',
+                            challengeId: challenge.challengeId || '',
+                            challengeNonce: challenge.nonce || '',
+                            stepIndex: index,
+                            image: captureJpegForLiveness(),
+                        });
+                        reached = Boolean(result.reached);
+                        if (!reached) {
+                            await sleep(200);
+                        }
+                    }
+                    if (!reached) {
+                        throw new Error(config.strings.movementTimeout || config.strings.failed);
+                    }
+                    progress.style.width = '100%';
+                    hint.textContent = config.strings.poseConfirmed || '';
+                    prompt.classList.add('is-confirmed');
+                    await sleep(350);
                 }
-                if (movement && progress) {
-                    const stepDuration = Math.max(1, Number(movement.endMs) - Number(movement.startMs));
-                    const stepProgress = Math.min(100, Math.max(
-                        0,
-                        ((elapsed - Number(movement.startMs)) / stepDuration) * 100
-                    ));
-                    progress.style.width = `${stepProgress}%`;
+                const minimumCapture = Math.max(0, Number(challenge.minimumCaptureMs || 0));
+                if (performance.now() - started < minimumCapture) {
+                    instruction.textContent = config.strings.lookStraight;
+                    hint.textContent = config.strings.holdPosition || '';
+                    prompt.className = 'local-proctorcore-liveness-prompt is-center';
+                    await sleep(minimumCapture - (performance.now() - started));
                 }
-                const light = (challenge.illuminationSteps || []).find(
-                    step => elapsed >= Number(step.startMs) && elapsed < Number(step.endMs)
-                );
-                illumination.style.setProperty('--liveness-colour', light ? light.hex : '#ffffff');
-                evidence.push({
-                    image: captureJpegForLiveness(),
-                    capturedAtMs: Number(challenge.issuedAtMs || 0) + elapsed,
-                    elapsedMs: elapsed,
-                });
-                await sleep(300);
+            } else {
+                let previousAction = '';
+                while (performance.now() - started <= duration) {
+                    const elapsed = Math.round(performance.now() - started);
+                    const movement = (challenge.movementSteps || []).find(
+                        step => elapsed >= Number(step.startMs) && elapsed < Number(step.endMs)
+                    );
+                    const action = movement ? movement.action : 'center';
+                    if (action !== previousAction) {
+                        const label = movementLabel(config, action);
+                        update(panel, 'running', label);
+                        instruction.textContent = label;
+                        prompt.className = `local-proctorcore-liveness-prompt is-${action}`;
+                        previousAction = action;
+                    }
+                    if (movement && progress) {
+                        const stepDuration = Math.max(1, Number(movement.endMs) - Number(movement.startMs));
+                        progress.style.width = `${Math.min(100, Math.max(
+                            0,
+                            ((elapsed - Number(movement.startMs)) / stepDuration) * 100
+                        ))}%`;
+                    }
+                    captureEvidenceFrame();
+                    await sleep(300);
+                }
             }
         } finally {
+            if (captureTimer !== null) {
+                window.clearInterval(captureTimer);
+            }
             illumination.remove();
             prompt.remove();
         }

@@ -87,6 +87,42 @@ final class identity_service {
         ];
     }
 
+    /** Advances an adaptive movement step only after server-side pose confirmation. */
+    public function check_liveness_pose(
+        int $quizid,
+        int $userid,
+        string $token,
+        string $challengeid,
+        string $challengenonce,
+        int $stepindex,
+        string $imagedata
+    ): array {
+        global $DB;
+
+        $this->require_precheck_token($quizid, $userid, $token);
+        $challenge = $this->get_liveness_challenge($quizid, $userid, $challengeid, $challengenonce, false);
+        $quiz = $DB->get_record('quiz', ['id' => $quizid], 'id,course', MUST_EXIST);
+        $companyid = (new tenant_resolver())->resolve_company_id($userid, (int) $quiz->course);
+        $enrollment = !(new face_enrollment_repository())->get_active($userid);
+        $result = (new server_client($companyid))->check_liveness_pose(
+            $userid,
+            (string) $challenge['contextId'],
+            (string) $challenge['transactionId'],
+            $enrollment,
+            $challengeid,
+            (string) $challenge['nonce'],
+            $stepindex,
+            $this->decode_image($imagedata)
+        );
+        return [
+            'ok' => true,
+            'reached' => !empty($result['reached']),
+            'reason' => clean_param((string) ($result['reason'] ?? 'keep_moving'), PARAM_ALPHANUMEXT),
+            'stepIndex' => (int) ($result['stepIndex'] ?? $stepindex),
+            'nextStepIndex' => (int) ($result['nextStepIndex'] ?? $stepindex),
+        ];
+    }
+
     /**
      * Enrolls or verifies the user against the Server B face reference.
      *
