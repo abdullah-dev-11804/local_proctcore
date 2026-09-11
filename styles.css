@@ -68,6 +68,63 @@
     z-index: 2;
 }
 
+.local-proctorcore-liveness-prompt {
+    align-items: center;
+    background: rgba(8, 20, 27, .88);
+    border: 1px solid rgba(255, 255, 255, .32);
+    border-radius: .5rem;
+    bottom: 1.25rem;
+    box-shadow: 0 .75rem 2rem rgba(0, 0, 0, .28);
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    gap: .28rem;
+    left: 50%;
+    max-width: calc(100% - 2rem);
+    min-width: min(26rem, calc(100% - 2rem));
+    padding: .8rem 1rem .7rem;
+    pointer-events: none;
+    position: absolute;
+    text-align: center;
+    transform: translateX(-50%);
+    z-index: 7;
+}
+
+.local-proctorcore-liveness-prompt strong {
+    font-size: clamp(1rem, 2.2vh, 1.35rem);
+    font-weight: 700;
+    letter-spacing: 0;
+    line-height: 1.25;
+}
+
+.local-proctorcore-liveness-prompt [data-liveness-hint] {
+    color: rgba(255, 255, 255, .82);
+    font-size: .78rem;
+    line-height: 1.3;
+}
+
+.local-proctorcore-liveness-progress {
+    background: rgba(255, 255, 255, .25);
+    display: block;
+    height: .25rem;
+    margin-top: .25rem;
+    overflow: hidden;
+    width: 100%;
+}
+
+.local-proctorcore-liveness-progress i {
+    background: #55d6a2;
+    display: block;
+    height: 100%;
+    transition: width .12s linear;
+    width: 0;
+}
+
+.local-proctorcore-liveness-prompt.is-left,
+.local-proctorcore-liveness-prompt.is-right {
+    border-color: rgba(85, 214, 162, .85);
+}
+
 .local-proctorcore-precheck.is-processing .local-proctorcore-precheck-video {
     filter: blur(12px) saturate(.72);
     transform: scaleX(-1) scale(1.04);
@@ -735,6 +792,13 @@
 
     .local-proctorcore-identity-start {
         width: 100%;
+    }
+
+    .local-proctorcore-liveness-prompt {
+        bottom: .65rem;
+        max-width: calc(100% - 1rem);
+        min-width: calc(100% - 1rem);
+        padding: .65rem .75rem .6rem;
     }
 }
 

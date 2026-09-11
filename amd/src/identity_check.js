@@ -121,9 +121,26 @@ define([], function() {
         const illumination = document.createElement('div');
         illumination.className = 'local-proctorcore-liveness-illumination';
         illumination.setAttribute('aria-hidden', 'true');
+        const prompt = document.createElement('div');
+        prompt.className = 'local-proctorcore-liveness-prompt is-center';
+        prompt.setAttribute('role', 'status');
+        prompt.setAttribute('aria-live', 'assertive');
+        prompt.innerHTML = '<strong data-liveness-instruction></strong>' +
+            '<span data-liveness-hint></span>' +
+            '<span class="local-proctorcore-liveness-progress" aria-hidden="true"><i></i></span>';
+        const instruction = prompt.querySelector('[data-liveness-instruction]');
+        const hint = prompt.querySelector('[data-liveness-hint]');
+        const progress = prompt.querySelector('.local-proctorcore-liveness-progress i');
         if (preview) {
             preview.appendChild(illumination);
+            preview.appendChild(prompt);
         }
+
+        instruction.textContent = config.strings.challengeGetReady || config.strings.lookStraight;
+        hint.textContent = config.strings.holdPosition || '';
+        update(panel, 'running', instruction.textContent);
+        await sleep(900);
+
         const started = performance.now();
         const duration = Math.max(1000, Number(challenge.durationMs || 4500));
         let previousAction = '';
@@ -135,8 +152,19 @@ define([], function() {
                 );
                 const action = movement ? movement.action : 'center';
                 if (action !== previousAction) {
-                    update(panel, 'running', movementLabel(config, action));
+                    const label = movementLabel(config, action);
+                    update(panel, 'running', label);
+                    instruction.textContent = label;
+                    prompt.className = `local-proctorcore-liveness-prompt is-${action}`;
                     previousAction = action;
+                }
+                if (movement && progress) {
+                    const stepDuration = Math.max(1, Number(movement.endMs) - Number(movement.startMs));
+                    const stepProgress = Math.min(100, Math.max(
+                        0,
+                        ((elapsed - Number(movement.startMs)) / stepDuration) * 100
+                    ));
+                    progress.style.width = `${stepProgress}%`;
                 }
                 const light = (challenge.illuminationSteps || []).find(
                     step => elapsed >= Number(step.startMs) && elapsed < Number(step.endMs)
@@ -151,6 +179,7 @@ define([], function() {
             }
         } finally {
             illumination.remove();
+            prompt.remove();
         }
         return evidence;
     };
