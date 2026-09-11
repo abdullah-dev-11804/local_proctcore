@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="local/proctorcore/db" VERSION="2026090900" COMMENT="XMLDB file for local_proctorcore"
+<XMLDB PATH="local/proctorcore/db" VERSION="2026091200" COMMENT="XMLDB file for local_proctorcore"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd">
   <TABLES>
@@ -111,9 +111,16 @@
         <FIELD NAME="companyid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
         <FIELD NAME="shortname" TYPE="char" LENGTH="64" NOTNULL="true"/>
         <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true"/>
+        <FIELD NAME="namekk" TYPE="char" LENGTH="255" NOTNULL="false"/>
+        <FIELD NAME="nameru" TYPE="char" LENGTH="255" NOTNULL="false"/>
+        <FIELD NAME="helptext" TYPE="text" NOTNULL="false"/>
+        <FIELD NAME="helpkk" TYPE="text" NOTNULL="false"/>
+        <FIELD NAME="helpru" TYPE="text" NOTNULL="false"/>
         <FIELD NAME="datatype" TYPE="char" LENGTH="32" NOTNULL="true" DEFAULT="text"/>
         <FIELD NAME="required" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0"/>
         <FIELD NAME="editablebyuser" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1"/>
+        <FIELD NAME="active" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1"/>
+        <FIELD NAME="profilefieldid" TYPE="int" LENGTH="10" NOTNULL="false"/>
         <FIELD NAME="sortorder" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
         <FIELD NAME="configjson" TYPE="text" NOTNULL="false"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
@@ -125,6 +132,96 @@
       <INDEXES>
         <INDEX NAME="companyshort" UNIQUE="true" FIELDS="companyid, shortname"/>
         <INDEX NAME="companysort" UNIQUE="false" FIELDS="companyid, sortorder"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="local_proctorcore_uservals" COMMENT="Reusable participant values retained against a Moodle user and company.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="companyid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="fieldid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="value" TYPE="text" NOTNULL="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="fieldid" TYPE="foreign" FIELDS="fieldid" REFTABLE="local_proctorcore_fields" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="userfield" UNIQUE="true" FIELDS="companyid, userid, fieldid"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="local_proctorcore_consentdoc" COMMENT="Administratively managed consent documents.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="shortname" TYPE="char" LENGTH="64" NOTNULL="true"/>
+        <FIELD NAME="active" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="required" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1"/>
+        <FIELD NAME="sortorder" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="currentversion" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="usermodified" TYPE="foreign" FIELDS="usermodified" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="shortname" UNIQUE="true" FIELDS="shortname"/>
+        <INDEX NAME="activesort" UNIQUE="false" FIELDS="active, sortorder"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="local_proctorcore_consentver" COMMENT="Immutable multilingual versions of consent documents.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="documentid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="version" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="titlekk" TYPE="char" LENGTH="255" NOTNULL="true"/>
+        <FIELD NAME="titleru" TYPE="char" LENGTH="255" NOTNULL="true"/>
+        <FIELD NAME="titleen" TYPE="char" LENGTH="255" NOTNULL="true"/>
+        <FIELD NAME="contentkk" TYPE="text" NOTNULL="true"/>
+        <FIELD NAME="contentru" TYPE="text" NOTNULL="true"/>
+        <FIELD NAME="contenten" TYPE="text" NOTNULL="true"/>
+        <FIELD NAME="materialchange" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1"/>
+        <FIELD NAME="contenthash" TYPE="char" LENGTH="64" NOTNULL="true"/>
+        <FIELD NAME="publishedat" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="publishedby" TYPE="int" LENGTH="10" NOTNULL="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="documentid" TYPE="foreign" FIELDS="documentid" REFTABLE="local_proctorcore_consentdoc" REFFIELDS="id"/>
+        <KEY NAME="publishedby" TYPE="foreign" FIELDS="publishedby" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="documentversion" UNIQUE="true" FIELDS="documentid, version"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="local_proctorcore_consentlog" COMMENT="Append-only proof of user consent to an exact document set.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="companyid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="language" TYPE="char" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="documentversions" TYPE="text" NOTNULL="true"/>
+        <FIELD NAME="documentshash" TYPE="char" LENGTH="64" NOTNULL="true"/>
+        <FIELD NAME="ipaddress" TYPE="char" LENGTH="45" NOTNULL="false"/>
+        <FIELD NAME="useragent" TYPE="text" NOTNULL="false"/>
+        <FIELD NAME="consentedat" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="userhash" UNIQUE="false" FIELDS="userid, documentshash"/>
+        <INDEX NAME="companytime" UNIQUE="false" FIELDS="companyid, consentedat"/>
       </INDEXES>
     </TABLE>
 

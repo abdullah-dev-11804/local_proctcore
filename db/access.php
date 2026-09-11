@@ -60,4 +60,19 @@ $capabilities = [
             'manager' => CAP_ALLOW,
         ],
     ],
+    'local/proctorcore:manageconsent' => [
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => ['manager' => CAP_ALLOW],
+    ],
+    'local/proctorcore:exportconsent' => [
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => ['manager' => CAP_ALLOW],
+    ],
+    'local/proctorcore:manageparticipantfields' => [
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => ['manager' => CAP_ALLOW],
+    ],
 ];

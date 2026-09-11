@@ -361,4 +361,28 @@ if ($hassiteconfig) {
         new moodle_url('/local/proctorcore/company_policy.php'),
         'local/proctorcore:manage'
     ));
+    $ADMIN->add('localplugins', new admin_externalpage(
+        'local_proctorcore_participant_fields',
+        get_string('participant:manage', 'local_proctorcore'),
+        new moodle_url('/local/proctorcore/participant_fields.php'),
+        'local/proctorcore:manageparticipantfields'
+    ));
+    $ADMIN->add('localplugins', new admin_externalpage(
+        'local_proctorcore_consent_documents',
+        get_string('consent:manage', 'local_proctorcore'),
+        new moodle_url('/local/proctorcore/consent_documents.php'),
+        'local/proctorcore:manageconsent'
+    ));
+    $ADMIN->add('localplugins', new admin_externalpage(
+        'local_proctorcore_consent_export',
+        get_string('consent:export', 'local_proctorcore'),
+        new moodle_url('/local/proctorcore/consent_export.php'),
+        'local/proctorcore:exportconsent'
+    ));
+    $ADMIN->add('localplugins', new admin_externalpage(
+        'local_proctorcore_appeals',
+        get_string('appeal:queue', 'local_proctorcore'),
+        new moodle_url('/local/proctorcore/appeals.php'),
+        'local/proctorcore:reviewappeals'
+    ));
 }

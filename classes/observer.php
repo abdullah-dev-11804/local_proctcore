@@ -25,4 +25,36 @@ final class observer {
             null
         );
     }
+
+    /** Releases appeal evidence after the learner fully completes the course. */
+    public static function course_completed(\core\event\course_completed $event): void {
+        global $DB;
+        $sql = "SELECT DISTINCT s.id
+                  FROM {local_proctorcore_sessions} s
+                  JOIN {local_proctorcore_appeals} a ON a.sessionid = s.id
+                 WHERE s.userid = :userid AND s.courseid = :courseid
+                   AND a.status <> :withdrawn AND s.appealstatus <> :released";
+        $sessions = $DB->get_records_sql($sql, [
+            'userid' => (int) $event->relateduserid,
+            'courseid' => (int) $event->courseid,
+            'withdrawn' => 'withdrawn',
+            'released' => 'released',
+        ]);
+        foreach ($sessions as $session) {
+            $DB->set_field('local_proctorcore_sessions', 'appealstatus', 'release_pending', [
+                'id' => (int) $session->id,
+            ]);
+            try {
+                (new \local_proctorcore\local\appeal_service())->release_session_evidence(
+                    (int) $session->id,
+                    (int) $event->timecreated,
+                    'course_completed',
+                    (int) $event->relateduserid
+                );
+            } catch (\Throwable $exception) {
+                debugging('ProctorCore could not release completed-course evidence: '
+                    . $exception->getMessage(), DEBUG_DEVELOPER);
+            }
+        }
+    }
 }

@@ -93,6 +93,9 @@ final class report_renderer {
         $sessionidtext = !empty($session->server_sessionid)
             ? (string) $session->server_sessionid
             : 'M-' . (int) $session->id;
+        $appeal = $report['appeal'] ?? null;
+        $canappeal = !$appeal && (int) $session->userid === $viewerid && !empty($session->endedat)
+            && !empty($session->appealuntil) && (int) $session->appealuntil >= time();
 
         return [
             'title' => get_string('report:title', 'local_proctorcore'),
@@ -156,6 +159,17 @@ final class report_renderer {
                 'attempt' => (int) $session->attemptid,
             ]))->out(false),
             'viewerid' => $viewerid,
+            'appeal' => $appeal ? [
+                'status' => self::humanise((string) $appeal->status),
+                'reason' => self::humanise((string) $appeal->reason),
+                'details' => format_text((string) $appeal->details, FORMAT_PLAIN),
+                'decision' => format_text((string) ($appeal->decision ?? ''), FORMAT_PLAIN),
+                'submittedat' => userdate((int) $appeal->submittedat),
+            ] : null,
+            'canappeal' => $canappeal,
+            'appealurl' => (new \moodle_url('/local/proctorcore/appeal.php', [
+                'sessionid' => (int) $session->id,
+            ]))->out(false),
         ];
     }
 

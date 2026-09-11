@@ -233,6 +233,17 @@ final class report_pdf_service {
             $html .= '</table><br>';
         }
 
+        if (!empty($report['appeal'])) {
+            $appeal = $report['appeal'];
+            $html .= '<h2 style="font-size:13px;">' . s(get_string('appeal:title', 'local_proctorcore')) . '</h2>';
+            $html .= '<table border="1" cellpadding="4">'
+                . $this->pdf_row(get_string('appeal:status', 'local_proctorcore'), ucfirst((string) $appeal->status))
+                . $this->pdf_row(get_string('appeal:reason', 'local_proctorcore'), ucfirst(str_replace('_', ' ', (string) $appeal->reason)))
+                . $this->pdf_row(get_string('appeal:details', 'local_proctorcore'), (string) $appeal->details)
+                . $this->pdf_row(get_string('appeal:decision', 'local_proctorcore'), (string) ($appeal->decision ?? ''))
+                . '</table><br>';
+        }
+
         $html .= '<h2 style="font-size:13px;">' . s(get_string('report:violations', 'local_proctorcore')) . '</h2>';
         if (!$report['violations']) {
             $html .= '<p>' . s(get_string('report:noviolations', 'local_proctorcore')) . '</p>';

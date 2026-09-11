@@ -38,6 +38,19 @@ final class provider implements \core_privacy\local\metadata\provider {
             'qualityjson' => 'privacy:metadata:faceenrol:qualityjson',
         ], 'privacy:metadata:faceenrol');
 
+        $collection->add_database_table('local_proctorcore_consentlog', [
+            'userid' => 'privacy:metadata:consent:userid',
+            'documentversions' => 'privacy:metadata:consent:documents',
+            'language' => 'privacy:metadata:consent:language',
+            'ipaddress' => 'privacy:metadata:consent:ipaddress',
+            'useragent' => 'privacy:metadata:consent:useragent',
+        ], 'privacy:metadata:consent');
+
+        $collection->add_database_table('local_proctorcore_uservals', [
+            'userid' => 'privacy:metadata:participant:userid',
+            'value' => 'privacy:metadata:participant:value',
+        ], 'privacy:metadata:participant');
+
         return $collection;
     }
 }

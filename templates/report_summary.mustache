@@ -142,4 +142,20 @@
             </tbody></table>
         </div>
     </div>
+
+    {{#appeal}}
+    <div class="card mb-4">
+        <div class="card-header"><strong>{{#str}}appeal:title, local_proctorcore{{/str}}</strong></div>
+        <div class="card-body">
+            <p><strong>{{#str}}appeal:status, local_proctorcore{{/str}}:</strong> {{status}}</p>
+            <p><strong>{{#str}}appeal:reason, local_proctorcore{{/str}}:</strong> {{reason}}</p>
+            <p>{{{details}}}</p>
+            {{#decision}}<p><strong>{{#str}}appeal:decision, local_proctorcore{{/str}}:</strong> {{{decision}}}</p>{{/decision}}
+            <a class="btn btn-secondary" href="{{appealurl}}">{{#str}}appeal:view, local_proctorcore{{/str}}</a>
+        </div>
+    </div>
+    {{/appeal}}
+    {{#canappeal}}
+    <a class="btn btn-primary mb-4" href="{{appealurl}}">{{#str}}appeal:submit, local_proctorcore{{/str}}</a>
+    {{/canappeal}}
 </div>

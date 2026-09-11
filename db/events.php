@@ -8,4 +8,8 @@ $observers = [
         'eventname' => '\core\event\user_deleted',
         'callback' => '\local_proctorcore\observer::user_deleted',
     ],
+    [
+        'eventname' => '\core\event\course_completed',
+        'callback' => '\local_proctorcore\observer::course_completed',
+    ],
 ];

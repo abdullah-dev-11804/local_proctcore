@@ -3,6 +3,41 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+/** Redirects authenticated users to the current consent set before normal site access. */
+function local_proctorcore_after_require_login(
+    $courseorid = null,
+    bool $autologinguest = false,
+    $cm = null,
+    bool $setwantsurltome = true,
+    bool $preventredirect = false
+): void {
+    global $DB, $USER;
+
+    if (CLI_SCRIPT || (defined('AJAX_SCRIPT') && AJAX_SCRIPT) || (defined('WS_SERVER') && WS_SERVER)
+            || !isloggedin() || isguestuser()) {
+        return;
+    }
+    $path = (string) parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
+    foreach (['/local/proctorcore/consent.php', '/login/', '/logout.php', '/webservice/', '/admin/cli/'] as $exempt) {
+        if (strpos($path, $exempt) !== false) {
+            return;
+        }
+    }
+    if (!$DB->get_manager()->table_exists(new xmldb_table('local_proctorcore_consentdoc'))) {
+        return;
+    }
+    $service = new \local_proctorcore\local\consent_service();
+    if ($service->is_impersonating() || $service->has_current_consent((int) $USER->id)) {
+        return;
+    }
+    $returnurl = clean_param($_SERVER['REQUEST_URI'] ?? '/my/', PARAM_LOCALURL);
+    $consenturl = new moodle_url('/local/proctorcore/consent.php', ['returnurl' => $returnurl]);
+    if ($preventredirect) {
+        throw new moodle_exception('consent:requiredredirect', 'local_proctorcore', '', $consenturl->out());
+    }
+    redirect($consenturl);
+}
+
 /**
  * Creates or returns the ProctorCore session linked to a quiz attempt.
  *

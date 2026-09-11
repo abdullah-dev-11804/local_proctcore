@@ -369,12 +369,26 @@ final class report_service {
      */
     public function get_participant_fields(int $sessionid): array {
         global $DB;
-        $sql = "SELECT f.id, f.shortname, f.name, f.datatype, v.value
+        $sql = "SELECT f.id, f.shortname, f.name, f.namekk, f.nameru, f.datatype, v.value
                   FROM {local_proctorcore_fieldvals} v
                   JOIN {local_proctorcore_fields} f ON f.id = v.fieldid
                  WHERE v.sessionid = :sessionid
               ORDER BY f.sortorder ASC, f.id ASC";
-        return array_values($DB->get_records_sql($sql, ['sessionid' => $sessionid]));
+        $records = array_values($DB->get_records_sql($sql, ['sessionid' => $sessionid]));
+        $lang = substr(current_language(), 0, 2);
+        foreach ($records as $record) {
+            if ($lang === 'kk' && !empty($record->namekk)) {
+                $record->name = $record->namekk;
+            } else if ($lang === 'ru' && !empty($record->nameru)) {
+                $record->name = $record->nameru;
+            }
+            if ((string) $record->datatype === 'date' && (int) $record->value > 0) {
+                $record->value = userdate((int) $record->value, get_string('strftimedatefullshort'));
+            } else if ((string) $record->datatype === 'checkbox') {
+                $record->value = !empty($record->value) ? get_string('yes') : get_string('no');
+            }
+        }
+        return $records;
     }
 
     /**
@@ -423,6 +437,7 @@ final class report_service {
         $assets = $this->get_report_assets((int) $session->id);
         $check = $this->get_latest_check((int) $session->id);
         $fields = $this->get_participant_fields((int) $session->id);
+        $appeal = (new appeal_service())->get_for_session((int) $session->id);
 
         $percent = null;
         $grade = null;
@@ -442,6 +457,7 @@ final class report_service {
             'assets' => $assets,
             'check' => $check,
             'participantfields' => $fields,
+            'appeal' => $appeal,
             'starttime' => $start,
             'endtime' => $end,
             'duration' => $duration,
