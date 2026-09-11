@@ -146,26 +146,25 @@ define([], function() {
         const lightForElapsed = elapsed => (challenge.illuminationSteps || []).find(
             step => elapsed >= Number(step.startMs) && elapsed < Number(step.endMs)
         );
-        const captureEvidenceFrame = () => {
+        const captureEvidenceFrame = illuminationElapsed => {
             const elapsed = Math.round(performance.now() - started);
             if (evidence.length >= 48 || elapsed > duration + 500) {
                 return;
             }
-            const light = lightForElapsed(elapsed);
-            illumination.style.setProperty('--liveness-colour', light ? light.hex : '#ffffff');
-            evidence.push({
+            const frame = {
                 image: captureJpegForLiveness(),
                 capturedAtMs: Number(challenge.issuedAtMs || 0) + elapsed,
                 elapsedMs: elapsed,
-            });
+            };
+            if (Number.isFinite(illuminationElapsed)) {
+                frame.illuminationElapsedMs = Math.max(0, Math.round(illuminationElapsed));
+            }
+            evidence.push(frame);
         };
-        let captureTimer = null;
         try {
             if (challenge.adaptiveHeadPose && challenge.components && challenge.components.headPose) {
-                captureEvidenceFrame();
-                captureTimer = window.setInterval(captureEvidenceFrame, 300);
                 const steps = challenge.movementSteps || [];
-                const stepTimeout = Math.max(2000, Number(challenge.poseStepTimeoutMs || 3000));
+                const stepTimeout = Math.max(5000, Number(challenge.poseStepTimeoutMs || 8000));
                 for (let index = 0; index < steps.length; index++) {
                     const action = steps[index].action || 'center';
                     const label = movementLabel(config, action);
@@ -174,9 +173,9 @@ define([], function() {
                     hint.textContent = config.strings.holdPosition || '';
                     prompt.className = `local-proctorcore-liveness-prompt is-${action}`;
                     progress.style.width = '0%';
-                    const stepStarted = performance.now();
                     let reached = false;
-                    await sleep(650);
+                    await sleep(action === 'center' ? 1100 : 1400);
+                    const stepStarted = performance.now();
                     while (!reached && performance.now() - stepStarted < stepTimeout
                             && performance.now() - started < duration) {
                         const stepElapsed = performance.now() - stepStarted;
@@ -190,7 +189,8 @@ define([], function() {
                         });
                         reached = Boolean(result.reached);
                         if (!reached) {
-                            await sleep(200);
+                            hint.textContent = result.message || config.strings.holdPosition || '';
+                            await sleep(300);
                         }
                     }
                     if (!reached) {
@@ -199,15 +199,36 @@ define([], function() {
                     progress.style.width = '100%';
                     hint.textContent = config.strings.poseConfirmed || '';
                     prompt.classList.add('is-confirmed');
-                    await sleep(350);
+                    await sleep(600);
                 }
-                const minimumCapture = Math.max(0, Number(challenge.minimumCaptureMs || 0));
-                if (performance.now() - started < minimumCapture) {
-                    instruction.textContent = config.strings.lookStraight;
-                    hint.textContent = config.strings.holdPosition || '';
-                    prompt.className = 'local-proctorcore-liveness-prompt is-center';
-                    await sleep(minimumCapture - (performance.now() - started));
+
+                const illuminationSteps = challenge.illuminationSteps || [];
+                const evidenceDuration = Math.max(
+                    Number(challenge.minimumCaptureMs || 0),
+                    illuminationSteps.length
+                        ? Number(illuminationSteps[illuminationSteps.length - 1].endMs || 0)
+                        : 0
+                );
+                instruction.textContent = illuminationSteps.length
+                    ? (config.strings.illuminationCheck || config.strings.lookStraight)
+                    : config.strings.lookStraight;
+                hint.textContent = config.strings.holdPosition || '';
+                prompt.className = 'local-proctorcore-liveness-prompt is-center';
+                progress.style.width = '0%';
+                await sleep(900);
+                const evidenceStarted = performance.now();
+                while (performance.now() - evidenceStarted <= evidenceDuration && evidence.length < 48) {
+                    const illuminationElapsed = Math.round(performance.now() - evidenceStarted);
+                    const light = lightForElapsed(illuminationElapsed);
+                    illumination.style.setProperty('--liveness-colour', light ? light.hex : '#ffffff');
+                    progress.style.width = `${Math.min(
+                        100,
+                        (illuminationElapsed / Math.max(1, evidenceDuration)) * 100
+                    )}%`;
+                    captureEvidenceFrame(illuminationSteps.length ? illuminationElapsed : undefined);
+                    await sleep(280);
                 }
+                progress.style.width = '100%';
             } else {
                 let previousAction = '';
                 while (performance.now() - started <= duration) {
@@ -230,14 +251,13 @@ define([], function() {
                             ((elapsed - Number(movement.startMs)) / stepDuration) * 100
                         ))}%`;
                     }
-                    captureEvidenceFrame();
+                    const light = lightForElapsed(elapsed);
+                    illumination.style.setProperty('--liveness-colour', light ? light.hex : '#ffffff');
+                    captureEvidenceFrame(elapsed);
                     await sleep(300);
                 }
             }
         } finally {
-            if (captureTimer !== null) {
-                window.clearInterval(captureTimer);
-            }
             illumination.remove();
             prompt.remove();
         }

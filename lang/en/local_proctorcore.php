@@ -472,6 +472,7 @@ $string['identity:challengegetready'] = 'Get ready. Keep your face centered and 
 $string['identity:holdposition'] = 'Move slowly, then hold the requested position briefly.';
 $string['identity:poseconfirmed'] = 'Movement confirmed.';
 $string['identity:movementtimeout'] = 'That movement was not detected. Keep your full face visible and try the identity check again.';
+$string['identity:illuminationcheck'] = 'Keep looking straight. The screen colours will change while we confirm a live face.';
 $string['identity:challengeready'] = 'Face position is ready. Follow the next direction.';
 $string['identity:challengecomplete'] = 'Live-camera challenge complete. Keep looking straight.';
 $string['identity:failmismatch'] = 'The live face did not match the stored face reference.';

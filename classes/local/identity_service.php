@@ -118,6 +118,9 @@ final class identity_service {
             'ok' => true,
             'reached' => !empty($result['reached']),
             'reason' => clean_param((string) ($result['reason'] ?? 'keep_moving'), PARAM_ALPHANUMEXT),
+            'message' => !empty($result['reached'])
+                ? get_string('identity:poseconfirmed', 'local_proctorcore')
+                : $this->pose_feedback_message((string) ($result['reason'] ?? 'keep_moving')),
             'stepIndex' => (int) ($result['stepIndex'] ?? $stepindex),
             'nextStepIndex' => (int) ($result['nextStepIndex'] ?? $stepindex),
         ];
@@ -752,9 +755,20 @@ final class identity_service {
                 'bytes' => $bytes,
                 'capturedAtMs' => max(0, (int) ($item['capturedAtMs'] ?? 0)),
                 'elapsedMs' => max(0, (int) ($item['elapsedMs'] ?? 0)),
+                'illuminationElapsedMs' => isset($item['illuminationElapsedMs'])
+                    ? max(0, (int) $item['illuminationElapsedMs'])
+                    : null,
             ];
         }
         return $frames;
+    }
+
+    /** Returns immediate, user-facing guidance while a pose is still being analysed. */
+    private function pose_feedback_message(string $reason): string {
+        if ($reason === 'keep_moving') {
+            return get_string('identity:holdposition', 'local_proctorcore');
+        }
+        return get_string($this->failure_message_key($reason, $reason), 'local_proctorcore');
     }
 
     /** Requires the browser challenge to match the server-issued Moodle session state. */

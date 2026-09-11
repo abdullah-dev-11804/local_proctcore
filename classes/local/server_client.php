@@ -245,6 +245,9 @@ final class server_client {
                 'image' => base64_encode($frame['bytes']),
                 'capturedAtMs' => max(0, (int) ($frame['capturedAtMs'] ?? 0)),
                 'elapsedMs' => max(0, (int) ($frame['elapsedMs'] ?? 0)),
+                'illuminationElapsedMs' => isset($frame['illuminationElapsedMs'])
+                    ? max(0, (int) $frame['illuminationElapsedMs'])
+                    : null,
             ];
         }
         return $encoded;
