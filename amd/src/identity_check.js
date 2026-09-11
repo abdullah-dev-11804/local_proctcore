@@ -147,7 +147,7 @@ define([], function() {
                     capturedAtMs: Number(challenge.issuedAtMs || 0) + elapsed,
                     elapsedMs: elapsed,
                 });
-                await sleep(230);
+                await sleep(300);
             }
         } finally {
             illumination.remove();

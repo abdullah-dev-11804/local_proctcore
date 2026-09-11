@@ -12,6 +12,9 @@ defined('MOODLE_INTERNAL') || die();
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 final class server_client {
+    /** Identity inference may legitimately take longer than ordinary API calls on CPU-only hosts. */
+    private const IDENTITY_REQUEST_TIMEOUT = 90;
+
     /** @var \stdClass Effective tenant configuration. */
     private $config;
 
@@ -159,7 +162,7 @@ final class server_client {
             'challengeId' => $challengeid,
             'challengeNonce' => $challengenonce,
             'livenessEvidence' => $this->encode_liveness_evidence($livenessevidence),
-        ]);
+        ], self::IDENTITY_REQUEST_TIMEOUT);
     }
 
     /**
@@ -203,7 +206,7 @@ final class server_client {
             'challengeId' => $challengeid,
             'challengeNonce' => $challengenonce,
             'livenessEvidence' => $this->encode_liveness_evidence($livenessevidence),
-        ]);
+        ], self::IDENTITY_REQUEST_TIMEOUT);
     }
 
     /** Converts validated binary liveness frames into the Server B JSON contract. */
@@ -417,7 +420,7 @@ final class server_client {
      * @param array|null $payload Optional request payload.
      * @return array Decoded JSON response.
      */
-    private function request(string $method, string $path, ?array $payload = null): array {
+    private function request(string $method, string $path, ?array $payload = null, ?int $timeout = null): array {
         global $CFG;
         require_once($CFG->libdir . '/filelib.php');
 
@@ -437,7 +440,7 @@ final class server_client {
 
         $options = [
             'CURLOPT_CONNECTTIMEOUT' => $this->config->connecttimeout,
-            'CURLOPT_TIMEOUT' => $this->config->requesttimeout,
+            'CURLOPT_TIMEOUT' => max((int) $this->config->requesttimeout, $timeout ?? 0),
             'CURLOPT_SSL_VERIFYPEER' => $this->config->verifyssl,
             'CURLOPT_SSL_VERIFYHOST' => $this->config->verifyssl ? 2 : 0,
         ];
