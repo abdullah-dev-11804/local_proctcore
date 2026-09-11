@@ -576,6 +576,8 @@ final class identity_service {
             'head_turn_not_detected' => 'identity:failheadturn',
             'antispoof_unavailable' => 'identity:failantispoofunavailable',
             'spoof_detected' => 'identity:failspoof',
+            'passive_liveness_failed' => 'identity:failpassiveliveness',
+            'illumination_liveness_failed' => 'identity:faililluminationliveness',
             'liveness_inconclusive' => 'identity:faillivenessinconclusive',
             'liveness_failed' => 'identity:failliveness',
             'challenge_expired_or_replayed' => 'identity:invalidchallenge',
