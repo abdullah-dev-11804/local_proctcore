@@ -321,7 +321,9 @@ function local_proctorcore_render_precheck_panel(
         'local-proctorcore-precheck-heading'
     );
 
-    $previewhtml = html_writer::start_div('local-proctorcore-precheck-preview');
+    $previewhtml = html_writer::start_div('local-proctorcore-precheck-preview', [
+        'data-precheck-preview' => '1',
+    ]);
     $previewhtml .= html_writer::tag('video', '', [
         'data-precheck-video' => '1',
         'class' => 'local-proctorcore-precheck-video',

@@ -19,6 +19,74 @@ final class identity_service {
     /** Result lifetime, seconds. */
     private const RESULT_TTL = 900;
 
+    /** Issues a short-lived, one-use liveness challenge through the trusted Moodle server. */
+    public function issue_liveness_challenge(int $quizid, int $userid, string $token): array {
+        global $DB, $SESSION;
+
+        $this->require_precheck_token($quizid, $userid, $token);
+        $quiz = $DB->get_record('quiz', ['id' => $quizid], 'id,course', MUST_EXIST);
+        $companyid = (new tenant_resolver())->resolve_company_id($userid, (int) $quiz->course);
+        $enrollment = (new face_enrollment_repository())->get_active($userid);
+        $transactionid = bin2hex(random_bytes(16));
+        $contextid = 'quiz:' . $quizid;
+        $challenge = (new server_client($companyid))->issue_liveness_challenge(
+            $userid,
+            $contextid,
+            $transactionid,
+            !$enrollment
+        );
+        if (empty($challenge['challengeId']) || empty($challenge['nonce'])) {
+            throw new \moodle_exception('identity:invalidchallenge', 'local_proctorcore');
+        }
+        if (!isset($SESSION->local_proctorcore_liveness) || !is_array($SESSION->local_proctorcore_liveness)) {
+            $SESSION->local_proctorcore_liveness = [];
+        }
+        $SESSION->local_proctorcore_liveness[$this->key($quizid, $userid)] = [
+            'challengeId' => (string) $challenge['challengeId'],
+            'nonce' => (string) $challenge['nonce'],
+            'transactionId' => $transactionid,
+            'contextId' => $contextid,
+            'expiresAtMs' => (int) ($challenge['expiresAtMs'] ?? 0),
+        ];
+        return $challenge;
+    }
+
+    /** Returns model-backed framing guidance without consuming the active challenge. */
+    public function check_liveness_frame(
+        int $quizid,
+        int $userid,
+        string $token,
+        string $challengeid,
+        string $challengenonce,
+        string $imagedata
+    ): array {
+        global $DB;
+
+        $this->require_precheck_token($quizid, $userid, $token);
+        $challenge = $this->get_liveness_challenge($quizid, $userid, $challengeid, $challengenonce, false);
+        $quiz = $DB->get_record('quiz', ['id' => $quizid], 'id,course', MUST_EXIST);
+        $companyid = (new tenant_resolver())->resolve_company_id($userid, (int) $quiz->course);
+        $enrollment = !(new face_enrollment_repository())->get_active($userid);
+        $result = (new server_client($companyid))->check_liveness_frame(
+            $userid,
+            (string) $challenge['contextId'],
+            (string) $challenge['transactionId'],
+            $enrollment,
+            $challengeid,
+            (string) $challenge['nonce'],
+            $this->decode_image($imagedata)
+        );
+        $reason = clean_param((string) ($result['reason'] ?? 'needs_retry'), PARAM_ALPHANUMEXT);
+        return [
+            'ok' => true,
+            'ready' => !empty($result['ready']),
+            'reason' => $reason,
+            'message' => $reason === 'ok'
+                ? get_string('identity:challengeready', 'local_proctorcore')
+                : get_string($this->failure_message_key($reason, $reason), 'local_proctorcore'),
+        ];
+    }
+
     /**
      * Enrolls or verifies the user against the Server B face reference.
      *
@@ -40,7 +108,10 @@ final class identity_service {
         $leftdata,
         $rightdata,
         string $confirmedname = '',
-        bool $confirmedenrollment = false
+        bool $confirmedenrollment = false,
+        string $challengeid = '',
+        string $challengenonce = '',
+        array $livenessevidence = []
     ): array {
         global $DB;
 
@@ -66,7 +137,16 @@ final class identity_service {
         $centerframes = $this->decode_images($centerdata, 12);
         $leftframes = $this->decode_optional_images($leftdata, 16);
         $rightframes = $this->decode_optional_images($rightdata, 16);
-        $transactionid = bin2hex(random_bytes(16));
+        $challenge = $this->get_liveness_challenge(
+            $quizid,
+            $userid,
+            $challengeid,
+            $challengenonce,
+            true
+        );
+        $transactionid = (string) $challenge['transactionId'];
+        $contextid = (string) $challenge['contextId'];
+        $livenessframes = $this->decode_liveness_evidence($livenessevidence, 48);
         $enrollments = new face_enrollment_repository();
         $enrollment = $enrollments->get_active($userid);
         $server = new server_client($companyid);
@@ -86,7 +166,11 @@ final class identity_service {
                 $transactionid,
                 $fullname,
                 time(),
-                (float) $config->identitythreshold
+                (float) $config->identitythreshold,
+                $contextid,
+                $challengeid,
+                (string) $challenge['nonce'],
+                $livenessframes
             );
             $status = clean_param((string) ($response['result'] ?? 'enrollment_error'), PARAM_ALPHANUMEXT);
             $passed = $status === 'enrolled';
@@ -127,7 +211,11 @@ final class identity_service {
                 $leftframes,
                 $rightframes,
                 $transactionid,
-                (float) $config->identitythreshold
+                (float) $config->identitythreshold,
+                $contextid,
+                $challengeid,
+                (string) $challenge['nonce'],
+                $livenessframes
             );
             $rawstatus = clean_param((string) ($response['result'] ?? 'verification_error'), PARAM_ALPHANUMEXT);
             $matched = $rawstatus === 'matched' || !empty($response['accessAllowed']);
@@ -147,14 +235,14 @@ final class identity_service {
                 'identity_low_light',
                 'identity_blurry',
                 'identity_multiple_faces',
-                'identity_liveness_failed',
                 'identity_head_turn_not_detected',
                 'identity_side_face_missing',
-                'liveness_failed',
                 'head_turn_not_detected',
                 'side_face_missing',
                 'low_face_confidence',
                 'identity_low_face_confidence',
+                'liveness_inconclusive',
+                'challenge_expired_or_replayed',
             ], true);
             $passed = $matched;
             $status = $matched ? 'matched' : $rawstatus;
@@ -411,6 +499,7 @@ final class identity_service {
             'similarityScore' => $result['score'],
             'threshold' => $result['threshold'],
             'livenessPassed' => !empty($result['livenessPassed']),
+            'livenessResult' => (string) (($result['liveness']['overall'] ?? '') ?: ''),
             'enrollment' => ($result['mode'] ?? '') === 'enroll',
             'message' => $message,
         ];
@@ -487,6 +576,9 @@ final class identity_service {
             'head_turn_not_detected' => 'identity:failheadturn',
             'antispoof_unavailable' => 'identity:failantispoofunavailable',
             'spoof_detected' => 'identity:failspoof',
+            'liveness_inconclusive' => 'identity:faillivenessinconclusive',
+            'liveness_failed' => 'identity:failliveness',
+            'challenge_expired_or_replayed' => 'identity:invalidchallenge',
             'mismatch' => 'identity:failmismatch',
         ];
         return $map[$value] ?? 'identity:failed';
@@ -553,6 +645,7 @@ final class identity_service {
             'score' => isset($response['similarityScore']) ? (float) $response['similarityScore'] : null,
             'threshold' => isset($response['threshold']) ? (float) $response['threshold'] : $defaultthreshold,
             'livenessPassed' => array_key_exists('livenessPassed', $response) ? !empty($response['livenessPassed']) : true,
+            'liveness' => is_array($response['liveness'] ?? null) ? $response['liveness'] : [],
             'referenceFaceCount' => (int) ($response['referenceFaceCount'] ?? 0),
             'liveFaceCount' => (int) ($response['liveFaceCount'] ?? 0),
             'quality' => $response['quality'] ?? null,
@@ -603,6 +696,53 @@ final class identity_service {
         } catch (\moodle_exception $exception) {
             return [];
         }
+    }
+
+    /** Validates and decodes timestamped challenge frames received from the browser. */
+    private function decode_liveness_evidence(array $data, int $limit): array {
+        $frames = [];
+        foreach (array_slice($data, 0, $limit) as $item) {
+            if (!is_array($item) || !is_string($item['image'] ?? null)) {
+                continue;
+            }
+            try {
+                $bytes = $this->decode_image($item['image']);
+            } catch (\moodle_exception $exception) {
+                continue;
+            }
+            $frames[] = [
+                'bytes' => $bytes,
+                'capturedAtMs' => max(0, (int) ($item['capturedAtMs'] ?? 0)),
+                'elapsedMs' => max(0, (int) ($item['elapsedMs'] ?? 0)),
+            ];
+        }
+        return $frames;
+    }
+
+    /** Requires the browser challenge to match the server-issued Moodle session state. */
+    private function get_liveness_challenge(
+        int $quizid,
+        int $userid,
+        string $challengeid,
+        string $challengenonce,
+        bool $consume
+    ): array {
+        global $SESSION;
+
+        $key = $this->key($quizid, $userid);
+        $challenge = $SESSION->local_proctorcore_liveness[$key] ?? null;
+        if ($consume) {
+            unset($SESSION->local_proctorcore_liveness[$key]);
+        }
+        if (!is_array($challenge)
+                || $challengeid === ''
+                || $challengenonce === ''
+                || !hash_equals((string) ($challenge['challengeId'] ?? ''), $challengeid)
+                || !hash_equals((string) ($challenge['nonce'] ?? ''), $challengenonce)
+                || (int) ($challenge['expiresAtMs'] ?? 0) < (int) floor(microtime(true) * 1000)) {
+            throw new \moodle_exception('identity:invalidchallenge', 'local_proctorcore');
+        }
+        return $challenge;
     }
 
     /**

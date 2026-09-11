@@ -58,7 +58,7 @@ define([], function() {
         return frames;
     };
 
-    const post = async(config, images) => {
+    const post = async(config, payload) => {
         const token = field('proctorcore_preflight_token');
         const response = await fetch(config.endpoint, {
             method: 'POST',
@@ -69,12 +69,7 @@ define([], function() {
                 sesskey: config.sesskey,
                 quizId: Number(config.quizId),
                 token: token ? token.value : '',
-                centerImage: images.center[0] || '',
-                centerImages: images.center,
-                leftImages: images.left || [],
-                rightImages: images.right || [],
-                confirmedName: config.fullName || '',
-                confirmEnrollment: config.enrollmentRequired ? 1 : 0,
+                ...payload,
             }),
         });
         let data = {};
@@ -87,6 +82,84 @@ define([], function() {
             throw new Error(data.message || data.error || config.strings.failed);
         }
         return data;
+    };
+
+    const issueChallenge = config => post(config, {action: 'issueChallenge'});
+
+    const waitForChallengeReady = async(config, panel, challenge) => {
+        let latest = null;
+        for (let attempt = 0; attempt < 3; attempt++) {
+            latest = await post(config, {
+                action: 'checkChallengeFrame',
+                challengeId: challenge.challengeId || '',
+                challengeNonce: challenge.nonce || '',
+                image: captureJpegForLiveness(),
+            });
+            update(panel, latest.ready ? 'running' : 'failed', latest.message || config.strings.lookStraight);
+            if (latest.ready) {
+                return;
+            }
+            await sleep(700);
+        }
+        throw new Error((latest && latest.message) || config.strings.failed);
+    };
+
+    const movementLabel = (config, action) => {
+        if (action === 'left') {
+            return config.strings.turnLeft;
+        }
+        if (action === 'right') {
+            return config.strings.turnRight;
+        }
+        return config.strings.lookStraight;
+    };
+
+    const captureLivenessEvidence = async(config, panel, challenge) => {
+        const evidence = [];
+        const preview = document.querySelector('[data-precheck-preview]')
+            || document.querySelector('.local-proctorcore-precheck-preview');
+        const illumination = document.createElement('div');
+        illumination.className = 'local-proctorcore-liveness-illumination';
+        illumination.setAttribute('aria-hidden', 'true');
+        if (preview) {
+            preview.appendChild(illumination);
+        }
+        const started = performance.now();
+        const duration = Math.max(1000, Number(challenge.durationMs || 4500));
+        let previousAction = '';
+        try {
+            while (performance.now() - started <= duration) {
+                const elapsed = Math.round(performance.now() - started);
+                const movement = (challenge.movementSteps || []).find(
+                    step => elapsed >= Number(step.startMs) && elapsed < Number(step.endMs)
+                );
+                const action = movement ? movement.action : 'center';
+                if (action !== previousAction) {
+                    update(panel, 'running', movementLabel(config, action));
+                    previousAction = action;
+                }
+                const light = (challenge.illuminationSteps || []).find(
+                    step => elapsed >= Number(step.startMs) && elapsed < Number(step.endMs)
+                );
+                illumination.style.setProperty('--liveness-colour', light ? light.hex : '#ffffff');
+                evidence.push({
+                    image: captureJpegForLiveness(),
+                    capturedAtMs: Number(challenge.issuedAtMs || 0) + elapsed,
+                    elapsedMs: elapsed,
+                });
+                await sleep(230);
+            }
+        } finally {
+            illumination.remove();
+        }
+        return evidence;
+    };
+
+    const captureJpegForLiveness = () => {
+        if (!window.ProctorCorePrecheck || typeof window.ProctorCorePrecheck.captureJpeg !== 'function') {
+            throw new Error('Camera preview is unavailable. Run the equipment check again.');
+        }
+        return window.ProctorCorePrecheck.captureJpeg(0.88, 960);
     };
 
     const runChallenge = async(config, panel, button) => {
@@ -104,20 +177,20 @@ define([], function() {
                 }
             }
 
-            update(panel, 'running', config.strings.lookStraight);
-            await sleep(600);
-            const center = await captureFrames(6, 220);
-            let left = [];
-            let right = [];
-            if (!config.enrollmentRequired && config.activeChallenge) {
-                update(panel, 'running', config.strings.turnLeft);
-                await sleep(700);
-                left = await captureFrames(6, 220);
-
-                update(panel, 'running', config.strings.turnRight);
-                await sleep(700);
-                right = await captureFrames(6, 220);
+            update(panel, 'running', config.strings.preparingChallenge || config.strings.lookStraight);
+            const challenge = await issueChallenge(config);
+            let livenessEvidence = [];
+            if (challenge.required) {
+                await waitForChallengeReady(config, panel, challenge);
+                await sleep(350);
+                livenessEvidence = await captureLivenessEvidence(config, panel, challenge);
+                update(panel, 'running', config.strings.challengeComplete || config.strings.lookStraight);
+                await sleep(250);
             }
+
+            update(panel, 'running', config.strings.lookStraight);
+            await sleep(400);
+            const center = await captureFrames(6, 220);
 
             update(panel, 'running', config.enrollmentRequired ? config.strings.enrolling : config.strings.comparing);
             if (window.ProctorCorePrecheck && typeof window.ProctorCorePrecheck.freeze === 'function') {
@@ -125,7 +198,17 @@ define([], function() {
                     config.enrollmentRequired ? config.strings.enrolling : config.strings.comparing
                 );
             }
-            const result = await post(config, {center, left, right});
+            const result = await post(config, {
+                centerImage: center[0] || '',
+                centerImages: center,
+                leftImages: [],
+                rightImages: [],
+                confirmedName: config.fullName || '',
+                confirmEnrollment: config.enrollmentRequired ? 1 : 0,
+                challengeId: challenge.challengeId || '',
+                challengeNonce: challenge.nonce || '',
+                livenessEvidence: livenessEvidence,
+            });
             setField('proctorcore_identity_status', result.result || 'failed');
             setField('proctorcore_identity_score', result.similarityScore ?? '');
             setField('proctorcore_identity_passed', result.passed ? 1 : 0);

@@ -9,7 +9,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_proctorcore';
-$plugin->version = 2026091200;
+$plugin->version = 2026091201;
 $plugin->requires = 2022041900; // Moodle 4.0+.
 $plugin->maturity = MATURITY_BETA;
-$plugin->release = '0.14.0 - Day 2 compliance workflows';
+$plugin->release = '0.14.1 - Multi-signal liveness';

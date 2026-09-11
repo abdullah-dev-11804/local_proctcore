@@ -24,7 +24,26 @@ try {
         throw new moodle_exception('identity:invalidrequest', 'local_proctorcore');
     }
 
-    $result = (new \local_proctorcore\local\identity_service())->verify_preflight(
+    $service = new \local_proctorcore\local\identity_service();
+    if (($data['action'] ?? '') === 'issueChallenge') {
+        $result = $service->issue_liveness_challenge($quizid, (int) $USER->id, $token);
+        echo json_encode($result, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+    if (($data['action'] ?? '') === 'checkChallengeFrame') {
+        $result = $service->check_liveness_frame(
+            $quizid,
+            (int) $USER->id,
+            $token,
+            clean_param((string) ($data['challengeId'] ?? ''), PARAM_ALPHANUMEXT),
+            clean_param((string) ($data['challengeNonce'] ?? ''), PARAM_ALPHANUMEXT),
+            (string) ($data['image'] ?? '')
+        );
+        echo json_encode($result, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    $result = $service->verify_preflight(
         $quizid,
         (int) $USER->id,
         $token,
@@ -32,7 +51,10 @@ try {
         $data['leftImages'] ?? ($data['leftImage'] ?? ''),
         $data['rightImages'] ?? ($data['rightImage'] ?? ''),
         (string) ($data['confirmedName'] ?? ''),
-        !empty($data['confirmEnrollment'])
+        !empty($data['confirmEnrollment']),
+        clean_param((string) ($data['challengeId'] ?? ''), PARAM_ALPHANUMEXT),
+        clean_param((string) ($data['challengeNonce'] ?? ''), PARAM_ALPHANUMEXT),
+        is_array($data['livenessEvidence'] ?? null) ? $data['livenessEvidence'] : []
     );
     echo json_encode($result, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 } catch (Throwable $exception) {

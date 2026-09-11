@@ -35,6 +35,45 @@ final class server_client {
         return $this->request('GET', '/api/health');
     }
 
+    /** Issues a one-use Server B liveness challenge bound to this candidate and quiz. */
+    public function issue_liveness_challenge(
+        int $userid,
+        string $contextid,
+        string $transactionid,
+        bool $enrollment
+    ): array {
+        return $this->request('POST', '/api/v1/identity/liveness/challenges', [
+            'transactionId' => $transactionid,
+            'companyId' => $this->companyid,
+            'userId' => $userid,
+            'contextId' => $contextid,
+            'enrollment' => $enrollment,
+        ]);
+    }
+
+    /** Runs a non-consuming quality probe before the timed liveness sequence starts. */
+    public function check_liveness_frame(
+        int $userid,
+        string $contextid,
+        string $transactionid,
+        bool $enrollment,
+        string $challengeid,
+        string $challengenonce,
+        string $imagebytes
+    ): array {
+        return $this->request('POST', '/api/v1/identity/liveness/challenges/quality', [
+            'transactionId' => $transactionid,
+            'companyId' => $this->companyid,
+            'userId' => $userid,
+            'contextId' => $contextid,
+            'enrollment' => $enrollment,
+            'challengeId' => $challengeid,
+            'challengeNonce' => $challengenonce,
+            'image' => base64_encode($imagebytes),
+            'qualityPolicy' => $this->identity_quality_policy(),
+        ]);
+    }
+
     /**
      * Verifies a pre-attempt identity challenge with Server B.
      *
@@ -92,7 +131,11 @@ final class server_client {
         string $transactionid,
         string $fullname,
         int $confirmedat,
-        float $threshold
+        float $threshold,
+        string $contextid = '',
+        string $challengeid = '',
+        string $challengenonce = '',
+        array $livenessevidence = []
     ): array {
         $encode = static function(string $bytes): string {
             return base64_encode($bytes);
@@ -112,6 +155,10 @@ final class server_client {
             'leftImages' => array_map($encode, $leftframes),
             'rightImages' => array_map($encode, $rightframes),
             'qualityPolicy' => $this->identity_quality_policy(),
+            'contextId' => $contextid,
+            'challengeId' => $challengeid,
+            'challengeNonce' => $challengenonce,
+            'livenessEvidence' => $this->encode_liveness_evidence($livenessevidence),
         ]);
     }
 
@@ -130,7 +177,11 @@ final class server_client {
         array $leftframes,
         array $rightframes,
         string $transactionid,
-        float $threshold
+        float $threshold,
+        string $contextid = '',
+        string $challengeid = '',
+        string $challengenonce = '',
+        array $livenessevidence = []
     ): array {
         $encode = static function(string $bytes): string {
             return base64_encode($bytes);
@@ -148,7 +199,27 @@ final class server_client {
             'leftImages' => array_map($encode, $leftframes),
             'rightImages' => array_map($encode, $rightframes),
             'qualityPolicy' => $this->identity_quality_policy(),
+            'contextId' => $contextid,
+            'challengeId' => $challengeid,
+            'challengeNonce' => $challengenonce,
+            'livenessEvidence' => $this->encode_liveness_evidence($livenessevidence),
         ]);
+    }
+
+    /** Converts validated binary liveness frames into the Server B JSON contract. */
+    private function encode_liveness_evidence(array $frames): array {
+        $encoded = [];
+        foreach ($frames as $frame) {
+            if (!is_array($frame) || !is_string($frame['bytes'] ?? null)) {
+                continue;
+            }
+            $encoded[] = [
+                'image' => base64_encode($frame['bytes']),
+                'capturedAtMs' => max(0, (int) ($frame['capturedAtMs'] ?? 0)),
+                'elapsedMs' => max(0, (int) ($frame['elapsedMs'] ?? 0)),
+            ];
+        }
+        return $encoded;
     }
 
     /** @return array */
