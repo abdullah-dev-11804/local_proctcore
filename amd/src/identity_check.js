@@ -114,6 +114,20 @@ define([], function() {
         return config.strings.lookStraight;
     };
 
+    const capturePoseBurst = async() => {
+        const frames = [];
+        for (let index = 0; index < 3; index++) {
+            if (!window.ProctorCorePrecheck || typeof window.ProctorCorePrecheck.captureJpeg !== 'function') {
+                throw new Error('Camera preview is unavailable. Run the equipment check again.');
+            }
+            frames.push(window.ProctorCorePrecheck.captureJpeg(0.82, 640));
+            if (index < 2) {
+                await sleep(180);
+            }
+        }
+        return frames;
+    };
+
     const captureLivenessEvidence = async(config, panel, challenge) => {
         const evidence = [];
         const preview = document.querySelector('[data-precheck-preview]')
@@ -164,7 +178,7 @@ define([], function() {
         try {
             if (challenge.adaptiveHeadPose && challenge.components && challenge.components.headPose) {
                 const steps = challenge.movementSteps || [];
-                const stepTimeout = Math.max(5000, Number(challenge.poseStepTimeoutMs || 8000));
+                const stepTimeout = Math.max(10000, Number(challenge.poseStepTimeoutMs || 12000));
                 for (let index = 0; index < steps.length; index++) {
                     const action = steps[index].action || 'center';
                     const label = movementLabel(config, action);
@@ -179,18 +193,23 @@ define([], function() {
                     while (!reached && performance.now() - stepStarted < stepTimeout
                             && performance.now() - started < duration) {
                         const stepElapsed = performance.now() - stepStarted;
-                        progress.style.width = `${Math.min(100, (stepElapsed / stepTimeout) * 100)}%`;
+                        const frames = await capturePoseBurst();
                         const result = await post(config, {
                             action: 'checkChallengePose',
                             challengeId: challenge.challengeId || '',
                             challengeNonce: challenge.nonce || '',
                             stepIndex: index,
-                            image: captureJpegForLiveness(),
+                            image: frames[0],
+                            images: frames,
                         });
                         reached = Boolean(result.reached);
+                        const measuredProgress = Number(result.progressPercent);
+                        progress.style.width = `${Number.isFinite(measuredProgress)
+                            ? Math.max(0, Math.min(100, measuredProgress))
+                            : Math.min(95, (stepElapsed / stepTimeout) * 100)}%`;
                         if (!reached) {
                             hint.textContent = result.message || config.strings.holdPosition || '';
-                            await sleep(300);
+                            await sleep(100);
                         }
                     }
                     if (!reached) {

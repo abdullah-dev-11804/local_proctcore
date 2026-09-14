@@ -86,8 +86,12 @@ final class server_client {
         string $challengeid,
         string $challengenonce,
         int $stepindex,
-        string $imagebytes
+        array $imageframes
     ): array {
+        $encode = static function(string $bytes): string {
+            return base64_encode($bytes);
+        };
+        $images = array_map($encode, array_slice($imageframes, 0, 4));
         return $this->request('POST', '/api/v1/identity/liveness/challenges/pose', [
             'transactionId' => $transactionid,
             'companyId' => $this->companyid,
@@ -97,7 +101,8 @@ final class server_client {
             'challengeId' => $challengeid,
             'challengeNonce' => $challengenonce,
             'stepIndex' => $stepindex,
-            'image' => base64_encode($imagebytes),
+            'image' => $images[0] ?? '',
+            'images' => $images,
             'qualityPolicy' => $this->identity_quality_policy(),
         ]);
     }

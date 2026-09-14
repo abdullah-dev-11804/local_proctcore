@@ -50,7 +50,9 @@ try {
             clean_param((string) ($data['challengeId'] ?? ''), PARAM_ALPHANUMEXT),
             clean_param((string) ($data['challengeNonce'] ?? ''), PARAM_ALPHANUMEXT),
             max(0, (int) ($data['stepIndex'] ?? 0)),
-            (string) ($data['image'] ?? '')
+            is_array($data['images'] ?? null)
+                ? $data['images']
+                : [(string) ($data['image'] ?? '')]
         );
         echo json_encode($result, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
         exit;

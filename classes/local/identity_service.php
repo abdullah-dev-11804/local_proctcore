@@ -95,7 +95,7 @@ final class identity_service {
         string $challengeid,
         string $challengenonce,
         int $stepindex,
-        string $imagedata
+        array $imagedata
     ): array {
         global $DB;
 
@@ -112,17 +112,19 @@ final class identity_service {
             $challengeid,
             (string) $challenge['nonce'],
             $stepindex,
-            $this->decode_image($imagedata)
+            $this->decode_images($imagedata, 4)
         );
+        $reason = clean_param((string) ($result['reason'] ?? 'keep_moving'), PARAM_ALPHANUMEXT);
         return [
             'ok' => true,
             'reached' => !empty($result['reached']),
-            'reason' => clean_param((string) ($result['reason'] ?? 'keep_moving'), PARAM_ALPHANUMEXT),
+            'reason' => $reason,
             'message' => !empty($result['reached'])
                 ? get_string('identity:poseconfirmed', 'local_proctorcore')
-                : $this->pose_feedback_message((string) ($result['reason'] ?? 'keep_moving')),
+                : $this->pose_feedback_message($reason),
             'stepIndex' => (int) ($result['stepIndex'] ?? $stepindex),
             'nextStepIndex' => (int) ($result['nextStepIndex'] ?? $stepindex),
+            'progressPercent' => max(0, min(100, (int) ($result['progressPercent'] ?? 0))),
         ];
     }
 
@@ -765,8 +767,14 @@ final class identity_service {
 
     /** Returns immediate, user-facing guidance while a pose is still being analysed. */
     private function pose_feedback_message(string $reason): string {
-        if ($reason === 'keep_moving') {
-            return get_string('identity:holdposition', 'local_proctorcore');
+        $map = [
+            'keep_moving' => 'identity:holdposition',
+            'center_not_stable' => 'identity:holdstraight',
+            'return_to_center' => 'identity:returntocenter',
+            'wrong_direction' => 'identity:wrongdirection',
+        ];
+        if (isset($map[$reason])) {
+            return get_string($map[$reason], 'local_proctorcore');
         }
         return get_string($this->failure_message_key($reason, $reason), 'local_proctorcore');
     }
