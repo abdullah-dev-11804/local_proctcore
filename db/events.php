@@ -12,4 +12,9 @@ $observers = [
         'eventname' => '\core\event\course_completed',
         'callback' => '\local_proctorcore\observer::course_completed',
     ],
+    [
+        'eventname' => '\mod_quiz\event\attempt_submitted',
+        'callback' => '\local_proctorcore\observer::quiz_attempt_submitted',
+        'priority' => 1000,
+    ],
 ];

@@ -6,7 +6,7 @@ namespace local_proctorcore\local;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * JSON client for the ProctorCore ML identity and behaviour-analysis service.
+ * JSON client for Proctoring Server behaviour analysis.
  *
  * The service is deliberately separate from Moodle PHP so model inference can
  * use Python/OpenCV and can be scaled independently later.
@@ -33,7 +33,7 @@ final class ml_client {
 
     /** @return array */
     public function health(): array {
-        return $this->request('GET', '/health');
+        return $this->request('GET', '/api/health');
     }
 
     /**
@@ -99,12 +99,12 @@ final class ml_client {
         global $CFG;
         require_once($CFG->libdir . '/filelib.php');
 
-        $baseurl = rtrim((string) $this->config->mlserviceurl, '/');
+        $baseurl = rtrim((string) $this->config->serverbaseurl, '/');
         if ($baseurl === '') {
-            throw new \moodle_exception('error:mlurlmissing', 'local_proctorcore');
+            throw new \moodle_exception('error:serverurlmissing', 'local_proctorcore');
         }
-        if (!preg_match('~^https://~i', $baseurl) && !empty($this->config->mlverifyssl)) {
-            throw new \moodle_exception('error:mlhttpsrequired', 'local_proctorcore');
+        if (!preg_match('~^https://~i', $baseurl) && !empty($this->config->verifyssl)) {
+            throw new \moodle_exception('error:httpsrequired', 'local_proctorcore');
         }
 
         $curl = new \curl();
@@ -114,16 +114,16 @@ final class ml_client {
             'X-ProctorCore-Company: ' . $this->companyid,
             'X-ProctorCore-Source: moodle-local-proctorcore',
         ];
-        if ((string) $this->config->mlapikey !== '') {
-            $headers[] = 'Authorization: Bearer ' . (string) $this->config->mlapikey;
+        if ((string) $this->config->serverapikey !== '') {
+            $headers[] = 'Authorization: Bearer ' . (string) $this->config->serverapikey;
         }
         $curl->setHeader($headers);
 
         $options = [
-            'CURLOPT_CONNECTTIMEOUT' => (int) $this->config->mlconnecttimeout,
-            'CURLOPT_TIMEOUT' => (int) $this->config->mlrequesttimeout,
-            'CURLOPT_SSL_VERIFYPEER' => !empty($this->config->mlverifyssl),
-            'CURLOPT_SSL_VERIFYHOST' => !empty($this->config->mlverifyssl) ? 2 : 0,
+            'CURLOPT_CONNECTTIMEOUT' => (int) $this->config->connecttimeout,
+            'CURLOPT_TIMEOUT' => (int) $this->config->requesttimeout,
+            'CURLOPT_SSL_VERIFYPEER' => !empty($this->config->verifyssl),
+            'CURLOPT_SSL_VERIFYHOST' => !empty($this->config->verifyssl) ? 2 : 0,
         ];
 
         $url = $baseurl . '/' . ltrim($path, '/');

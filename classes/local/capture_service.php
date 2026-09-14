@@ -456,6 +456,11 @@ final class capture_service {
                     'segments' => $segments,
                 ],
             ]);
+            if ($state !== 'interrupted') {
+                // A submitted attempt is no longer eligible for heartbeat expiry.
+                // Server B will move it to its terminal state through the final webhook.
+                $this->sessions->update_status((int) $session->id, 'processing');
+            }
             $this->sessions->update_media_status((int) $session->id, $state === 'interrupted' ? 'partial' : 'finalizing', [
                 'segment' => $segment,
                 'stoppedAt' => $now,

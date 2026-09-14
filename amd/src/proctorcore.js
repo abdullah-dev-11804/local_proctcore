@@ -579,7 +579,7 @@ define([], function() {
 
     const isFinalSubmission = (form, submitter) => {
         const submitterName = submitter ? String(submitter.getAttribute('name') || '') : '';
-        return submitterName === 'finishattempt' || Boolean(form.querySelector('input[name="finishattempt"]'));
+        return submitterName === 'finishattempt' || Boolean(form.querySelector('[name="finishattempt"]'));
     };
 
     const finishLocalSubmission = async(form, submitter) => {
@@ -601,7 +601,13 @@ define([], function() {
     const finishServerSubmission = async(form, submitter) => {
         updateStatus('stopping', config.strings.finalising, config.strings.submissionSnapshot);
         await stopServerRecorder();
-        await requestSnapshot('submission');
+        try {
+            await requestSnapshot('submission');
+        } catch (error) {
+            // Finalising the durable recording is more important than an individual
+            // snapshot. The Moodle submission observer provides a second stop signal.
+            window.console.warn('ProctorCore submission snapshot failed:', error);
+        }
         await apiRequest('stop', {reason: 'submitted'});
         disconnectRoom();
 
@@ -731,6 +737,7 @@ define([], function() {
         }
         const started = await apiRequest('start', {reason: 'attempt_page_connected'});
         localSegment = Number(started.segment) || 1;
+        serverSequence = Math.max(0, Number(started.nextSequence) || 0);
         if (started.fallback || started.provider !== 'livekit_egress') {
             startServerRecorder(stream, bootstrap.chunkMilliseconds || 5000);
         }

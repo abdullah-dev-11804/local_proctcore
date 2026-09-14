@@ -13,6 +13,57 @@ defined('MOODLE_INTERNAL') || die();
  */
 final class observer {
     /**
+     * Finalises capture when Moodle has durably submitted the Quiz attempt.
+     *
+     * Browser submission handling provides the fast path. This observer is the
+     * authoritative fallback and must never make a valid Moodle submission fail.
+     *
+     * @param \mod_quiz\event\attempt_submitted $event Quiz attempt event.
+     * @return void
+     */
+    public static function quiz_attempt_submitted(\mod_quiz\event\attempt_submitted $event): void {
+        $sessions = new \local_proctorcore\local\session_repository();
+        $session = $sessions->get_by_attempt_id((int) $event->objectid);
+        if (!$session || in_array((string) $session->status,
+                ['processing', 'completed', 'failed', 'abandoned', 'expired'], true)) {
+            return;
+        }
+
+        try {
+            $result = (new \local_proctorcore\local\capture_service())->stop_capture(
+                (int) $session->id,
+                null,
+                'submitted'
+            );
+            (new \local_proctorcore\local\audit_logger())->log(
+                'capture.quiz_attempt_submitted',
+                (int) $session->companyid,
+                (int) $session->id,
+                (int) $session->userid,
+                [
+                    'attemptId' => (int) $session->attemptid,
+                    'captureStatus' => (string) ($result['status'] ?? ''),
+                    'eventTime' => (int) $event->timecreated,
+                ],
+                null,
+                'session',
+                (int) $session->id
+            );
+        } catch (\Throwable $exception) {
+            $sessions->merge_server_metadata((int) $session->id, [
+                'submissionFinalization' => [
+                    'state' => 'retry_pending',
+                    'eventTime' => (int) $event->timecreated,
+                    'lastError' => clean_param($exception->getMessage(), PARAM_TEXT),
+                    'lastAttemptAt' => time(),
+                ],
+            ]);
+            debugging('ProctorCore could not finalise the submitted Quiz attempt: '
+                . $exception->getMessage(), DEBUG_DEVELOPER);
+        }
+    }
+
+    /**
      * Deletes the reusable Server B face reference when Moodle deletes a user.
      *
      * @param \core\event\user_deleted $event Moodle user-deleted event.

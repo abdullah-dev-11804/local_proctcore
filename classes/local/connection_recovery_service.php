@@ -216,6 +216,7 @@ final class connection_recovery_service {
 
         $counts = [
             'checked' => 0,
+            'finalized' => 0,
             'interrupted' => 0,
             'expired' => 0,
             'errors' => 0,
@@ -233,6 +234,11 @@ final class connection_recovery_service {
                 try {
                     $session = $this->sessions->get_by_id((int) $candidate->id);
                     if ($session->status === 'active') {
+                        if ($this->moodle_attempt_is_finished($session)) {
+                            (new capture_service())->stop_capture((int) $session->id, null, 'submitted');
+                            $counts['finalized']++;
+                            continue;
+                        }
                         $heartbeat = (int) ($session->lastheartbeat ?: $session->startedat ?: $session->timecreated);
                         if ($heartbeat > $now - $grace) {
                             continue;
@@ -287,6 +293,14 @@ final class connection_recovery_service {
         }
 
         return $counts;
+    }
+
+    /** Returns whether Moodle has already committed this Quiz attempt as finished. */
+    private function moodle_attempt_is_finished(\stdClass $session): bool {
+        global $DB;
+
+        $state = $DB->get_field('quiz_attempts', 'state', ['id' => (int) $session->attemptid]);
+        return $state === 'finished';
     }
 
     /**

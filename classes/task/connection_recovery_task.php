@@ -23,6 +23,7 @@ final class connection_recovery_task extends \core\task\scheduled_task {
         $result = $service->process_timeouts(200);
 
         mtrace('ProctorCore connection recovery: checked=' . (int) $result['checked']
+            . ', finalized=' . (int) $result['finalized']
             . ', interrupted=' . (int) $result['interrupted']
             . ', expired=' . (int) $result['expired']
             . ', errors=' . (int) $result['errors']);

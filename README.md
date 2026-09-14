@@ -40,7 +40,7 @@ Main Moodle-side control centre and official record keeper for the SENTAL procto
 - `classes/local/rules_service.php` - Records explicit acknowledgements against the exact configured exam-rules hash.
 - `classes/local/asset_repository.php` - Home for report, video, snapshot, room scan, ID photo, and violation-act references.
 - `classes/local/audit_logger.php` - Home for append-only administrator, coordinator, proctor, and integration audit events.
-- `classes/observer.php` - Handles account-deletion face-reference cleanup and course-completion appeal release.
+- `classes/observer.php` - Finalises submitted Quiz capture and handles account-deletion and appeal lifecycle events.
 - `classes/task/cleanup_retention_task.php` - Deletes expired, non-held Moodle and Proctoring Server evidence with retry-safe audit records.
 - `classes/external/webhook_receiver.php` - Web-service receiver for signed lifecycle, result, and asset events.
 - `classes/privacy/provider.php` - Moodle privacy metadata declaration for stored proctoring personal data.
@@ -71,7 +71,7 @@ Main Moodle-side control centre and official record keeper for the SENTAL procto
 - `local_proctorcore_webhooks` - Raw inbound Server B events plus processing status for idempotency and troubleshooting.
 - `local_proctorcore_appeals` - Appeal requests, reasons, reviewer decisions, and evidence-hold state linkage.
 - `local_proctorcore_audit` - Append-only administrator, coordinator, proctor, and integration action log.
-# ProctorCore local plugin - release 0.14.0
+# ProctorCore local plugin - release 0.14.2
 
 Technical component: `local_proctorcore`  
 Install location: `local/proctorcore`
