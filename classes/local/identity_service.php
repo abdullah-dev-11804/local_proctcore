@@ -33,7 +33,8 @@ final class identity_service {
             $userid,
             $contextid,
             $transactionid,
-            !$enrollment
+            !$enrollment,
+            !empty(get_config('local_proctorcore', 'identityilluminationenabled'))
         );
         if (empty($challenge['challengeId']) || empty($challenge['nonce'])) {
             throw new \moodle_exception('identity:invalidchallenge', 'local_proctorcore');
@@ -759,6 +760,11 @@ final class identity_service {
                 'bytes' => $bytes,
                 'capturedAtMs' => max(0, (int) ($item['capturedAtMs'] ?? 0)),
                 'elapsedMs' => max(0, (int) ($item['elapsedMs'] ?? 0)),
+                'purpose' => in_array(
+                    (string) ($item['purpose'] ?? 'combined'),
+                    ['passive', 'headpose', 'illumination', 'combined'],
+                    true
+                ) ? (string) ($item['purpose'] ?? 'combined') : 'combined',
                 'illuminationElapsedMs' => isset($item['illuminationElapsedMs'])
                     ? max(0, (int) $item['illuminationElapsedMs'])
                     : null,

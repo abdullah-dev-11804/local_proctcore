@@ -101,6 +101,13 @@ if ($hassiteconfig) {
         1
     ));
 
+    $settings->add(new admin_setting_configcheckbox(
+        'local_proctorcore/identityilluminationenabled',
+        get_string('settings:identityilluminationenabled', 'local_proctorcore'),
+        get_string('settings:identityilluminationenabled_desc', 'local_proctorcore'),
+        0
+    ));
+
     $settings->add(new admin_setting_configtext(
         'local_proctorcore/identitythreshold',
         get_string('settings:identitythreshold', 'local_proctorcore'),

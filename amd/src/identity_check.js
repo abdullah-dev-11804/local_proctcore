@@ -183,7 +183,7 @@ define([], function() {
         const lightForElapsed = elapsed => (challenge.illuminationSteps || []).find(
             step => elapsed >= Number(step.startMs) && elapsed < Number(step.endMs)
         );
-        const captureEvidenceFrame = illuminationElapsed => {
+        const captureEvidenceFrame = (purpose, illuminationElapsed) => {
             const elapsed = Math.round(performance.now() - started);
             if (evidence.length >= 48 || elapsed > duration + 500) {
                 return;
@@ -192,11 +192,55 @@ define([], function() {
                 image: captureJpegForLiveness(),
                 capturedAtMs: Number(challenge.issuedAtMs || 0) + elapsed,
                 elapsedMs: elapsed,
+                purpose: purpose,
             };
             if (Number.isFinite(illuminationElapsed)) {
                 frame.illuminationElapsedMs = Math.max(0, Math.round(illuminationElapsed));
             }
             evidence.push(frame);
+        };
+        const capturePassiveFrames = async() => {
+            if (!challenge.components || !challenge.components.passivePad) {
+                return;
+            }
+            const captureMs = Math.max(1800, Number(challenge.passiveCaptureMs || 4500));
+            instruction.textContent = config.strings.passiveCheck || config.strings.lookStraight;
+            hint.textContent = config.strings.holdPosition || '';
+            prompt.className = 'local-proctorcore-liveness-prompt is-center';
+            progress.style.width = '0%';
+            illumination.classList.remove('is-active');
+            const phaseStarted = performance.now();
+            while (performance.now() - phaseStarted <= captureMs && evidence.length < 48) {
+                const phaseElapsed = performance.now() - phaseStarted;
+                progress.style.width = `${Math.min(100, (phaseElapsed / captureMs) * 100)}%`;
+                captureEvidenceFrame('passive');
+                await sleep(280);
+            }
+            progress.style.width = '100%';
+        };
+        const captureIlluminationFrames = async() => {
+            const illuminationSteps = challenge.illuminationSteps || [];
+            if (!challenge.components || !challenge.components.illumination || !illuminationSteps.length) {
+                return;
+            }
+            const captureMs = Number(illuminationSteps[illuminationSteps.length - 1].endMs || 0);
+            instruction.textContent = config.strings.illuminationCheck || config.strings.lookStraight;
+            hint.textContent = config.strings.holdPosition || '';
+            prompt.className = 'local-proctorcore-liveness-prompt is-center';
+            progress.style.width = '0%';
+            illumination.classList.add('is-active');
+            await sleep(700);
+            const phaseStarted = performance.now();
+            while (performance.now() - phaseStarted <= captureMs && evidence.length < 48) {
+                const phaseElapsed = Math.round(performance.now() - phaseStarted);
+                const light = lightForElapsed(phaseElapsed);
+                illumination.style.setProperty('--liveness-colour', light ? light.hex : '#ffffff');
+                progress.style.width = `${Math.min(100, (phaseElapsed / Math.max(1, captureMs)) * 100)}%`;
+                captureEvidenceFrame('illumination', phaseElapsed);
+                await sleep(280);
+            }
+            illumination.classList.remove('is-active');
+            progress.style.width = '100%';
         };
         try {
             if (challenge.adaptiveHeadPose && challenge.components && challenge.components.headPose) {
@@ -249,38 +293,14 @@ define([], function() {
                     await sleep(600);
                 }
 
-                const illuminationSteps = challenge.illuminationSteps || [];
-                const evidenceDuration = Math.max(
-                    Number(challenge.minimumCaptureMs || 0),
-                    illuminationSteps.length
-                        ? Number(illuminationSteps[illuminationSteps.length - 1].endMs || 0)
-                        : 0
-                );
-                instruction.textContent = illuminationSteps.length
-                    ? (config.strings.illuminationCheck || config.strings.lookStraight)
-                    : config.strings.lookStraight;
-                hint.textContent = config.strings.holdPosition || '';
-                prompt.className = 'local-proctorcore-liveness-prompt is-center';
-                progress.style.width = '0%';
-                illumination.classList.add('is-active');
-                await sleep(900);
-                const evidenceStarted = performance.now();
-                while (performance.now() - evidenceStarted <= evidenceDuration && evidence.length < 48) {
-                    const illuminationElapsed = Math.round(performance.now() - evidenceStarted);
-                    const light = lightForElapsed(illuminationElapsed);
-                    illumination.style.setProperty('--liveness-colour', light ? light.hex : '#ffffff');
-                    progress.style.width = `${Math.min(
-                        100,
-                        (illuminationElapsed / Math.max(1, evidenceDuration)) * 100
-                    )}%`;
-                    captureEvidenceFrame(illuminationSteps.length ? illuminationElapsed : undefined);
-                    await sleep(280);
-                }
-                progress.style.width = '100%';
+                await capturePassiveFrames();
+                await captureIlluminationFrames();
             } else {
                 let previousAction = '';
-                illumination.classList.add('is-active');
-                while (performance.now() - started <= duration) {
+                const movementEnd = challenge.components && challenge.components.headPose
+                    ? Math.max(0, ...(challenge.movementSteps || []).map(step => Number(step.endMs || 0)))
+                    : 0;
+                while (performance.now() - started <= movementEnd && evidence.length < 48) {
                     const elapsed = Math.round(performance.now() - started);
                     const movement = (challenge.movementSteps || []).find(
                         step => elapsed >= Number(step.startMs) && elapsed < Number(step.endMs)
@@ -300,11 +320,11 @@ define([], function() {
                             ((elapsed - Number(movement.startMs)) / stepDuration) * 100
                         ))}%`;
                     }
-                    const light = lightForElapsed(elapsed);
-                    illumination.style.setProperty('--liveness-colour', light ? light.hex : '#ffffff');
-                    captureEvidenceFrame(elapsed);
+                    captureEvidenceFrame('headpose');
                     await sleep(300);
                 }
+                await capturePassiveFrames();
+                await captureIlluminationFrames();
             }
         } finally {
             illumination.remove();

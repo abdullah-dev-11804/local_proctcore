@@ -43,7 +43,8 @@ final class server_client {
         int $userid,
         string $contextid,
         string $transactionid,
-        bool $enrollment
+        bool $enrollment,
+        bool $illuminationrequired = false
     ): array {
         return $this->request('POST', '/api/v1/identity/liveness/challenges', [
             'transactionId' => $transactionid,
@@ -51,6 +52,7 @@ final class server_client {
             'userId' => $userid,
             'contextId' => $contextid,
             'enrollment' => $enrollment,
+            'illuminationRequired' => $illuminationrequired,
         ]);
     }
 
@@ -250,6 +252,11 @@ final class server_client {
                 'image' => base64_encode($frame['bytes']),
                 'capturedAtMs' => max(0, (int) ($frame['capturedAtMs'] ?? 0)),
                 'elapsedMs' => max(0, (int) ($frame['elapsedMs'] ?? 0)),
+                'purpose' => in_array(
+                    (string) ($frame['purpose'] ?? 'combined'),
+                    ['passive', 'headpose', 'illumination', 'combined'],
+                    true
+                ) ? (string) ($frame['purpose'] ?? 'combined') : 'combined',
                 'illuminationElapsedMs' => isset($frame['illuminationElapsedMs'])
                     ? max(0, (int) $frame['illuminationElapsedMs'])
                     : null,

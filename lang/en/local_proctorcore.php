@@ -362,6 +362,8 @@ $string['error:asseturlblocked'] = 'The evidence URL is outside the configured P
 
 $string['settings:identityenabled'] = 'Enable automatic identity verification';
 $string['settings:identityenabled_desc'] = 'When enabled, Server B may enforce identity verification and report the official result back to Moodle.';
+$string['settings:identityilluminationenabled'] = 'Require screen-light liveness challenge';
+$string['settings:identityilluminationenabled_desc'] = 'Disabled by default. When enabled, the identity check adds a coloured screen-light response test after the passive camera-authenticity and head-movement checks. Enable it only after calibration for the approved devices and testing environment.';
 $string['settings:identitythreshold'] = 'Face similarity threshold';
 $string['settings:identitythreshold_desc'] = 'Cosine similarity required for an automatic match. Moodle enforces 0.85 as the lowest configurable threshold; the mismatch policy decides whether a lower score blocks entry or is admitted for review/failure handling.';
 $string['settings:identityminliveframes'] = 'Verification minimum live frames';
@@ -480,6 +482,7 @@ $string['identity:wrongdirection'] = 'You are turning the opposite way. Follow t
 $string['identity:poseconfirmed'] = 'Movement confirmed.';
 $string['identity:movementtimeout'] = 'That movement was not detected. Keep your full face visible and try the identity check again.';
 $string['identity:illuminationcheck'] = 'Keep looking straight. The screen colours will change while we confirm a live face.';
+$string['identity:passivecheck'] = 'Keep looking straight while we confirm this is a live camera view.';
 $string['identity:challengeready'] = 'Face position is ready. Follow the next direction.';
 $string['identity:challengecomplete'] = 'Live-camera challenge complete. Keep looking straight.';
 $string['identity:failmismatch'] = 'The live face did not match the stored face reference.';
