@@ -793,16 +793,19 @@ final class identity_service {
 
         $key = $this->key($quizid, $userid);
         $challenge = $SESSION->local_proctorcore_liveness[$key] ?? null;
-        if ($consume) {
-            unset($SESSION->local_proctorcore_liveness[$key]);
-        }
         if (!is_array($challenge)
                 || $challengeid === ''
                 || $challengenonce === ''
                 || !hash_equals((string) ($challenge['challengeId'] ?? ''), $challengeid)
-                || !hash_equals((string) ($challenge['nonce'] ?? ''), $challengenonce)
-                || (int) ($challenge['expiresAtMs'] ?? 0) < (int) floor(microtime(true) * 1000)) {
+                || !hash_equals((string) ($challenge['nonce'] ?? ''), $challengenonce)) {
             throw new \moodle_exception('identity:invalidchallenge', 'local_proctorcore');
+        }
+        if ((int) ($challenge['expiresAtMs'] ?? 0) < (int) floor(microtime(true) * 1000)) {
+            unset($SESSION->local_proctorcore_liveness[$key]);
+            throw new \moodle_exception('identity:challengeexpired', 'local_proctorcore');
+        }
+        if ($consume) {
+            unset($SESSION->local_proctorcore_liveness[$key]);
         }
         return $challenge;
     }

@@ -469,6 +469,7 @@ $string['identity:faillivenesscaptureunstable'] = 'Too many live-check frames we
 $string['identity:failliveness'] = 'The requested live movement could not be verified. Follow the on-screen direction and try again.';
 $string['identity:faillivenessinconclusive'] = 'The live-camera check was inconclusive. Keep one face centred, follow the direction shown, and try again.';
 $string['identity:invalidchallenge'] = 'The identity challenge expired or was already used. Start the identity check again.';
+$string['identity:challengeexpired'] = 'The identity check took too long and expired. Start the identity check again.';
 $string['identity:preparingchallenge'] = 'Preparing a secure live-camera challenge...';
 $string['identity:challengegetready'] = 'Get ready. Keep your face centered and follow each movement prompt.';
 $string['identity:holdposition'] = 'Move slowly, then hold the requested position briefly.';
