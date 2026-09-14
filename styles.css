@@ -58,14 +58,18 @@
 }
 
 .local-proctorcore-liveness-illumination {
-    border: clamp(2.5rem, 7vw, 7rem) solid var(--liveness-colour, #fff);
-    box-shadow: inset 0 0 2.5rem var(--liveness-colour, #fff);
+    border: clamp(.75rem, 2.5vw, 2.5rem) solid var(--liveness-colour, #fff);
+    box-shadow: inset 0 0 1.5rem var(--liveness-colour, #fff);
     inset: 0;
-    opacity: .72;
+    opacity: 0;
     pointer-events: none;
     position: absolute;
-    transition: border-color .12s linear, box-shadow .12s linear;
+    transition: border-color .12s linear, box-shadow .12s linear, opacity .18s ease;
     z-index: 2;
+}
+
+.local-proctorcore-liveness-illumination.is-active {
+    opacity: .5;
 }
 
 .local-proctorcore-liveness-prompt {
@@ -154,7 +158,7 @@
     border: 2px solid rgba(255, 255, 255, .72);
     border-radius: 48% 48% 44% 44%;
     box-shadow: 0 0 0 999px rgba(8, 18, 25, .13);
-    height: 58%;
+    height: 72%;
     left: 50%;
     opacity: .75;
     pointer-events: none;
@@ -162,7 +166,7 @@
     top: 48%;
     transform: translate(-50%, -50%);
     transition: opacity .2s ease;
-    width: 31%;
+    width: min(45%, 31rem);
     z-index: 3;
 }
 

@@ -112,7 +112,7 @@ final class identity_service {
             $challengeid,
             (string) $challenge['nonce'],
             $stepindex,
-            $this->decode_images($imagedata, 4)
+            $this->decode_images($imagedata, 8)
         );
         $reason = clean_param((string) ($result['reason'] ?? 'keep_moving'), PARAM_ALPHANUMEXT);
         return [
@@ -619,6 +619,8 @@ final class identity_service {
             'spoof_detected' => 'identity:failspoof',
             'passive_liveness_failed' => 'identity:failpassiveliveness',
             'illumination_liveness_failed' => 'identity:faililluminationliveness',
+            'illumination_liveness_inconclusive' => 'identity:faililluminationinconclusive',
+            'liveness_capture_unstable' => 'identity:faillivenesscaptureunstable',
             'liveness_inconclusive' => 'identity:faillivenessinconclusive',
             'liveness_failed' => 'identity:failliveness',
             'challenge_expired_or_replayed' => 'identity:invalidchallenge',
@@ -768,7 +770,7 @@ final class identity_service {
     /** Returns immediate, user-facing guidance while a pose is still being analysed. */
     private function pose_feedback_message(string $reason): string {
         $map = [
-            'keep_moving' => 'identity:holdposition',
+            'keep_moving' => 'identity:keepturning',
             'center_not_stable' => 'identity:holdstraight',
             'return_to_center' => 'identity:returntocenter',
             'wrong_direction' => 'identity:wrongdirection',

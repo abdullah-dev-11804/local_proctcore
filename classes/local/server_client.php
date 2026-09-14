@@ -91,7 +91,7 @@ final class server_client {
         $encode = static function(string $bytes): string {
             return base64_encode($bytes);
         };
-        $images = array_map($encode, array_slice($imageframes, 0, 4));
+        $images = array_map($encode, array_slice($imageframes, 0, 8));
         return $this->request('POST', '/api/v1/identity/liveness/challenges/pose', [
             'transactionId' => $transactionid,
             'companyId' => $this->companyid,

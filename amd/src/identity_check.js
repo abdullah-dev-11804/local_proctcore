@@ -114,18 +114,41 @@ define([], function() {
         return config.strings.lookStraight;
     };
 
-    const capturePoseBurst = async() => {
+    const createPoseSampler = () => {
         const frames = [];
-        for (let index = 0; index < 3; index++) {
+        let captureError = null;
+        const capture = () => {
             if (!window.ProctorCorePrecheck || typeof window.ProctorCorePrecheck.captureJpeg !== 'function') {
-                throw new Error('Camera preview is unavailable. Run the equipment check again.');
+                captureError = new Error('Camera preview is unavailable. Run the equipment check again.');
+                return;
             }
-            frames.push(window.ProctorCorePrecheck.captureJpeg(0.82, 640));
-            if (index < 2) {
-                await sleep(180);
+            try {
+                frames.push(window.ProctorCorePrecheck.captureJpeg(0.80, 560));
+                if (frames.length > 40) {
+                    frames.shift();
+                }
+            } catch (error) {
+                captureError = error;
             }
-        }
-        return frames;
+        };
+        capture();
+        const timer = window.setInterval(capture, 140);
+        return {
+            nextBatch: async() => {
+                const deadline = performance.now() + 700;
+                while (frames.length < 3 && performance.now() < deadline && !captureError) {
+                    await sleep(40);
+                }
+                if (captureError) {
+                    throw captureError;
+                }
+                if (!frames.length) {
+                    capture();
+                }
+                return frames.splice(0, 8);
+            },
+            stop: () => window.clearInterval(timer),
+        };
     };
 
     const captureLivenessEvidence = async(config, panel, challenge) => {
@@ -188,29 +211,34 @@ define([], function() {
                     prompt.className = `local-proctorcore-liveness-prompt is-${action}`;
                     progress.style.width = '0%';
                     let reached = false;
-                    await sleep(action === 'center' ? 1100 : 1400);
-                    const stepStarted = performance.now();
-                    while (!reached && performance.now() - stepStarted < stepTimeout
-                            && performance.now() - started < duration) {
-                        const stepElapsed = performance.now() - stepStarted;
-                        const frames = await capturePoseBurst();
-                        const result = await post(config, {
-                            action: 'checkChallengePose',
-                            challengeId: challenge.challengeId || '',
-                            challengeNonce: challenge.nonce || '',
-                            stepIndex: index,
-                            image: frames[0],
-                            images: frames,
-                        });
-                        reached = Boolean(result.reached);
-                        const measuredProgress = Number(result.progressPercent);
-                        progress.style.width = `${Number.isFinite(measuredProgress)
-                            ? Math.max(0, Math.min(100, measuredProgress))
-                            : Math.min(95, (stepElapsed / stepTimeout) * 100)}%`;
-                        if (!reached) {
-                            hint.textContent = result.message || config.strings.holdPosition || '';
-                            await sleep(100);
+                    const sampler = createPoseSampler();
+                    try {
+                        await sleep(action === 'center' ? 1100 : 1400);
+                        const stepStarted = performance.now();
+                        while (!reached && performance.now() - stepStarted < stepTimeout
+                                && performance.now() - started < duration) {
+                            const stepElapsed = performance.now() - stepStarted;
+                            const frames = await sampler.nextBatch();
+                            const result = await post(config, {
+                                action: 'checkChallengePose',
+                                challengeId: challenge.challengeId || '',
+                                challengeNonce: challenge.nonce || '',
+                                stepIndex: index,
+                                image: frames[0],
+                                images: frames,
+                            });
+                            reached = Boolean(result.reached);
+                            const measuredProgress = Number(result.progressPercent);
+                            progress.style.width = `${Number.isFinite(measuredProgress)
+                                ? Math.max(0, Math.min(100, measuredProgress))
+                                : Math.min(95, (stepElapsed / stepTimeout) * 100)}%`;
+                            if (!reached) {
+                                hint.textContent = result.message || config.strings.holdPosition || '';
+                                await sleep(100);
+                            }
                         }
+                    } finally {
+                        sampler.stop();
                     }
                     if (!reached) {
                         throw new Error(config.strings.movementTimeout || config.strings.failed);
@@ -234,6 +262,7 @@ define([], function() {
                 hint.textContent = config.strings.holdPosition || '';
                 prompt.className = 'local-proctorcore-liveness-prompt is-center';
                 progress.style.width = '0%';
+                illumination.classList.add('is-active');
                 await sleep(900);
                 const evidenceStarted = performance.now();
                 while (performance.now() - evidenceStarted <= evidenceDuration && evidence.length < 48) {
@@ -250,6 +279,7 @@ define([], function() {
                 progress.style.width = '100%';
             } else {
                 let previousAction = '';
+                illumination.classList.add('is-active');
                 while (performance.now() - started <= duration) {
                     const elapsed = Math.round(performance.now() - started);
                     const movement = (challenge.movementSteps || []).find(
