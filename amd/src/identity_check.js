@@ -42,18 +42,20 @@ define([], function() {
         }
     };
 
-    const capture = () => {
+    const capture = (quality = 0.84, maxDimension = 960) => {
         if (!window.ProctorCorePrecheck || typeof window.ProctorCorePrecheck.captureJpeg !== 'function') {
             throw new Error('Camera preview is unavailable. Run the equipment check again.');
         }
-        return window.ProctorCorePrecheck.captureJpeg(0.96, 1440);
+        return window.ProctorCorePrecheck.captureJpeg(quality, maxDimension);
     };
 
-    const captureFrames = async(count, intervalMs) => {
+    const captureFrames = async(count, intervalMs, captureFrame = capture) => {
         const frames = [];
         for (let index = 0; index < count; index++) {
-            frames.push(capture());
-            await sleep(intervalMs);
+            frames.push(captureFrame());
+            if (index + 1 < count) {
+                await sleep(intervalMs);
+            }
         }
         return frames;
     };
@@ -176,7 +178,10 @@ define([], function() {
         instruction.textContent = config.strings.challengeGetReady || config.strings.lookStraight;
         hint.textContent = config.strings.holdPosition || '';
         update(panel, 'running', instruction.textContent);
-        await sleep(900);
+        const interactive = Boolean(
+            challenge.components && (challenge.components.headPose || challenge.components.illumination)
+        );
+        await sleep(interactive ? 900 : 200);
 
         const started = performance.now();
         const duration = Math.max(1000, Number(challenge.durationMs || 4500));
@@ -337,10 +342,11 @@ define([], function() {
         if (!window.ProctorCorePrecheck || typeof window.ProctorCorePrecheck.captureJpeg !== 'function') {
             throw new Error('Camera preview is unavailable. Run the equipment check again.');
         }
-        return window.ProctorCorePrecheck.captureJpeg(0.88, 960);
+        return window.ProctorCorePrecheck.captureJpeg(0.76, 640);
     };
 
     const runChallenge = async(config, panel, button) => {
+        const startedAt = performance.now();
         button.disabled = true;
         enableSubmit(panel, false);
         setField('proctorcore_identity_passed', 0);
@@ -359,16 +365,23 @@ define([], function() {
             const challenge = await issueChallenge(config);
             let livenessEvidence = [];
             if (challenge.required) {
-                await waitForChallengeReady(config, panel, challenge);
-                await sleep(350);
+                const needsRemoteReadiness = Boolean(
+                    challenge.components && (challenge.components.headPose || challenge.components.illumination)
+                );
+                if (needsRemoteReadiness) {
+                    await waitForChallengeReady(config, panel, challenge);
+                    await sleep(350);
+                }
                 livenessEvidence = await captureLivenessEvidence(config, panel, challenge);
                 update(panel, 'running', config.strings.challengeComplete || config.strings.lookStraight);
-                await sleep(250);
+                await sleep(needsRemoteReadiness ? 250 : 100);
             }
 
             update(panel, 'running', config.strings.lookStraight);
-            await sleep(400);
-            const center = await captureFrames(6, 220);
+            await sleep(200);
+            const center = config.enrollmentRequired
+                ? await captureFrames(4, 160, () => capture(0.88, 960))
+                : await captureFrames(3, 140, () => capture(0.82, 720));
 
             update(panel, 'running', config.enrollmentRequired ? config.strings.enrolling : config.strings.comparing);
             if (window.ProctorCorePrecheck && typeof window.ProctorCorePrecheck.freeze === 'function') {
@@ -387,6 +400,16 @@ define([], function() {
                 challengeNonce: challenge.nonce || '',
                 livenessEvidence: livenessEvidence,
             });
+            const totalMs = Math.round(performance.now() - startedAt);
+            if (window.console && typeof window.console.info === 'function') {
+                window.console.info('ProctorCore identity timing', {
+                    totalMs: totalMs,
+                    serverProcessingMs: Number(result.serverProcessingMs || 0),
+                    enrollment: Boolean(config.enrollmentRequired),
+                    centerFrames: center.length,
+                    livenessFrames: livenessEvidence.length,
+                });
+            }
             setField('proctorcore_identity_status', result.result || 'failed');
             setField('proctorcore_identity_score', result.similarityScore ?? '');
             setField('proctorcore_identity_passed', result.passed ? 1 : 0);

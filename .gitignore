@@ -14,4 +14,7 @@ cli/test_ml_health.php
 cli/test_ml_identity.php
 cli/test_report_generation.php
 cli/test_violation_event.php
-amd/build/
+# Moodle serves AMD modules from amd/build in production. Keep generated files
+# ignored except for the module changed by this release.
+amd/build/*
+!amd/build/identity_check.min.js

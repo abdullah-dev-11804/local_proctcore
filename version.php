@@ -9,7 +9,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_proctorcore';
-$plugin->version = 2026091600;
+$plugin->version = 2026091601;
 $plugin->requires = 2022041900; // Moodle 4.0+.
 $plugin->maturity = MATURITY_BETA;
-$plugin->release = '0.14.4 - Configurable identity movement challenge';
+$plugin->release = '0.14.5 - Faster identity verification';

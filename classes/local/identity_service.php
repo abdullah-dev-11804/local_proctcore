@@ -544,6 +544,7 @@ final class identity_service {
             'livenessPassed' => !empty($result['livenessPassed']),
             'livenessResult' => (string) (($result['liveness']['overall'] ?? '') ?: ''),
             'enrollment' => ($result['mode'] ?? '') === 'enroll',
+            'serverProcessingMs' => max(0, (int) ($result['serverProcessingMs'] ?? 0)),
             'message' => $message,
         ];
     }
@@ -702,6 +703,7 @@ final class identity_service {
             'manualReviewRequired' => $status === 'needs_review',
             'checkedAt' => time(),
             'transactionId' => $transactionid,
+            'serverProcessingMs' => max(0, (int) ($response['processingMs'] ?? 0)),
         ];
     }
 
