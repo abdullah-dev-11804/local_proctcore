@@ -37,6 +37,7 @@ Main Moodle-side control centre and official record keeper for the SENTAL procto
 - `classes/local/appeal_service.php` - Home for appeal submission, review state changes, and evidence retention holds.
 - `classes/local/consent_service.php` - Owns versioned documents, renewed-consent checks, impersonation protection, and immutable acceptance logs.
 - `classes/local/participant_field_service.php` - Owns participant field definitions, prefill, validation, reusable values, profile synchronization, and report snapshots.
+- `classes/local/violation_scoring_service.php` - Applies configurable per-violation points and manual-review/failure thresholds.
 - `classes/local/rules_service.php` - Records explicit acknowledgements against the exact configured exam-rules hash.
 - `classes/local/asset_repository.php` - Home for report, video, snapshot, room scan, ID photo, and violation-act references.
 - `classes/local/audit_logger.php` - Home for append-only administrator, coordinator, proctor, and integration audit events.
@@ -92,6 +93,7 @@ Implemented scope:
 - Section 5.3 — heartbeat, interruption detection, reconnect window, and same-attempt recovery.
 - Section 6.1/A.4 - reusable multilingual participant fields, preflight validation,
   Moodle profile mapping, and report snapshots.
+- Administrator-configurable violation points, manual-review threshold, and automatic-failure threshold.
 - Section 7.1 - configurable exam rules with explicit hash-bound acknowledgement.
 - Section 8.1 - categorized appeals, authorised review, notifications, evidence holds,
   retry, and course-completion release.

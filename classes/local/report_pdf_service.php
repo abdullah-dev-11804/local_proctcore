@@ -13,7 +13,7 @@ defined('MOODLE_INTERNAL') || die();
  */
 final class report_pdf_service {
     /** Increment when PDF layout/content changes so cached reports regenerate. */
-    private const GENERATOR_VERSION = 3;
+    private const GENERATOR_VERSION = 4;
 
     /** @var report_service */
     private $reports;
@@ -227,6 +227,19 @@ final class report_pdf_service {
             $report['grade'] !== null ? format_float((float) $report['grade'], 2) : '—');
         $html .= $this->pdf_row(get_string('report:percentage', 'local_proctorcore'),
             $report['percent'] !== null ? format_float((float) $report['percent'], 2) . '%' : '—');
+        $sessionmetadata = json_decode((string) ($session->servermetadata ?? ''), true);
+        $sessionmetadata = is_array($sessionmetadata) ? $sessionmetadata : [];
+        $scoring = is_array($sessionmetadata['violationScoring'] ?? null)
+            ? $sessionmetadata['violationScoring']
+            : [];
+        $html .= $this->pdf_row(get_string('report:riskscore', 'local_proctorcore'),
+            $session->risk_score !== null ? format_float((float) $session->risk_score, 2) : '—');
+        $html .= $this->pdf_row(get_string('report:riskreviewthreshold', 'local_proctorcore'),
+            isset($scoring['reviewThreshold']) ? (string) (int) $scoring['reviewThreshold'] : '—');
+        $html .= $this->pdf_row(get_string('report:riskfailthreshold', 'local_proctorcore'),
+            isset($scoring['failureThreshold']) ? (string) (int) $scoring['failureThreshold'] : '—');
+        $html .= $this->pdf_row(get_string('report:reviewrequired', 'local_proctorcore'),
+            !empty($session->reviewrequired) ? get_string('yes') : get_string('no'));
         $html .= '</table><br>';
 
         if ($report['participantfields']) {
@@ -256,13 +269,17 @@ final class report_pdf_service {
             $html .= '<table border="1" cellpadding="4">'
                 . '<tr style="font-weight:bold;background-color:#eeeeee;">'
                 . '<td width="24%">' . s(get_string('report:time', 'local_proctorcore')) . '</td>'
-                . '<td width="22%">' . s(get_string('report:type', 'local_proctorcore')) . '</td>'
+                . '<td width="20%">' . s(get_string('report:type', 'local_proctorcore')) . '</td>'
                 . '<td width="12%">' . s(get_string('report:severity', 'local_proctorcore')) . '</td>'
-                . '<td width="42%">' . s(get_string('report:description', 'local_proctorcore')) . '</td></tr>';
+                . '<td width="10%">' . s(get_string('report:riskpoints', 'local_proctorcore')) . '</td>'
+                . '<td width="34%">' . s(get_string('report:description', 'local_proctorcore')) . '</td></tr>';
             foreach ($report['violations'] as $violation) {
+                $metadata = json_decode((string) ($violation->metadata ?? ''), true);
+                $metadata = is_array($metadata) ? $metadata : [];
                 $html .= '<tr><td>' . s(userdate((int) $violation->occurredat)) . '</td>'
                     . '<td>' . s(ucfirst(str_replace('_', ' ', (string) $violation->type))) . '</td>'
                     . '<td>' . (int) $violation->severity . '</td>'
+                    . '<td>' . (isset($metadata['riskPoints']) ? (int) $metadata['riskPoints'] : '—') . '</td>'
                     . '<td>' . s((string) ($violation->description ?? '')) . '</td></tr>';
             }
             $html .= '</table>';

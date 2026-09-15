@@ -41,6 +41,12 @@ final class violation_repository {
         }
         $severity = min(5, max(1, $severity));
         $metadata = $data['metadata'] ?? [];
+        $scoring = new violation_scoring_service();
+        $riskpoints = $scoring->points_for($cleantype);
+        $policy = $scoring->get_policy();
+        $metadata['riskPoints'] = $riskpoints;
+        $metadata['riskReviewThreshold'] = $policy['reviewThreshold'];
+        $metadata['riskFailureThreshold'] = $policy['failureThreshold'];
         $encoded = json_encode($metadata, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
         if ($encoded === false) {
             throw new \coding_exception('Unable to encode violation metadata.');
@@ -69,18 +75,7 @@ final class violation_repository {
         ];
         $record->id = (int) $DB->insert_record(self::TABLE, $record);
 
-        // Use normal Moodle record updates rather than database-specific SQL
-        // functions so this remains portable across supported database engines.
-        $summary = $DB->get_record(
-            'local_proctorcore_sessions',
-            ['id' => $sessionid],
-            'id,violationcount,risk_score',
-            MUST_EXIST
-        );
-        $summary->violationcount = max(0, (int) $summary->violationcount) + 1;
-        $summary->risk_score = min(100, max(0, (int) $summary->risk_score) + ($severity * 10));
-        $summary->timemodified = $now;
-        $DB->update_record('local_proctorcore_sessions', $summary);
+        $evaluation = $scoring->apply_to_session($sessionid);
 
         (new audit_logger())->log(
             'violation.created',
@@ -93,6 +88,9 @@ final class violation_repository {
                 'source' => $record->source,
                 'occurredAt' => $record->occurredat,
                 'durationMs' => $record->durationms,
+                'riskPoints' => $riskpoints,
+                'riskScore' => $evaluation['score'],
+                'riskDecision' => $evaluation['decision'],
             ],
             null,
             'violation',

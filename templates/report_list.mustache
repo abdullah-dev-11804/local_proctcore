@@ -14,6 +14,7 @@
                     <th>{{#str}}report:quiz, local_proctorcore{{/str}}</th>
                     <th>{{#str}}report:endtime, local_proctorcore{{/str}}</th>
                     <th>{{#str}}report:result, local_proctorcore{{/str}}</th>
+                    <th>{{#str}}report:reviewrequired, local_proctorcore{{/str}}</th>
                     <th>{{#str}}report:mediastatus, local_proctorcore{{/str}}</th>
                     <th>{{#str}}report:violations, local_proctorcore{{/str}}</th>
                     <th>{{#str}}appeal:status, local_proctorcore{{/str}}</th>
@@ -30,6 +31,10 @@
                     <td>{{quizname}} #{{attemptnumber}}</td>
                     <td>{{endedat}}</td>
                     <td><span class="badge {{resultclass}}">{{resulttext}}</span></td>
+                    <td>
+                        {{#reviewrequired}}<span class="badge badge-warning">{{reviewtext}}</span>{{/reviewrequired}}
+                        {{^reviewrequired}}<span class="text-muted">{{reviewtext}}</span>{{/reviewrequired}}
+                    </td>
                     <td>{{mediastatus}}</td>
                     <td>{{violationcount}}</td>
                     <td>

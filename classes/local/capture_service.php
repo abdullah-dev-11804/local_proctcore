@@ -400,6 +400,9 @@ final class capture_service {
         $lock = $this->acquire_lock($sessionid);
 
         try {
+            // Re-evaluate immediately before finalization so the outcome sent
+            // to Server B always reflects the complete Moodle violation record.
+            (new violation_scoring_service())->apply_to_session($sessionid);
             $session = $this->require_session($sessionid, $userid, false);
             $metadata = $this->decode_metadata($session->servermetadata);
             $capture = is_array($metadata['capture'] ?? null) ? $metadata['capture'] : [];

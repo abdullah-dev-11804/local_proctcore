@@ -309,6 +309,51 @@ if ($hassiteconfig) {
     ));
 
     $settings->add(new admin_setting_heading(
+        'local_proctorcore/riskscoringheading',
+        get_string('settings:riskscoringheading', 'local_proctorcore'),
+        get_string('settings:riskscoringheading_desc', 'local_proctorcore')
+    ));
+
+    $settings->add(new admin_setting_configtext(
+        'local_proctorcore/riskreviewthreshold',
+        get_string('settings:riskreviewthreshold', 'local_proctorcore'),
+        get_string('settings:riskreviewthreshold_desc', 'local_proctorcore'),
+        40,
+        PARAM_INT
+    ));
+
+    $settings->add(new admin_setting_configtext(
+        'local_proctorcore/riskfailthreshold',
+        get_string('settings:riskfailthreshold', 'local_proctorcore'),
+        get_string('settings:riskfailthreshold_desc', 'local_proctorcore'),
+        80,
+        PARAM_INT
+    ));
+
+    $riskpointsettings = [
+        'riskpointsnoface' => 30,
+        'riskpointslookingaway' => 20,
+        'riskpointsmultiplefaces' => 50,
+        'riskpointstabhidden' => 30,
+        'riskpointswindowblur' => 20,
+        'riskpointsspoof' => 50,
+        'riskpointscameraended' => 40,
+        'riskpointsmicrophoneended' => 40,
+        'riskpointscamerablocked' => 30,
+        'riskpointsspeechdetected' => 30,
+        'riskpointsother' => 10,
+    ];
+    foreach ($riskpointsettings as $name => $default) {
+        $settings->add(new admin_setting_configtext(
+            'local_proctorcore/' . $name,
+            get_string('settings:' . $name, 'local_proctorcore'),
+            get_string('settings:riskpoints_desc', 'local_proctorcore'),
+            $default,
+            PARAM_INT
+        ));
+    }
+
+    $settings->add(new admin_setting_heading(
         'local_proctorcore/retentionheading',
         get_string('settings:retentionheading', 'local_proctorcore'),
         get_string('settings:retentionheading_desc', 'local_proctorcore')

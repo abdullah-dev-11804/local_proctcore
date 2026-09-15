@@ -27,14 +27,22 @@ final class report_renderer {
         $identity = self::status((string) $session->identitystatus);
         $technical = self::status((string) $session->techcheckstatus);
         $media = self::status((string) ($session->mediastatus ?? 'pending'));
+        $sessionmetadata = json_decode((string) ($session->servermetadata ?? ''), true);
+        $sessionmetadata = is_array($sessionmetadata) ? $sessionmetadata : [];
+        $scoring = is_array($sessionmetadata['violationScoring'] ?? null)
+            ? $sessionmetadata['violationScoring']
+            : [];
 
         $violations = [];
         foreach ($report['violations'] as $violation) {
+            $metadata = json_decode((string) ($violation->metadata ?? ''), true);
+            $metadata = is_array($metadata) ? $metadata : [];
             $violations[] = [
                 'id' => (int) $violation->id,
                 'time' => userdate((int) $violation->occurredat),
                 'type' => self::humanise((string) $violation->type),
                 'severity' => (int) $violation->severity,
+                'points' => isset($metadata['riskPoints']) ? (int) $metadata['riskPoints'] : '—',
                 'status' => self::humanise((string) $violation->status),
                 'description' => format_text((string) ($violation->description ?? ''), FORMAT_PLAIN),
                 'duration' => !empty($violation->durationms)
@@ -133,6 +141,12 @@ final class report_renderer {
             'identitypolicy' => self::humanise((string) ($session->identitypolicy ?? '')),
             'reviewrequired' => self::yesno(!empty($session->reviewrequired)),
             'risk' => $session->risk_score !== null ? format_float((float) $session->risk_score, 2) : '—',
+            'riskreviewthreshold' => isset($scoring['reviewThreshold'])
+                ? (int) $scoring['reviewThreshold']
+                : '—',
+            'riskfailthreshold' => isset($scoring['failureThreshold'])
+                ? (int) $scoring['failureThreshold']
+                : '—',
             'violationcount' => count($violations),
             'snapshotcount' => (int) $session->snapshotcount,
             'violations' => $violations,
@@ -198,6 +212,8 @@ final class report_renderer {
                     : get_string('report:pending', 'local_proctorcore'),
                 'resulttext' => $result['text'],
                 'resultclass' => $result['class'],
+                'reviewrequired' => !empty($record->reviewrequired),
+                'reviewtext' => self::yesno(!empty($record->reviewrequired)),
                 'mediastatus' => self::humanise((string) ($record->mediastatus ?? 'pending')),
                 'violationcount' => (int) $record->violationcount,
                 'appealtext' => $appeal['text'],

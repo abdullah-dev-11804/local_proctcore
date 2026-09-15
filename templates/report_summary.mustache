@@ -43,6 +43,8 @@
                         <tr><th>{{#str}}report:grade, local_proctorcore{{/str}}</th><td>{{grade}}</td></tr>
                         <tr><th>{{#str}}report:percentage, local_proctorcore{{/str}}</th><td>{{percent}}</td></tr>
                         <tr><th>{{#str}}report:riskscore, local_proctorcore{{/str}}</th><td>{{risk}}</td></tr>
+                        <tr><th>{{#str}}report:riskreviewthreshold, local_proctorcore{{/str}}</th><td>{{riskreviewthreshold}}</td></tr>
+                        <tr><th>{{#str}}report:riskfailthreshold, local_proctorcore{{/str}}</th><td>{{riskfailthreshold}}</td></tr>
                         <tr><th>{{#str}}report:identityscore, local_proctorcore{{/str}}</th><td>{{identityscore}}</td></tr>
                         <tr><th>{{#str}}report:identitythreshold, local_proctorcore{{/str}}</th><td>{{identitythreshold}}</td></tr>
                         <tr><th>{{#str}}report:identitypolicy, local_proctorcore{{/str}}</th><td>{{identitypolicy}}</td></tr>
@@ -84,8 +86,8 @@
             {{#hasviolations}}
             <div class="table-responsive">
                 <table class="table table-striped mb-0">
-                    <thead><tr><th>{{#str}}report:time, local_proctorcore{{/str}}</th><th>{{#str}}report:type, local_proctorcore{{/str}}</th><th>{{#str}}report:severity, local_proctorcore{{/str}}</th><th>{{#str}}report:description, local_proctorcore{{/str}}</th><th>{{#str}}report:duration, local_proctorcore{{/str}}</th></tr></thead>
-                    <tbody>{{#violations}}<tr><td>{{time}}</td><td>{{type}}</td><td>{{severity}}</td><td>{{{description}}}</td><td>{{duration}}</td></tr>{{/violations}}</tbody>
+                    <thead><tr><th>{{#str}}report:time, local_proctorcore{{/str}}</th><th>{{#str}}report:type, local_proctorcore{{/str}}</th><th>{{#str}}report:severity, local_proctorcore{{/str}}</th><th>{{#str}}report:riskpoints, local_proctorcore{{/str}}</th><th>{{#str}}report:description, local_proctorcore{{/str}}</th><th>{{#str}}report:duration, local_proctorcore{{/str}}</th></tr></thead>
+                    <tbody>{{#violations}}<tr><td>{{time}}</td><td>{{type}}</td><td>{{severity}}</td><td>{{points}}</td><td>{{{description}}}</td><td>{{duration}}</td></tr>{{/violations}}</tbody>
                 </table>
             </div>
             {{/hasviolations}}
