@@ -14,3 +14,4 @@ cli/test_ml_health.php
 cli/test_ml_identity.php
 cli/test_report_generation.php
 cli/test_violation_event.php
+amd/build/
