@@ -13,7 +13,7 @@ defined('MOODLE_INTERNAL') || die();
  */
 final class report_pdf_service {
     /** Increment when PDF layout/content changes so cached reports regenerate. */
-    private const GENERATOR_VERSION = 2;
+    private const GENERATOR_VERSION = 3;
 
     /** @var report_service */
     private $reports;

@@ -3,39 +3,82 @@
 
 require_once(__DIR__ . '/../../config.php');
 
+use local_proctorcore\local\appeal_service;
+use local_proctorcore\output\appeal_renderer;
+
 require_login();
-$context = context_system::instance();
-require_capability('local/proctorcore:reviewappeals', $context);
+
+$courseid = optional_param('courseid', 0, PARAM_INT);
+$companyid = optional_param('companyid', 0, PARAM_INT);
+$status = optional_param('status', 'pending', PARAM_ALPHANUMEXT);
+$page = optional_param('page', 0, PARAM_INT);
+$perpage = 25;
+$systemcontext = context_system::instance();
+$context = $systemcontext;
+$canaccess = has_capability('local/proctorcore:reviewappeals', $systemcontext);
+if ($courseid > 0) {
+    $course = get_course($courseid);
+    require_login($course);
+    $context = context_course::instance($courseid);
+    $canaccess = (new \local_proctorcore\local\report_service())
+        ->can_review_course_appeals($courseid, (int) $USER->id);
+}
+if (!$canaccess) {
+    throw new required_capability_exception($context, 'local/proctorcore:reviewappeals', 'nopermissions', '');
+}
+
 $PAGE->set_context($context);
-$PAGE->set_url('/local/proctorcore/appeals.php');
+$PAGE->set_pagelayout('report');
+$PAGE->set_url(new moodle_url('/local/proctorcore/appeals.php', array_filter([
+    'courseid' => $courseid,
+    'companyid' => $companyid,
+    'status' => $status,
+    'page' => $page,
+])));
 $PAGE->set_title(get_string('appeal:queue', 'local_proctorcore'));
 $PAGE->set_heading(get_string('appeal:queue', 'local_proctorcore'));
 
-$sql = "SELECT a.*, s.courseid, s.cmid, s.quizid, s.userid AS sessionuserid,
-               u.firstname, u.lastname, c.fullname AS coursename, q.name AS quizname
-          FROM {local_proctorcore_appeals} a
-          JOIN {local_proctorcore_sessions} s ON s.id = a.sessionid
-          JOIN {user} u ON u.id = a.userid
-          JOIN {course} c ON c.id = s.courseid
-          JOIN {quiz} q ON q.id = s.quizid
-      ORDER BY CASE WHEN a.status IN ('submitted', 'hold_pending') THEN 0 ELSE 1 END,
-               a.submittedat DESC";
-$reports = new \local_proctorcore\local\report_service();
-$table = new html_table();
-$table->head = [get_string('report:student', 'local_proctorcore'), get_string('report:course', 'local_proctorcore'),
-    get_string('report:quiz', 'local_proctorcore'), get_string('appeal:reason', 'local_proctorcore'),
-    get_string('appeal:status', 'local_proctorcore'), get_string('actions')];
-foreach ($DB->get_records_sql($sql) as $record) {
-    if (!$reports->can_view_session((object) [
-        'id' => $record->sessionid, 'userid' => $record->sessionuserid, 'companyid' => $record->companyid,
-        'courseid' => $record->courseid, 'cmid' => $record->cmid, 'quizid' => $record->quizid,
-    ], (int) $USER->id)) {
-        continue;
-    }
-    $table->data[] = [fullname($record), format_string($record->coursename), format_string($record->quizname),
-        s(str_replace('_', ' ', $record->reason)), s($record->status),
-        html_writer::link(new moodle_url('/local/proctorcore/appeal.php', ['sessionid' => $record->sessionid]), get_string('view'))];
-}
+$service = new appeal_service();
+$list = $service->list_for_reviewer((int) $USER->id, [
+    'courseid' => $courseid,
+    'companyid' => $companyid,
+    'status' => $status,
+], $page, $perpage);
+$data = appeal_renderer::prepare_list($list['records']);
+
+$baseparams = $courseid > 0 ? ['courseid' => $courseid] : [];
+$tabs = [
+    new tabobject('reports', new moodle_url('/local/proctorcore/reports.php', $baseparams),
+        get_string('report:reports', 'local_proctorcore')),
+    new tabobject('appeals', new moodle_url('/local/proctorcore/appeals.php', $baseparams),
+        get_string('appeal:queue', 'local_proctorcore')),
+];
+
 echo $OUTPUT->header();
-echo html_writer::table($table);
+echo $OUTPUT->tabtree($tabs, 'appeals');
+echo $OUTPUT->heading(get_string('appeal:queue', 'local_proctorcore'));
+echo html_writer::start_tag('form', ['method' => 'get', 'class' => 'mb-3']);
+if ($courseid > 0) {
+    echo html_writer::empty_tag('input', [
+        'type' => 'hidden', 'name' => 'courseid', 'value' => $courseid,
+    ]);
+}
+echo html_writer::select([
+    'pending' => get_string('appeal:pending', 'local_proctorcore'),
+    'submitted' => get_string('appeal:submittedstatus', 'local_proctorcore'),
+    'approved' => get_string('appeal:approved', 'local_proctorcore'),
+    'rejected' => get_string('appeal:rejected', 'local_proctorcore'),
+    '' => get_string('appeal:all', 'local_proctorcore'),
+], 'status', $status, false, ['class' => 'custom-select w-auto mr-2']);
+echo html_writer::tag('button', get_string('applyfilters'), ['type' => 'submit', 'class' => 'btn btn-secondary']);
+echo html_writer::end_tag('form');
+echo $OUTPUT->render_from_template('local_proctorcore/appeal_list', $data);
+echo $OUTPUT->paging_bar(
+    (int) $list['total'],
+    (int) $list['page'],
+    (int) $list['perpage'],
+    new moodle_url('/local/proctorcore/appeals.php', array_filter([
+        'courseid' => $courseid, 'companyid' => $companyid, 'status' => $status,
+    ]))
+);
 echo $OUTPUT->footer();

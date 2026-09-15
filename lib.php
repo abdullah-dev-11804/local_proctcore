@@ -481,6 +481,57 @@ function local_proctorcore_extend_navigation_course(
         'local_proctorcore_course_reports',
         new pix_icon('i/report', '')
     );
+
+    $canreview = (new \local_proctorcore\local\report_service())
+        ->can_review_course_appeals((int) $course->id, (int) $USER->id);
+    if ($canreview) {
+        $pending = local_proctorcore_pending_appeal_count((int) $course->id, (int) $USER->id);
+        $label = $pending > 0
+            ? get_string('appeal:queuecount', 'local_proctorcore', $pending)
+            : get_string('appeal:queue', 'local_proctorcore');
+        $parentnode->add(
+            $label,
+            new moodle_url('/local/proctorcore/appeals.php', ['courseid' => (int) $course->id]),
+            navigation_node::TYPE_SETTING,
+            null,
+            'local_proctorcore_course_appeals',
+            new pix_icon('i/flagged', '')
+        );
+    }
+}
+
+/** Returns a request-cached pending appeal count for one course and reviewer. */
+function local_proctorcore_pending_appeal_count(int $courseid, int $userid): int {
+    static $counts = [];
+    $key = $courseid . ':' . $userid;
+    if (!array_key_exists($key, $counts)) {
+        $counts[$key] = (new \local_proctorcore\local\appeal_service())
+            ->count_pending_for_course($courseid, $userid);
+    }
+    return $counts[$key];
+}
+
+/** Displays an unavoidable course-page warning to authorised appeal reviewers. */
+function local_proctorcore_before_footer(): void {
+    global $OUTPUT, $PAGE, $USER;
+
+    if (!isloggedin() || isguestuser() || empty($PAGE->course->id)
+            || (int) $PAGE->course->id === SITEID) {
+        return;
+    }
+    $courseid = (int) $PAGE->course->id;
+    if (!(new \local_proctorcore\local\report_service())
+            ->can_review_course_appeals($courseid, (int) $USER->id)) {
+        return;
+    }
+    $pending = local_proctorcore_pending_appeal_count($courseid, (int) $USER->id);
+    if ($pending <= 0) {
+        return;
+    }
+    $url = new moodle_url('/local/proctorcore/appeals.php', ['courseid' => $courseid]);
+    $message = get_string('appeal:coursewarning', 'local_proctorcore', $pending)
+        . ' ' . html_writer::link($url, get_string('appeal:reviewnow', 'local_proctorcore'));
+    echo $OUTPUT->notification($message, \core\output\notification::NOTIFY_WARNING);
 }
 
 /**

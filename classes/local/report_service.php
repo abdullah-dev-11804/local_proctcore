@@ -123,7 +123,7 @@ final class report_service {
                        s.server_sessionid, s.status, s.result, s.identitystatus,
                        s.identityscore, s.identitythreshold, s.identitypolicy, s.reviewrequired,
                        s.techcheckstatus, s.mediastatus, s.violationcount, s.snapshotcount,
-                       s.startedat, s.endedat, s.reportexpiresat, s.timemodified,
+                       s.appealstatus, s.startedat, s.endedat, s.reportexpiresat, s.timemodified,
                        u.firstname, u.lastname, u.firstnamephonetic, u.lastnamephonetic,
                        u.middlename, u.alternatename, u.email,
                        c.fullname AS coursename, c.shortname AS courseshortname,
@@ -213,6 +213,36 @@ final class report_service {
                 ''
             );
         }
+    }
+
+    /** Whether a user may review an appeal for this exact session. */
+    public function can_review_appeal(\stdClass $session, int $viewerid): bool {
+        if (!$this->can_view_session($session, $viewerid)) {
+            return false;
+        }
+        if (has_capability('local/proctorcore:reviewappeals', \context_system::instance(), $viewerid)) {
+            return true;
+        }
+        return $this->can_view_quiz_reports($session, $viewerid);
+    }
+
+    /** Whether a user has appeal-review authority anywhere in a course. */
+    public function can_review_course_appeals(int $courseid, int $viewerid): bool {
+        if (has_capability('local/proctorcore:reviewappeals', \context_system::instance(), $viewerid)) {
+            return true;
+        }
+
+        $coursecontext = \context_course::instance($courseid);
+        if (has_capability('moodle/course:manageactivities', $coursecontext, $viewerid)) {
+            return true;
+        }
+
+        foreach (get_fast_modinfo($courseid, $viewerid)->get_instances_of('quiz') as $cm) {
+            if (has_capability('mod/quiz:viewreports', \context_module::instance((int) $cm->id), $viewerid)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -332,6 +362,15 @@ final class report_service {
                     }
                     break;
                 case asset_repository::TYPE_VIDEO_CLIP:
+                    // Legacy deployments registered the temporary full-session
+                    // source as report evidence. Keep the record for audit and
+                    // retention handling, but expose only key-moment clips.
+                    if ($asset->serverassettype === 'full_recording' || $asset->reason === 'full_session') {
+                        $grouped['other'][] = $asset;
+                        break;
+                    }
+                    $grouped['videos'][] = $asset;
+                    break;
                 case asset_repository::TYPE_ROOM_SCAN:
                     $grouped['videos'][] = $asset;
                     break;

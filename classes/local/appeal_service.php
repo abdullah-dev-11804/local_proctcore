@@ -91,7 +91,14 @@ final class appeal_service {
         }
         $appeal = $DB->get_record('local_proctorcore_appeals', ['id' => $appealid], '*', MUST_EXIST);
         $session = (new session_repository())->get_by_id((int) $appeal->sessionid);
-        (new report_service())->require_can_view_session($session, $reviewerid);
+        if (!(new report_service())->can_review_appeal($session, $reviewerid)) {
+            throw new \required_capability_exception(
+                \context_system::instance(),
+                'local/proctorcore:reviewappeals',
+                'nopermissions',
+                ''
+            );
+        }
         $now = time();
         $appeal->status = $status;
         $appeal->decision = clean_param($decision, PARAM_TEXT);
@@ -117,6 +124,86 @@ final class appeal_service {
         return $record ?: null;
     }
 
+    /**
+     * Lists appeals the viewer is authorised to review.
+     *
+     * @param int $viewerid Reviewer user id.
+     * @param array $filters Optional courseid, companyid, and status.
+     * @param int $page Zero-based page.
+     * @param int $perpage Page size.
+     * @return array{records: array, total: int, page: int, perpage: int}
+     */
+    public function list_for_reviewer(
+        int $viewerid,
+        array $filters = [],
+        int $page = 0,
+        int $perpage = 25
+    ): array {
+        global $DB;
+
+        $where = [];
+        $params = [];
+        if (!empty($filters['courseid'])) {
+            $where[] = 's.courseid = :courseid';
+            $params['courseid'] = (int) $filters['courseid'];
+        }
+        if (!empty($filters['companyid'])) {
+            $where[] = 'a.companyid = :companyid';
+            $params['companyid'] = (int) $filters['companyid'];
+        }
+        $status = strtolower((string) ($filters['status'] ?? ''));
+        if ($status === 'pending') {
+            $where[] = 'a.status IN (:holdpending, :submitted, :held)';
+            $params += ['holdpending' => 'hold_pending', 'submitted' => 'submitted', 'held' => 'held'];
+        } else if ($status !== '') {
+            $where[] = 'a.status = :appealstatus';
+            $params['appealstatus'] = clean_param($status, PARAM_ALPHANUMEXT);
+        }
+        $wheresql = $where ? 'WHERE ' . implode(' AND ', $where) : '';
+        $sql = "SELECT a.id AS appealid, a.sessionid, a.companyid, a.userid AS appellantid,
+                       a.reason, a.details, a.status AS appealstatus, a.decision,
+                       a.reviewerid, a.submittedat, a.decidedat,
+                       s.cmid, s.courseid, s.quizid, s.attemptid, s.userid,
+                       s.server_sessionid, s.result, s.status,
+                       u.firstname, u.lastname, u.firstnamephonetic, u.lastnamephonetic,
+                       u.middlename, u.alternatename, u.email,
+                       c.fullname AS coursename, q.name AS quizname,
+                       qa.attempt AS attemptnumber
+                  FROM {local_proctorcore_appeals} a
+                  JOIN {local_proctorcore_sessions} s ON s.id = a.sessionid
+                  JOIN {user} u ON u.id = a.userid
+                  JOIN {course} c ON c.id = s.courseid
+                  JOIN {quiz} q ON q.id = s.quizid
+             LEFT JOIN {quiz_attempts} qa ON qa.id = s.attemptid
+                  {$wheresql}
+              ORDER BY a.submittedat DESC, a.id DESC";
+
+        $reports = new report_service();
+        $visible = [];
+        foreach ($DB->get_records_sql($sql, $params) as $record) {
+            $record->id = (int) $record->sessionid;
+            if (!$reports->can_review_appeal($record, $viewerid)) {
+                continue;
+            }
+            $record->studentname = fullname($record);
+            $visible[] = $record;
+        }
+        $page = max(0, $page);
+        $perpage = min(100, max(1, $perpage));
+        return [
+            'records' => array_slice($visible, $page * $perpage, $perpage),
+            'total' => count($visible),
+            'page' => $page,
+            'perpage' => $perpage,
+        ];
+    }
+
+    /** Returns the number of unresolved appeals visible in one course. */
+    public function count_pending_for_course(int $courseid, int $viewerid): int {
+        $list = $this->list_for_reviewer($viewerid, ['courseid' => $courseid, 'status' => 'pending'], 0, 1);
+        return (int) $list['total'];
+    }
+
     /** Whether a learner can file an appeal now. */
     public function can_submit(\stdClass $session, int $userid): bool {
         global $DB;
@@ -129,17 +216,33 @@ final class appeal_service {
     private function notify_reviewers(int $appealid): void {
         global $DB;
         $appeal = $DB->get_record('local_proctorcore_appeals', ['id' => $appealid], '*', MUST_EXIST);
-        $context = \context_system::instance();
-        $users = get_users_by_capability($context, 'local/proctorcore:reviewappeals',
-            'u.id,u.firstname,u.lastname,u.email');
+        $session = (new session_repository())->get_by_id((int) $appeal->sessionid);
+        $users = get_users_by_capability(\context_system::instance(), 'local/proctorcore:reviewappeals',
+            'u.id,u.firstname,u.lastname,u.email') ?: [];
+        $coursecontext = \context_course::instance((int) $session->courseid);
+        foreach (get_enrolled_users($coursecontext, 'moodle/course:manageactivities', 0,
+            'u.id,u.firstname,u.lastname,u.email') as $user) {
+            $users[(int) $user->id] = $user;
+        }
+        if (!empty($session->cmid)) {
+            $modulecontext = \context_module::instance((int) $session->cmid);
+            foreach (get_users_by_capability($modulecontext, 'mod/quiz:viewreports',
+                'u.id,u.firstname,u.lastname,u.email') ?: [] as $user) {
+                $users[(int) $user->id] = $user;
+            }
+        }
         $tenants = new tenant_resolver();
+        $url = new \moodle_url('/local/proctorcore/appeal.php', ['sessionid' => (int) $appeal->sessionid]);
         foreach ($users as $user) {
+            if ((int) $user->id === (int) $appeal->userid) {
+                continue;
+            }
             if (!is_siteadmin((int) $user->id)
                     && !$tenants->user_belongs_to_company((int) $user->id, (int) $appeal->companyid)) {
                 continue;
             }
             $this->send_message($user, get_string('appeal:notificationsubject', 'local_proctorcore'),
-                get_string('appeal:notificationreviewer', 'local_proctorcore', $appealid));
+                get_string('appeal:notificationreviewer', 'local_proctorcore', $appealid), null, $url);
         }
     }
 
@@ -152,7 +255,13 @@ final class appeal_service {
             ]), $reviewerid);
     }
 
-    private function send_message(\stdClass $recipient, string $subject, string $body, ?int $senderid = null): void {
+    private function send_message(
+        \stdClass $recipient,
+        string $subject,
+        string $body,
+        ?int $senderid = null,
+        ?\moodle_url $contexturl = null
+    ): void {
         $message = new \core\message\message();
         $message->component = 'local_proctorcore';
         $message->name = 'appeal_updates';
@@ -164,6 +273,10 @@ final class appeal_service {
         $message->fullmessagehtml = '';
         $message->smallmessage = $body;
         $message->notification = 1;
+        if ($contexturl) {
+            $message->contexturl = $contexturl->out(false);
+            $message->contexturlname = get_string('appeal:view', 'local_proctorcore');
+        }
         try {
             message_send($message);
         } catch (\Throwable $exception) {

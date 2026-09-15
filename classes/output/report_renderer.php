@@ -183,6 +183,7 @@ final class report_renderer {
         $rows = [];
         foreach ($records as $record) {
             $result = self::status((string) $record->result);
+            $appeal = self::status((string) ($record->appealstatus ?? 'none'));
             $rows[] = [
                 'sessionid' => !empty($record->server_sessionid)
                     ? s((string) $record->server_sessionid)
@@ -199,6 +200,12 @@ final class report_renderer {
                 'resultclass' => $result['class'],
                 'mediastatus' => self::humanise((string) ($record->mediastatus ?? 'pending')),
                 'violationcount' => (int) $record->violationcount,
+                'appealtext' => $appeal['text'],
+                'appealclass' => $appeal['class'],
+                'hasappeal' => !empty($record->appealstatus) && (string) $record->appealstatus !== 'none',
+                'appealurl' => (new \moodle_url('/local/proctorcore/appeal.php', [
+                    'sessionid' => (int) $record->id,
+                ]))->out(false),
                 'detailurl' => (new \moodle_url('/local/proctorcore/reports.php', [
                     'sessionid' => (int) $record->id,
                 ]))->out(false),
@@ -245,12 +252,12 @@ final class report_renderer {
     private static function status(string $value): array {
         $normal = strtolower(trim($value));
         $class = 'badge-secondary';
-        if (in_array($normal, ['passed', 'completed', 'active', 'ready'], true)) {
+        if (in_array($normal, ['passed', 'completed', 'active', 'ready', 'approved'], true)) {
             $class = 'badge-success';
-        } else if (in_array($normal, ['failed', 'failed_allowed', 'abandoned', 'expired'], true)) {
+        } else if (in_array($normal, ['failed', 'failed_allowed', 'abandoned', 'expired', 'rejected'], true)) {
             $class = 'badge-danger';
         } else if (in_array($normal, ['pending', 'unknown', 'created', 'precheck', 'interrupted', 'recording',
-                'finalizing', 'needs_review', 'partial'], true)) {
+                'finalizing', 'needs_review', 'partial', 'submitted', 'hold_pending', 'held'], true)) {
             $class = 'badge-warning';
         }
         return ['text' => self::humanise($normal), 'class' => $class];

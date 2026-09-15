@@ -65,7 +65,12 @@ if ($sessionid > 0) {
     exit;
 }
 
-$PAGE->set_context(context_system::instance());
+$systemcontext = context_system::instance();
+$listcontext = $systemcontext;
+if ($courseid > 0) {
+    $listcontext = context_course::instance($courseid);
+}
+$PAGE->set_context($listcontext);
 $PAGE->set_title(get_string('report:reports', 'local_proctorcore'));
 $PAGE->set_heading(get_string('report:reports', 'local_proctorcore'));
 
@@ -102,6 +107,17 @@ $data = report_renderer::prepare_list($list['records']);
 );
 
 echo $OUTPUT->header();
+$showappeals = has_capability('local/proctorcore:reviewappeals', $systemcontext)
+    || ($courseid > 0 && $service->can_review_course_appeals($courseid, (int) $USER->id));
+if ($showappeals) {
+    $baseparams = $courseid > 0 ? ['courseid' => $courseid] : [];
+    echo $OUTPUT->tabtree([
+        new tabobject('reports', new moodle_url('/local/proctorcore/reports.php', $baseparams),
+            get_string('report:reports', 'local_proctorcore')),
+        new tabobject('appeals', new moodle_url('/local/proctorcore/appeals.php', $baseparams),
+            get_string('appeal:queue', 'local_proctorcore')),
+    ], 'reports');
+}
 echo $OUTPUT->heading(get_string('report:reports', 'local_proctorcore'));
 echo $OUTPUT->render_from_template('local_proctorcore/report_list', $data);
 echo $OUTPUT->paging_bar(

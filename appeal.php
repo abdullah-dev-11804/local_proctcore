@@ -15,8 +15,7 @@ $session = $report['session'];
 $context = context_course::instance((int) $session->courseid);
 $service = new appeal_service();
 $appeal = $service->get_for_session($sessionid);
-$canreview = has_capability('local/proctorcore:reviewappeals', context_system::instance())
-    && $reports->can_view_session($session, (int) $USER->id);
+$canreview = $reports->can_review_appeal($session, (int) $USER->id);
 
 $PAGE->set_context($context);
 $PAGE->set_url('/local/proctorcore/appeal.php', ['sessionid' => $sessionid]);
@@ -68,4 +67,11 @@ if ($appeal && $canreview && !in_array($appeal->status, ['approved', 'rejected']
 }
 echo html_writer::link(new moodle_url('/local/proctorcore/reports.php', ['sessionid' => $sessionid]),
     get_string('report:backtolist', 'local_proctorcore'), ['class' => 'btn btn-secondary mt-3']);
+if ($canreview) {
+    echo ' ' . html_writer::link(
+        new moodle_url('/local/proctorcore/appeals.php', ['courseid' => (int) $session->courseid]),
+        get_string('appeal:backtoqueue', 'local_proctorcore'),
+        ['class' => 'btn btn-secondary mt-3']
+    );
+}
 echo $OUTPUT->footer();

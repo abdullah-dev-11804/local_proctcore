@@ -1,0 +1,42 @@
+{{!
+    ProctorCore appeal review queue.
+}}
+<div class="local-proctorcore-appeal-list">
+    {{#hasrows}}
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>{{#str}}appeal:id, local_proctorcore{{/str}}</th>
+                    <th>{{#str}}report:student, local_proctorcore{{/str}}</th>
+                    <th>{{#str}}report:company, local_proctorcore{{/str}}</th>
+                    <th>{{#str}}report:course, local_proctorcore{{/str}}</th>
+                    <th>{{#str}}report:quiz, local_proctorcore{{/str}}</th>
+                    <th>{{#str}}appeal:reason, local_proctorcore{{/str}}</th>
+                    <th>{{#str}}appeal:submittedat, local_proctorcore{{/str}}</th>
+                    <th>{{#str}}appeal:status, local_proctorcore{{/str}}</th>
+                    <th>{{#str}}report:actions, local_proctorcore{{/str}}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#rows}}
+                <tr>
+                    <td>#{{appealid}}</td>
+                    <td>{{studentname}}<br><small class="text-muted">{{email}}</small></td>
+                    <td>{{company}}</td>
+                    <td>{{course}}</td>
+                    <td>{{quiz}} #{{attempt}}</td>
+                    <td>{{reason}}</td>
+                    <td>{{submittedat}}</td>
+                    <td><span class="badge {{statusclass}}">{{status}}</span></td>
+                    <td><a class="btn btn-sm btn-primary" href="{{viewurl}}">{{#str}}appeal:review, local_proctorcore{{/str}}</a></td>
+                </tr>
+                {{/rows}}
+            </tbody>
+        </table>
+    </div>
+    {{/hasrows}}
+    {{^hasrows}}
+        <div class="alert alert-info">{{#str}}appeal:none, local_proctorcore{{/str}}</div>
+    {{/hasrows}}
+</div>
