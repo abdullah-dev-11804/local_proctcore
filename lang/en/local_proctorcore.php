@@ -75,6 +75,20 @@ $string['participant:preflightheading'] = 'Participant information';
 $string['participant:requiredvalue'] = 'Complete this required participant field.';
 $string['participant:invalidnumber'] = 'Enter a valid number.';
 $string['participant:invalidoption'] = 'Choose a configured option.';
+$string['participant:managedescription'] = 'Choose the Moodle custom profile fields requested in every proctored exam. '
+    . 'Values are prefilled from and saved back to the user profile; reports retain a session snapshot.';
+$string['participant:manageprofilefields'] = 'Create or edit Moodle profile fields';
+$string['participant:editconfiguration'] = 'Edit proctoring field configuration';
+$string['participant:selectedfields'] = 'Fields included in proctoring';
+$string['participant:availablefields'] = 'Available Moodle profile fields';
+$string['participant:order'] = 'Order';
+$string['participant:remove'] = 'Remove from proctoring';
+$string['participant:missingprofilefield'] = 'Mapped Moodle profile field is missing';
+$string['participant:noselectedfields'] = 'No profile fields are currently requested before proctored exams.';
+$string['participant:noprofilefields'] = 'No Moodle custom profile fields exist yet. Create one using the button above.';
+$string['participant:requiredinprofile'] = 'Required in Moodle profile';
+$string['participant:included'] = 'Included';
+$string['participant:include'] = 'Include in proctoring';
 
 $string['rules:title'] = 'Exam rules';
 $string['rules:acknowledge'] = 'I have read and agree to follow these exam rules.';

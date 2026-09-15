@@ -6,18 +6,18 @@ namespace local_proctorcore\form;
 defined('MOODLE_INTERNAL') || die();
 require_once($CFG->libdir . '/formslib.php');
 
-/** Company-scoped participant field definition editor. */
+/** Global proctoring configuration editor for a selected Moodle profile field. */
 final class participant_fields_form extends \moodleform {
     protected function definition(): void {
         $mform = $this->_form;
         $mform->addElement('hidden', 'id', 0);
         $mform->setType('id', PARAM_INT);
-        $mform->addElement('select', 'companyid', get_string('participant:company', 'local_proctorcore'),
-            $this->_customdata['companies']);
+        $mform->addElement('hidden', 'companyid', 0);
         $mform->setType('companyid', PARAM_INT);
         $mform->addElement('text', 'shortname', get_string('participant:shortname', 'local_proctorcore'));
         $mform->setType('shortname', PARAM_ALPHANUMEXT);
         $mform->addRule('shortname', null, 'required');
+        $mform->freeze('shortname');
         foreach (['name', 'nameru', 'namekk'] as $name) {
             $mform->addElement('text', $name, get_string('participant:' . $name, 'local_proctorcore'));
             $mform->setType($name, PARAM_TEXT);
@@ -40,21 +40,19 @@ final class participant_fields_form extends \moodleform {
         $mform->addElement('select', 'profilefieldid', get_string('participant:profilefield', 'local_proctorcore'),
             $this->_customdata['profilefields']);
         $mform->setType('profilefieldid', PARAM_INT);
+        $mform->freeze('profilefieldid');
         $mform->addElement('advcheckbox', 'required', get_string('participant:required', 'local_proctorcore'));
         $mform->addElement('advcheckbox', 'editablebyuser', get_string('participant:editable', 'local_proctorcore'));
         $mform->setDefault('editablebyuser', 1);
-        $mform->addElement('advcheckbox', 'active', get_string('participant:active', 'local_proctorcore'));
-        $mform->setDefault('active', 1);
-        $mform->addElement('text', 'sortorder', get_string('participant:sortorder', 'local_proctorcore'));
+        $mform->addElement('hidden', 'active', 1);
+        $mform->setType('active', PARAM_BOOL);
+        $mform->addElement('hidden', 'sortorder', 0);
         $mform->setType('sortorder', PARAM_INT);
-        $this->add_action_buttons(false, get_string('savechanges'));
+        $this->add_action_buttons(true, get_string('savechanges'));
     }
 
     public function validation($data, $files): array {
         $errors = parent::validation($data, $files);
-        if (!isset($this->_customdata['companies'][(int) ($data['companyid'] ?? 0)])) {
-            $errors['companyid'] = get_string('participant:invalidcompany', 'local_proctorcore');
-        }
         if (($data['datatype'] ?? '') === 'dropdown') {
             $options = preg_split('/\R+/', trim((string) ($data['options'] ?? '')), -1, PREG_SPLIT_NO_EMPTY);
             if (!$options) {

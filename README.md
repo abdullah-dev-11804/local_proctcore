@@ -15,7 +15,7 @@ Main Moodle-side control centre and official record keeper for the SENTAL procto
 - `consent.php` - Enforces personal acceptance of the current required document versions.
 - `consent_documents.php` - Publishes and activates immutable multilingual consent-document versions.
 - `consent_export.php` - Exports the append-only consent evidence log as CSV.
-- `participant_fields.php` - Manages company-scoped multilingual participant fields and Moodle profile mappings.
+- `participant_fields.php` - Selects and orders global Moodle custom profile fields for proctored exams and edits their multilingual presentation.
 - `reset_face.php` - Admin entry point for resetting a user's reusable Server B face reference.
 - `cli/reset_face_reference.php` - CLI helper to reset a user's reusable face reference and force fresh enrollment.
 - `cli/purge_test_data.php` - Safely previews or purges pre-production ProctorCore transactions while preserving configuration.
@@ -45,7 +45,7 @@ Main Moodle-side control centre and official record keeper for the SENTAL procto
 - `classes/external/webhook_receiver.php` - Web-service receiver for signed lifecycle, result, and asset events.
 - `classes/privacy/provider.php` - Moodle privacy metadata declaration for stored proctoring personal data.
 - `classes/form/appeal_form.php` - Moodle form used by students to file categorized appeals.
-- `classes/form/participant_fields_form.php` - Moodle form for multilingual company participant-field definitions.
+- `classes/form/participant_fields_form.php` - Moodle form for multilingual proctoring presentation of selected profile fields.
 - `classes/form/consent_document_form.php` - Moodle form for publishing immutable multilingual consent versions.
 - `classes/output/report_renderer.php` - Prepares report status, identity policy, violations, snapshots, clips, and retention data for templates.
 - `templates/report_summary.mustache` - Displays a detailed proctoring report and protected evidence links.
@@ -57,7 +57,7 @@ Main Moodle-side control centre and official record keeper for the SENTAL procto
 - `local_proctorcore_companycfg` - Per-company integration, retention, language, instruction, and feature settings.
 - `local_proctorcore_faceenrol` - One reusable Server B face reference metadata record per Moodle user.
 - `local_proctorcore_quizcfg` - Per-quiz proctoring enablement and gate requirements.
-- `local_proctorcore_fields` - Configurable participant data fields such as IIN, department, or course-specific identifiers.
+- `local_proctorcore_fields` - Global proctoring selection, ordering, and multilingual presentation for Moodle custom profile fields.
 - `local_proctorcore_uservals` - Reusable per-user participant values with optional Moodle custom-profile synchronization.
 - `local_proctorcore_consentdoc` - Consent document activation, ordering, and current-version pointers.
 - `local_proctorcore_consentver` - Immutable Kazakh, Russian, and English consent document versions.

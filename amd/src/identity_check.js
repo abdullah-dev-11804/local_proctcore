@@ -18,6 +18,13 @@ define([], function() {
         }
     };
 
+    const setParticipantFieldsVisible = visible => {
+        document.querySelectorAll('[data-proctorcore-participant-fields]').forEach(section => {
+            section.classList.toggle('is-waiting', !visible);
+            section.setAttribute('aria-hidden', visible ? 'false' : 'true');
+        });
+    };
+
     const submitButtons = panel => {
         const form = panel.closest('form');
         return form ? Array.from(form.querySelectorAll(
@@ -405,6 +412,7 @@ define([], function() {
                     window.ProctorCorePrecheck.complete(label);
                     window.ProctorCorePrecheck.stop();
                 }
+                setParticipantFieldsVisible(true);
                 enableSubmit(panel, true);
             } else {
                 if (window.ProctorCorePrecheck && typeof window.ProctorCorePrecheck.resume === 'function') {
@@ -428,6 +436,7 @@ define([], function() {
          * @param {Object} config Moodle configuration.
          */
         init: function(config) {
+            setParticipantFieldsVisible(false);
             const panel = document.getElementById(config.panelId);
             if (!panel) {
                 return;
@@ -440,6 +449,7 @@ define([], function() {
                 setField('proctorcore_identity_passed', 1);
                 setField('proctorcore_identity_status', 'notrequired');
                 update(panel, 'passed', config.strings.notRequired);
+                setParticipantFieldsVisible(true);
                 return;
             }
 

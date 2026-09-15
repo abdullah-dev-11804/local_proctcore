@@ -9,7 +9,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_proctorcore';
-$plugin->version = 2026091602;
+$plugin->version = 2026091603;
 $plugin->requires = 2022041900; // Moodle 4.0+.
 $plugin->maturity = MATURITY_BETA;
-$plugin->release = '0.14.6 - Restored identity capture quality';
+$plugin->release = '0.15.0 - Global participant profile fields';

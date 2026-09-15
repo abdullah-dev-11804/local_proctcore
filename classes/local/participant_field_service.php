@@ -12,11 +12,44 @@ final class participant_field_service {
     /** @return \stdClass[] */
     public function get_fields(int $companyid, bool $activeonly = true): array {
         global $DB;
-        $conditions = ['companyid' => $companyid];
+
+        // A.4 is deliberately site-wide. Keep the company argument for API
+        // compatibility with callers, but never add legacy tenant definitions
+        // to the globally selected pre-exam fields.
+        $where = 'companyid = :participantcompany';
+        $params = ['participantcompany' => 0];
         if ($activeonly) {
-            $conditions['active'] = 1;
+            $where .= ' AND active = 1';
         }
-        return array_values($DB->get_records('local_proctorcore_fields', $conditions, 'sortorder, id'));
+        $records = array_values($DB->get_records_select(
+            'local_proctorcore_fields',
+            $where,
+            $params,
+            'companyid ASC, sortorder ASC, id ASC'
+        ));
+
+        if ($activeonly) {
+            // A Moodle profile field may have been deleted outside ProctorCore.
+            // Do not block exam entry with a configuration that can no longer
+            // be displayed or saved; the admin board still exposes it for removal.
+            $profileids = array_values(array_unique(array_filter(array_map(
+                static fn(\stdClass $record): int => (int) $record->profilefieldid,
+                $records
+            ))));
+            $availableprofiles = $profileids
+                ? $DB->get_records_list('user_info_field', 'id', $profileids, '', 'id')
+                : [];
+            $records = array_values(array_filter(
+                $records,
+                static fn(\stdClass $record): bool => empty($record->profilefieldid)
+                    || isset($availableprofiles[(int) $record->profilefieldid])
+            ));
+        }
+        usort($records, static function(\stdClass $left, \stdClass $right): int {
+            return [(int) $left->sortorder, (int) $left->id]
+                <=> [(int) $right->sortorder, (int) $right->id];
+        });
+        return $records;
     }
 
     /** Adds configured fields to Moodle's preflight form. */
@@ -25,6 +58,8 @@ final class participant_field_service {
         if (!$fields) {
             return;
         }
+        $mform->addElement('html', '<div class="local-proctorcore-participant-fields is-waiting" '
+            . 'data-proctorcore-participant-fields>');
         $mform->addElement('header', 'proctorcore_participant_heading',
             get_string('participant:preflightheading', 'local_proctorcore'));
         foreach ($fields as $field) {
@@ -67,6 +102,91 @@ final class participant_field_service {
                 $mform->freeze($name);
             }
         }
+        $mform->addElement('html', '</div>');
+    }
+
+    /** Returns all standard Moodle custom profile fields available for inclusion. */
+    public function get_profile_fields(): array {
+        global $DB;
+        if (!$DB->get_manager()->table_exists(new \xmldb_table('user_info_field'))) {
+            return [];
+        }
+        return array_values($DB->get_records('user_info_field', [], 'sortorder, id'));
+    }
+
+    /** Includes a Moodle custom profile field in every proctored exam. */
+    public function include_profile_field(int $profilefieldid): \stdClass {
+        global $DB;
+
+        $profile = $DB->get_record('user_info_field', ['id' => $profilefieldid], '*', MUST_EXIST);
+        $matches = $DB->get_records('local_proctorcore_fields', [
+            'companyid' => 0,
+            'profilefieldid' => $profilefieldid,
+        ], 'id ASC', '*', 0, 1);
+        $existing = $matches ? reset($matches) : false;
+        if (!$existing) {
+            $existing = $DB->get_record('local_proctorcore_fields', [
+                'companyid' => 0,
+                'shortname' => (string) $profile->shortname,
+            ]);
+        }
+        $sortorder = (int) $DB->get_field_sql(
+            'SELECT COALESCE(MAX(sortorder), 0) FROM {local_proctorcore_fields} WHERE companyid = 0'
+        ) + 10;
+        $datatype = $this->profile_datatype((string) $profile->datatype);
+        $options = $datatype === 'dropdown'
+            ? trim((string) ($profile->param1 ?? ''))
+            : '';
+        $description = trim(html_to_text((string) ($profile->description ?? ''), 0, false));
+
+        return $this->save_definition([
+            'id' => (int) ($existing->id ?? 0),
+            'companyid' => 0,
+            'profilefieldid' => $profilefieldid,
+            'shortname' => (string) $profile->shortname,
+            'name' => (string) $profile->name,
+            'nameru' => (string) ($existing->nameru ?? $profile->name),
+            'namekk' => (string) ($existing->namekk ?? $profile->name),
+            'helptext' => (string) ($existing->helptext ?? $description),
+            'helpru' => (string) ($existing->helpru ?? $description),
+            'helpkk' => (string) ($existing->helpkk ?? $description),
+            'datatype' => (string) ($existing->datatype ?? $datatype),
+            'options' => $existing ? implode("\n", $this->option_values($existing)) : $options,
+            'required' => $existing ? (int) $existing->required : (int) ($profile->required ?? 0),
+            'editablebyuser' => $existing ? (int) $existing->editablebyuser : empty($profile->locked),
+            'active' => 1,
+            'sortorder' => $existing ? (int) $existing->sortorder : $sortorder,
+        ]);
+    }
+
+    /** Reorders one global proctoring field while retaining stable integer positions. */
+    public function move_definition(int $id, string $direction): void {
+        global $DB;
+
+        $records = array_values($DB->get_records(
+            'local_proctorcore_fields',
+            ['companyid' => 0, 'active' => 1],
+            'sortorder, id'
+        ));
+        $index = null;
+        foreach ($records as $position => $record) {
+            if ((int) $record->id === $id) {
+                $index = $position;
+                break;
+            }
+        }
+        if ($index === null) {
+            throw new \moodle_exception('invalidrecord', 'error');
+        }
+        $target = $direction === 'up' ? $index - 1 : ($direction === 'down' ? $index + 1 : $index);
+        if ($target >= 0 && $target < count($records) && $target !== $index) {
+            [$records[$index], $records[$target]] = [$records[$target], $records[$index]];
+        }
+        $transaction = $DB->start_delegated_transaction();
+        foreach ($records as $position => $record) {
+            $DB->set_field('local_proctorcore_fields', 'sortorder', ($position + 1) * 10, ['id' => $record->id]);
+        }
+        $transaction->allow_commit();
     }
 
     /** Validates and retains values until Moodle creates the attempt/session. */
@@ -196,9 +316,14 @@ final class participant_field_service {
     }
 
     private function options(\stdClass $field): array {
-        $config = json_decode((string) ($field->configjson ?? ''), true);
-        $values = is_array($config['options'] ?? null) ? $config['options'] : [];
+        $values = $this->option_values($field);
         return $values ? array_combine(array_map('strval', $values), array_map('strval', $values)) : [];
+    }
+
+    /** @return string[] */
+    private function option_values(\stdClass $field): array {
+        $config = json_decode((string) ($field->configjson ?? ''), true);
+        return is_array($config['options'] ?? null) ? array_values($config['options']) : [];
     }
 
     private function upsert(string $table, array $keys, string $value): void {
@@ -215,16 +340,23 @@ final class participant_field_service {
     }
 
     private function save_profile_value(int $fieldid, int $userid, string $value): void {
-        global $DB;
-        $record = $DB->get_record('user_info_data', ['userid' => $userid, 'fieldid' => $fieldid]);
-        if ($record) {
-            $record->data = $value;
-            $record->dataformat = FORMAT_PLAIN;
-            $DB->update_record('user_info_data', $record);
-        } else {
-            $DB->insert_record('user_info_data', (object) [
-                'userid' => $userid, 'fieldid' => $fieldid, 'data' => $value, 'dataformat' => FORMAT_PLAIN,
-            ]);
-        }
+        global $CFG, $DB;
+        $profile = $DB->get_record('user_info_field', ['id' => $fieldid], 'id,shortname', MUST_EXIST);
+        require_once($CFG->dirroot . '/user/profile/lib.php');
+        $user = (object) [
+            'id' => $userid,
+            'profile_field_' . (string) $profile->shortname => $value,
+        ];
+        profile_save_data($user);
+    }
+
+    /** Maps Moodle's profile plugins to the field types supported by A.4.1. */
+    private function profile_datatype(string $datatype): string {
+        $map = [
+            'checkbox' => 'checkbox',
+            'datetime' => 'date',
+            'menu' => 'dropdown',
+        ];
+        return $map[strtolower($datatype)] ?? 'text';
     }
 }
