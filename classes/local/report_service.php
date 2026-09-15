@@ -314,7 +314,9 @@ final class report_service {
             $metadata = is_array($metadata) ? $metadata : [];
             $asset->metadataarray = $metadata;
             $asset->reason = strtolower((string) ($metadata['reason'] ?? $metadata['snapshotReason'] ?? ''));
+            $asset->serverassettype = strtolower((string) ($metadata['serverAssetType'] ?? ''));
             $asset->filename = $this->asset_filename($asset, $metadata);
+            $asset->displayname = $this->asset_display_name($asset);
 
             switch ((string) $asset->assettype) {
                 case asset_repository::TYPE_IDENTITY_PHOTO:
@@ -343,6 +345,25 @@ final class report_service {
         }
 
         return $grouped;
+    }
+
+    /**
+     * Returns an evidence label that distinguishes full recordings from clips.
+     *
+     * @param \stdClass $asset Asset row with decoded metadata.
+     * @return string
+     */
+    private function asset_display_name(\stdClass $asset): string {
+        $reason = str_replace(['_', '-'], ' ', (string) ($asset->reason ?? ''));
+        $reason = $reason !== '' ? ucfirst($reason) : get_string('report:notavailable', 'local_proctorcore');
+        if ((string) ($asset->serverassettype ?? '') === 'full_recording'
+                || (string) ($asset->reason ?? '') === 'full_session') {
+            return get_string('report:fullrecording', 'local_proctorcore');
+        }
+        if ((string) $asset->assettype === asset_repository::TYPE_VIDEO_CLIP) {
+            return get_string('report:violationclip', 'local_proctorcore', $reason);
+        }
+        return $reason;
     }
 
     /**
@@ -435,6 +456,23 @@ final class report_service {
     private function build_report(\stdClass $session): array {
         $violations = $this->get_violations((int) $session->id);
         $assets = $this->get_report_assets((int) $session->id);
+        $violationtypes = [];
+        foreach ($violations as $violation) {
+            $violationtypes[(int) $violation->id] = ucfirst(str_replace(
+                ['_', '-'],
+                ' ',
+                (string) $violation->type
+            ));
+        }
+        foreach ($assets['violations'] as $asset) {
+            if (!empty($asset->violationid) && isset($violationtypes[(int) $asset->violationid])) {
+                $asset->displayname = get_string(
+                    'report:violationsnapshot',
+                    'local_proctorcore',
+                    $violationtypes[(int) $asset->violationid]
+                );
+            }
+        }
         $check = $this->get_latest_check((int) $session->id);
         $fields = $this->get_participant_fields((int) $session->id);
         $appeal = (new appeal_service())->get_for_session((int) $session->id);

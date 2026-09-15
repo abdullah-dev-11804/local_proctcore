@@ -18,6 +18,7 @@ define([], function() {
     let completedSamples = 0;
     let lastLatencyMs = null;
     let activeController = null;
+    let lastFrameImage = null;
 
     const request = async(payload, keepalive = false) => {
         const controller = new AbortController();
@@ -80,7 +81,7 @@ define([], function() {
         return canvas.toDataURL('image/jpeg', 0.72);
     };
 
-    const dispatchViolations = data => {
+    const dispatchViolations = (data, snapshotImage = null) => {
         const violations = Array.isArray(data.violations)
             ? data.violations
             : (data.violation ? [data.violation] : []);
@@ -91,6 +92,7 @@ define([], function() {
                     violationType: violation.type,
                     severity: Number(violation.severity || 1),
                     occurredAt: Number(violation.occurredAt || Math.floor(Date.now() / 1000)),
+                    snapshotImage: snapshotImage || lastFrameImage,
                 },
             }));
         });
@@ -108,6 +110,7 @@ define([], function() {
         if (!image) {
             return;
         }
+        lastFrameImage = image;
         requestRunning = true;
         const started = performance.now();
         try {
@@ -150,9 +153,12 @@ define([], function() {
     };
 
     const browserEvent = async(type, metadata = {}, keepalive = false) => {
+        // Preserve a camera frame before a hidden tab can suspend rendering or
+        // delay the asynchronous response that creates the violation record.
+        const snapshotImage = frameData() || lastFrameImage;
         try {
             const data = await request({action: 'event', eventType: type, metadata}, keepalive);
-            dispatchViolations(data);
+            dispatchViolations(data, snapshotImage);
         } catch (error) {
             window.console.warn(`ProctorCore event ${type} failed:`, error);
         }

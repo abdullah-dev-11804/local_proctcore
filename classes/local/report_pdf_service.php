@@ -12,6 +12,9 @@ defined('MOODLE_INTERNAL') || die();
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 final class report_pdf_service {
+    /** Increment when PDF layout/content changes so cached reports regenerate. */
+    private const GENERATOR_VERSION = 2;
+
     /** @var report_service */
     private $reports;
 
@@ -117,6 +120,7 @@ final class report_pdf_service {
                     'generatedAt' => time(),
                     'sourceModified' => $sourceversion,
                     'generationReason' => clean_param($reason, PARAM_ALPHANUMEXT),
+                    'generatorVersion' => self::GENERATOR_VERSION,
                     'provisional' => (string) $session->result === 'unknown',
                 ]
             );
@@ -164,9 +168,10 @@ final class report_pdf_service {
             $metadata = json_decode((string) ($asset->metadata ?? ''), true);
             $metadata = is_array($metadata) ? $metadata : [];
             $assetversion = (int) ($metadata['sourceModified'] ?? 0);
+            $generatorversion = (int) ($metadata['generatorVersion'] ?? 0);
             try {
                 $this->assetaccess->get_moodle_file($asset);
-                if ($assetversion >= $sourcemodified) {
+                if ($assetversion >= $sourcemodified && $generatorversion >= self::GENERATOR_VERSION) {
                     return $asset;
                 }
             } catch (\Throwable $exception) {
@@ -204,9 +209,9 @@ final class report_pdf_service {
         $html .= $this->pdf_row(get_string('report:sessionid', 'local_proctorcore'), $sessionidtext);
         $html .= $this->pdf_row(get_string('report:student', 'local_proctorcore'), (string) $session->studentname);
         $html .= $this->pdf_row(get_string('report:email', 'local_proctorcore'), (string) $session->email);
-        $html .= $this->pdf_row(get_string('report:company', 'local_proctorcore'), (string) $session->companyname);
-        $html .= $this->pdf_row(get_string('report:course', 'local_proctorcore'), (string) $session->coursename);
-        $html .= $this->pdf_row(get_string('report:quiz', 'local_proctorcore'), (string) $session->quizname);
+        $html .= $this->pdf_row(get_string('report:company', 'local_proctorcore'), format_string((string) $session->companyname));
+        $html .= $this->pdf_row(get_string('report:course', 'local_proctorcore'), format_string((string) $session->coursename));
+        $html .= $this->pdf_row(get_string('report:quiz', 'local_proctorcore'), format_string((string) $session->quizname));
         $html .= $this->pdf_row(get_string('report:attempt', 'local_proctorcore'), (string) ($session->attemptnumber ?? '—'));
         $html .= $this->pdf_row(get_string('report:starttime', 'local_proctorcore'),
             $report['starttime'] ? userdate((int) $report['starttime']) : '—');
@@ -281,12 +286,38 @@ final class report_pdf_service {
                 $pdf->Cell(0, 8, $heading, 0, 1);
                 $pdf->SetFont('freesans', '', 9);
                 $pdf->Cell(0, 6, userdate((int) $asset->timecreated), 0, 1);
+                if (!empty($asset->displayname)) {
+                    $pdf->Cell(0, 6, (string) $asset->displayname, 0, 1);
+                }
                 try {
-                    $pdf->Image('@' . $content, 15, 34, 180, 0);
+                    $pdf->Image('@' . $content, 15, !empty($asset->displayname) ? 40 : 34, 180, 0);
                 } catch (\Throwable $exception) {
                     $pdf->writeHTML('<p>' . s(get_string('report:snapshotunavailable', 'local_proctorcore')) . '</p>');
                 }
             }
+        }
+
+        if (!empty($report['assets']['videos'])) {
+            $pdf->AddPage();
+            $pdf->SetFont('freesans', 'B', 13);
+            $pdf->Cell(0, 8, get_string('report:videoclips', 'local_proctorcore'), 0, 1);
+            $pdf->SetFont('freesans', '', 9);
+            $videohtml = '<p>' . s(get_string('report:videolinknote', 'local_proctorcore')) . '</p>'
+                . '<table border="1" cellpadding="5">';
+            foreach ($report['assets']['videos'] as $asset) {
+                $url = (new \moodle_url('/local/proctorcore/evidence.php', [
+                    'assetid' => (int) $asset->id,
+                ]))->out(false);
+                $label = (string) ($asset->displayname ?? $asset->reason ?? $asset->assettype);
+                $size = $asset->filesize !== null ? display_size((int) $asset->filesize) : '—';
+                $value = s(userdate((int) $asset->timecreated) . ' · ' . $size)
+                    . '<br><a href="' . s($url) . '">'
+                    . s(get_string('report:openvideo', 'local_proctorcore')) . '</a>';
+                $videohtml .= '<tr><td width="42%"><strong>' . s($label) . '</strong></td>'
+                    . '<td width="58%">' . $value . '</td></tr>';
+            }
+            $videohtml .= '</table>';
+            $pdf->writeHTML($videohtml, true, false, true, false, '');
         }
 
         $pdf->AddPage();

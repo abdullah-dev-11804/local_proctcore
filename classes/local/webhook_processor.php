@@ -387,6 +387,7 @@ final class webhook_processor {
                     'availableat' => $availableat,
                     'expiresat' => null,
                     'metadata' => [
+                        'serverAssetType' => clean_param((string) $asset['type'], PARAM_ALPHANUMEXT),
                         'capturedAt' => $asset['capturedAt'] ?? null,
                         'availableAt' => $asset['availableAt'] ?? null,
                         'reason' => $asset['reason'] ?? ($asset['metadata']['reason'] ?? null),

@@ -227,7 +227,8 @@ final class report_renderer {
             'id' => (int) $asset->id,
             'filename' => s((string) $asset->filename),
             'type' => self::humanise((string) $asset->assettype),
-            'reason' => self::humanise((string) ($asset->reason ?: $asset->assettype)),
+            'reason' => s((string) ($asset->displayname
+                ?? self::humanise((string) ($asset->reason ?: $asset->assettype)))),
             'createdat' => userdate((int) $asset->timecreated),
             'filesize' => $asset->filesize !== null ? display_size((int) $asset->filesize) : '—',
             'viewurl' => $url->out(false),

@@ -570,7 +570,7 @@ define([], function() {
             payload.violationType = violation.violationType || 'violation';
             payload.occurredAt = Number(violation.occurredAt || Math.floor(Date.now() / 1000));
         }
-        const snapshotImage = capturePanelDataUrl(0.85);
+        const snapshotImage = violation.snapshotImage || capturePanelDataUrl(0.85);
         if (snapshotImage) {
             payload.snapshotImage = snapshotImage;
         }
@@ -584,7 +584,11 @@ define([], function() {
 
     const finishLocalSubmission = async(form, submitter) => {
         updateStatus('stopping', config.strings.finalising, config.strings.submissionSnapshot);
-        await captureLocalSnapshot('submission');
+        try {
+            await captureLocalSnapshot('submission');
+        } catch (error) {
+            window.console.warn('ProctorCore submission snapshot failed:', error);
+        }
         await stopLocalRecorder();
         await apiRequest('stop', {reason: 'submitted'});
         stopLocalTracks();
@@ -600,14 +604,13 @@ define([], function() {
 
     const finishServerSubmission = async(form, submitter) => {
         updateStatus('stopping', config.strings.finalising, config.strings.submissionSnapshot);
-        await stopServerRecorder();
-        try {
-            await requestSnapshot('submission');
-        } catch (error) {
-            // Finalising the durable recording is more important than an individual
-            // snapshot. The Moodle submission observer provides a second stop signal.
+        // Start the exact submission-moment capture before stopping media, but
+        // do not let a failed snapshot prevent durable recording finalization.
+        const submissionSnapshot = requestSnapshot('submission').catch(error => {
             window.console.warn('ProctorCore submission snapshot failed:', error);
-        }
+        });
+        await stopServerRecorder();
+        await submissionSnapshot;
         await apiRequest('stop', {reason: 'submitted'});
         disconnectRoom();
 
@@ -738,9 +741,10 @@ define([], function() {
         const started = await apiRequest('start', {reason: 'attempt_page_connected'});
         localSegment = Number(started.segment) || 1;
         serverSequence = Math.max(0, Number(started.nextSequence) || 0);
-        if (started.fallback || started.provider !== 'livekit_egress') {
-            startServerRecorder(stream, bootstrap.chunkMilliseconds || 5000);
-        }
+        // Keep a low-bitrate browser safety copy even while Egress is healthy.
+        // Participant Egress can end at a Moodle page navigation; the worker
+        // chooses this copy only when it covers materially more of the segment.
+        startServerRecorder(stream, bootstrap.chunkMilliseconds || 5000);
         return started;
     };
 
