@@ -34,7 +34,8 @@ final class identity_service {
             $contextid,
             $transactionid,
             !$enrollment,
-            !empty(get_config('local_proctorcore', 'identityilluminationenabled'))
+            !empty(get_config('local_proctorcore', 'identityilluminationenabled')),
+            !empty(get_config('local_proctorcore', 'identitymovementenabled'))
         );
         if (empty($challenge['challengeId']) || empty($challenge['nonce'])) {
             throw new \moodle_exception('identity:invalidchallenge', 'local_proctorcore');

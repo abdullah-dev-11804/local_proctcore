@@ -20,6 +20,15 @@ final class session_repository_test extends \advanced_testcase {
         $this->assertEquals(0.85, $config->identitythreshold);
     }
 
+    public function test_identity_movement_challenge_is_disabled_by_default(): void {
+        $this->resetAfterTest();
+        unset_config('identitymovementenabled', 'local_proctorcore');
+
+        $config = (new \local_proctorcore\local\company_config_repository())->get_effective_config(0);
+
+        $this->assertFalse($config->identitymovementenabled);
+    }
+
     public function test_report_retention_has_six_month_floor(): void {
         $this->resetAfterTest();
         set_config('reportretentiondays', '20', 'local_proctorcore');

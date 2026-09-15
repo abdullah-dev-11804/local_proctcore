@@ -40,6 +40,7 @@ final class company_config_repository {
             'minimumspeedmbps' => max(0.1, (float) $this->global_config('minimumspeedmbps', 5.0)),
             'minimumlighting' => min(255, max(1, (int) $this->global_config('minimumlighting', 35))),
             'identityenabled' => (bool) $this->global_config('identityenabled', 1),
+            'identitymovementenabled' => (bool) $this->global_config('identitymovementenabled', 0),
             'identitythreshold' => min(1.0, max(0.85, (float) $this->global_config('identitythreshold', 0.85))),
             'identityminliveframes' => min(12, max(1, (int) $this->global_config('identityminliveframes', 1))),
             'identityminbrightness' => min(255, max(1, (float) $this->global_config('identityminbrightness', 35))),

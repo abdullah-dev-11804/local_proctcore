@@ -44,7 +44,8 @@ final class server_client {
         string $contextid,
         string $transactionid,
         bool $enrollment,
-        bool $illuminationrequired = false
+        bool $illuminationrequired = false,
+        bool $movementrequired = false
     ): array {
         return $this->request('POST', '/api/v1/identity/liveness/challenges', [
             'transactionId' => $transactionid,
@@ -53,6 +54,7 @@ final class server_client {
             'contextId' => $contextid,
             'enrollment' => $enrollment,
             'illuminationRequired' => $illuminationrequired,
+            'movementRequired' => $movementrequired,
         ]);
     }
 

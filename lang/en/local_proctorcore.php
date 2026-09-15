@@ -380,8 +380,10 @@ $string['error:asseturlblocked'] = 'The evidence URL is outside the configured P
 
 $string['settings:identityenabled'] = 'Enable automatic identity verification';
 $string['settings:identityenabled_desc'] = 'When enabled, Server B may enforce identity verification and report the official result back to Moodle.';
+$string['settings:identitymovementenabled'] = 'Require head-movement identity challenge';
+$string['settings:identitymovementenabled_desc'] = 'Disabled by default. When enabled, both first-time face-reference enrollment and later face verification require the server-authored head-turn challenge. Passive MiniFASNet anti-spoof detection remains active when this setting is disabled.';
 $string['settings:identityilluminationenabled'] = 'Require screen-light liveness challenge';
-$string['settings:identityilluminationenabled_desc'] = 'Disabled by default. When enabled, the identity check adds a coloured screen-light response test after the passive camera-authenticity and head-movement checks. Enable it only after calibration for the approved devices and testing environment.';
+$string['settings:identityilluminationenabled_desc'] = 'Disabled by default. When enabled, the identity check adds a coloured screen-light response test after the other enabled liveness checks. Enable it only after calibration for the approved devices and testing environment.';
 $string['settings:identitythreshold'] = 'Face similarity threshold';
 $string['settings:identitythreshold_desc'] = 'Cosine similarity required for an automatic match. Moodle enforces 0.85 as the lowest configurable threshold; the mismatch policy decides whether a lower score blocks entry or is admitted for review/failure handling.';
 $string['settings:identityminliveframes'] = 'Verification minimum live frames';

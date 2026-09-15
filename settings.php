@@ -102,6 +102,13 @@ if ($hassiteconfig) {
     ));
 
     $settings->add(new admin_setting_configcheckbox(
+        'local_proctorcore/identitymovementenabled',
+        get_string('settings:identitymovementenabled', 'local_proctorcore'),
+        get_string('settings:identitymovementenabled_desc', 'local_proctorcore'),
+        0
+    ));
+
+    $settings->add(new admin_setting_configcheckbox(
         'local_proctorcore/identityilluminationenabled',
         get_string('settings:identityilluminationenabled', 'local_proctorcore'),
         get_string('settings:identityilluminationenabled_desc', 'local_proctorcore'),
