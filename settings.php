@@ -449,6 +449,12 @@ if ($hassiteconfig) {
         'local/proctorcore:manageparticipantfields'
     ));
     $ADMIN->add('localplugins', new admin_externalpage(
+        'local_proctorcore_face_references',
+        get_string('identity:managereferences', 'local_proctorcore'),
+        new moodle_url('/local/proctorcore/face_references.php'),
+        'local/proctorcore:resetfaceenrolment'
+    ));
+    $ADMIN->add('localplugins', new admin_externalpage(
         'local_proctorcore_consent_documents',
         get_string('consent:manage', 'local_proctorcore'),
         new moodle_url('/local/proctorcore/consent_documents.php'),

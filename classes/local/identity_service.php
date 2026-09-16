@@ -522,6 +522,10 @@ final class identity_service {
      * @return void
      */
     public function erase_reference(int $userid, string $reason, ?int $actoruserid = null): void {
+        $reason = trim(clean_param($reason, PARAM_TEXT));
+        if ($reason === '') {
+            throw new \moodle_exception('identity:resetreasonrequired', 'local_proctorcore');
+        }
         $repository = new face_enrollment_repository();
         $enrollment = $repository->get_active($userid);
         if (!$enrollment) {
