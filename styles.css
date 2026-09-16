@@ -846,7 +846,7 @@
 .moodle-dialogue-base .mod_quiz_preflight_popup .moodle-dialogue-bd {
     flex: 1 1 auto;
     min-height: 0;
-    overflow: hidden !important;
+    overflow: auto !important;
     padding: .8rem 1rem !important;
 }
 
