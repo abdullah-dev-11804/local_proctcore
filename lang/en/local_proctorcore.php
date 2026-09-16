@@ -510,6 +510,7 @@ $string['identity:needsretry'] = 'Identity capture needs another try';
 $string['identity:attemptsremaining'] = 'Attempts remaining for this quiz: {$a}.';
 $string['identity:retrylocked'] = 'Identity verification is temporarily locked after {$a->max} failed attempts. You can try again at {$a->time}.';
 $string['identity:failed'] = 'Identity verification failed';
+$string['identity:snapshotmissing'] = 'The verified identity frame is unavailable. Run the identity check again before starting the exam.';
 $string['identity:failnoface'] = 'No face was detected. Keep your face clearly visible in the camera.';
 $string['identity:faillowlight'] = 'The image is too dark. Improve lighting and try again.';
 $string['identity:failblurry'] = 'The image is blurry. Hold still and try again.';

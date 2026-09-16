@@ -248,6 +248,30 @@ final class precheck_service {
             }
         }
 
+        if ($identityrequired) {
+            $identitysnapshot = (string) ($result['identity']['snapshotData'] ?? '');
+            if ($identitysnapshot === '') {
+                throw new \moodle_exception('identity:snapshotmissing', 'local_proctorcore');
+            }
+            // Persist the frame that actually passed verification before the
+            // candidate can move away and before the attempt camera reconnects.
+            (new capture_service())->request_snapshot(
+                (int) $session->id,
+                $userid,
+                'identity_verification',
+                null,
+                '',
+                (int) ($result['identity']['snapshotCapturedAt'] ?? time()),
+                $identitysnapshot
+            );
+        }
+
+        $identitymetadata = $result['identity'] ?? [
+            'status' => $identityrequired ? 'missing' : 'notrequired',
+            'checkedAt' => time(),
+        ];
+        unset($identitymetadata['snapshotData']);
+
         $repository->update_check_statuses(
             (int) $session->id,
             'passed',
@@ -270,10 +294,7 @@ final class precheck_service {
                     'checkedAt' => (int) $result['checkedat'],
                     'clientReported' => true,
                 ],
-                'identity' => $result['identity'] ?? [
-                    'status' => $identityrequired ? 'missing' : 'notrequired',
-                    'checkedAt' => time(),
-                ],
+                'identity' => $identitymetadata,
             ]
         );
 

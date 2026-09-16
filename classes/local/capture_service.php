@@ -291,11 +291,18 @@ final class capture_service {
             throw new \moodle_exception('error:invalidsnapshotreason', 'local_proctorcore');
         }
 
-        $this->require_session($sessionid, $userid, false);
+        // Identity evidence is persisted during the preflight-to-attempt handoff,
+        // immediately before the technical-check status is committed.
+        $this->require_session($sessionid, $userid, false, $reason !== 'identity_verification');
         $lock = $this->acquire_lock($sessionid);
 
         try {
-            $session = $this->require_session($sessionid, $userid, false);
+            $session = $this->require_session(
+                $sessionid,
+                $userid,
+                false,
+                $reason !== 'identity_verification'
+            );
             $metadata = $this->decode_metadata($session->servermetadata);
             $capture = is_array($metadata['capture'] ?? null) ? $metadata['capture'] : [];
             $snapshotflags = is_array($capture['snapshotRequests'] ?? null)
@@ -315,13 +322,16 @@ final class capture_service {
             }
 
             $now = time();
+            $capturedat = $reason === 'identity_verification' && $occurredat !== null
+                ? max(1, $occurredat)
+                : $now;
             $payload = [
                 'moodleSessionId' => (int) $session->id,
                 'attemptId' => (int) $session->attemptid,
                 'companyId' => (int) $session->companyid,
                 'userId' => (int) $session->userid,
                 'reason' => $reason,
-                'capturedAt' => gmdate('c', $now),
+                'capturedAt' => gmdate('c', $capturedat),
                 'idempotencyKey' => 'snapshot-' . (int) $session->id . '-' . $stablekey,
             ];
             if ($violationid !== null && $violationid > 0) {
@@ -336,10 +346,19 @@ final class capture_service {
             }
 
             if (local_capture_storage::is_enabled()) {
-                // In local mode the browser uploads the actual camera frame to
-                // local_upload.php. Server-side observers cannot take a browser
-                // snapshot, so this method records only the request marker.
-                $serverrequestid = 'browser-upload-required';
+                if (trim($snapshotdata) !== '') {
+                    $saved = (new local_capture_storage())->save_snapshot_data(
+                        $session,
+                        $snapshotdata,
+                        $reason,
+                        $violationid,
+                        $userid
+                    );
+                    $serverrequestid = 'local-asset-' . (int) $saved['assetId'];
+                } else {
+                    // Server-side observers cannot take a browser snapshot.
+                    $serverrequestid = 'browser-upload-required';
+                }
             } else {
                 $response = (new server_client((int) $session->companyid, $this->configs))->capture_snapshot(
                     (string) $session->server_sessionid,
@@ -537,9 +556,15 @@ final class capture_service {
      * @param int $sessionid Local session id.
      * @param int|null $userid Owner id or null for trusted server code.
      * @param bool $requireactive Require active state.
+     * @param bool $requireprecheck Require a committed passed precheck.
      * @return \stdClass
      */
-    private function require_session(int $sessionid, ?int $userid, bool $requireactive): \stdClass {
+    private function require_session(
+        int $sessionid,
+        ?int $userid,
+        bool $requireactive,
+        bool $requireprecheck = true
+    ): \stdClass {
         $session = $this->sessions->get_by_id($sessionid);
         if ($userid !== null && (int) $session->userid !== $userid) {
             throw new \moodle_exception('error:sessionowner', 'local_proctorcore');
@@ -553,7 +578,7 @@ final class capture_service {
         if ($requireactive && (string) $session->status !== 'active') {
             throw new \moodle_exception('error:capturenotactive', 'local_proctorcore');
         }
-        if ((string) $session->techcheckstatus !== 'passed') {
+        if ($requireprecheck && (string) $session->techcheckstatus !== 'passed') {
             throw new \moodle_exception('error:captureprecheckrequired', 'local_proctorcore');
         }
         return $session;

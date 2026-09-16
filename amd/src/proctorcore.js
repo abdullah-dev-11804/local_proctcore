@@ -775,7 +775,6 @@ define([], function() {
         const started = await apiRequest('start', {reason: 'attempt_page_connected'});
         localSegment = Number(started.segment) || 1;
         startLocalRecorder(bootstrap.chunkMilliseconds || 5000);
-        await captureLocalSnapshot('identity_verification');
         return started;
     };
 
@@ -799,13 +798,6 @@ define([], function() {
                 ? (config.strings.localModeMessage || config.strings.recordingMessage)
                 : config.strings.recordingMessage
         );
-
-        if (captureMode !== 'localtest') {
-            // Snapshot failure must not stop an otherwise healthy full-session recording.
-            requestSnapshot('identity_verification').catch(error => {
-                window.console.warn('ProctorCore identity snapshot request failed:', error);
-            });
-        }
 
         window.dispatchEvent(new CustomEvent('proctorcore:captureconnected', {
             detail: {

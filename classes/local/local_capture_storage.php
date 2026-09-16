@@ -239,6 +239,113 @@ final class local_capture_storage {
     }
 
     /**
+     * Saves an already captured data-URL snapshot without taking a later camera frame.
+     *
+     * Used for identity evidence in local-test mode, where the accepted preflight
+     * frame exists before the attempt page's MediaRecorder starts.
+     *
+     * @param \stdClass $session ProctorCore session.
+     * @param string $snapshotdata JPEG/PNG/WebP data URL or base64 payload.
+     * @param string $reason Snapshot reason.
+     * @param int|null $violationid Optional violation id.
+     * @param int|null $actorid Current Moodle user id.
+     * @return array
+     */
+    public function save_snapshot_data(
+        \stdClass $session,
+        string $snapshotdata,
+        string $reason,
+        ?int $violationid,
+        ?int $actorid
+    ): array {
+        if (!self::is_enabled()) {
+            throw new \moodle_exception('error:localstorageinvalid', 'local_proctorcore');
+        }
+
+        $encoded = trim($snapshotdata);
+        if (strpos($encoded, ',') !== false) {
+            [, $encoded] = explode(',', $encoded, 2);
+        }
+        $content = base64_decode($encoded, true);
+        if ($content === false || strlen($content) < 256 || strlen($content) > self::MAX_UPLOAD_BYTES) {
+            throw new \moodle_exception('error:localuploadfailed', 'local_proctorcore');
+        }
+        $mime = (string) (new \finfo(FILEINFO_MIME_TYPE))->buffer($content);
+        [$extension, $assettype] = $this->resolve_type('snapshot', $reason, $mime);
+        $context = \context_system::instance();
+        $filename = sprintf(
+            'attempt_%d_%s_%s_%s.%s',
+            (int) $session->attemptid,
+            clean_param($reason, PARAM_ALPHANUMEXT) ?: 'snapshot',
+            gmdate('Ymd_His'),
+            bin2hex(random_bytes(4)),
+            $extension
+        );
+        $filearea = 'identity_evidence';
+        $file = get_file_storage()->create_file_from_string([
+            'contextid' => $context->id,
+            'component' => 'local_proctorcore',
+            'filearea' => $filearea,
+            'itemid' => (int) $session->id,
+            'filepath' => '/',
+            'filename' => $filename,
+        ], $content);
+
+        try {
+            $asset = (new asset_repository())->create(
+                (int) $session->id,
+                (int) $session->companyid,
+                $assettype,
+                [
+                    'violationid' => $violationid,
+                    'storage' => 'moodle_file',
+                    'externalid' => 'moodle-snapshot-' . (int) $session->id . '-' . bin2hex(random_bytes(4)),
+                    'filearea' => $filearea,
+                    'itemid' => (int) $session->id,
+                    'checksum' => $file->get_contenthash(),
+                    'mime' => $mime,
+                    'filesize' => $file->get_filesize(),
+                    'availableat' => time(),
+                    'metadata' => [
+                        'contextid' => $context->id,
+                        'filename' => $filename,
+                        'reason' => $reason,
+                        'localTest' => true,
+                        'source' => 'accepted_identity_frame',
+                    ],
+                ]
+            );
+        } catch (\Throwable $exception) {
+            $file->delete();
+            throw $exception;
+        }
+
+        (new session_repository())->increment_snapshot_count((int) $session->id);
+        (new audit_logger())->log(
+            'capture.local_identity_snapshot_saved',
+            (int) $session->companyid,
+            (int) $session->id,
+            (int) $session->userid,
+            [
+                'assetId' => (int) $asset->id,
+                'reason' => $reason,
+                'size' => $file->get_filesize(),
+            ],
+            $actorid,
+            'asset',
+            (int) $asset->id
+        );
+
+        return [
+            'ok' => true,
+            'assetId' => (int) $asset->id,
+            'assetType' => $assettype,
+            'mime' => $mime,
+            'size' => $file->get_filesize(),
+        ];
+    }
+
+    /**
      * Deletes a local-test asset referenced by its metadata.
      *
      * @param \stdClass $asset Asset row.

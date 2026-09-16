@@ -324,6 +324,17 @@ final class identity_service {
             $result['referenceId'] = (string) $enrollment->server_referenceid;
         }
 
+        if (!empty($result['passed'])) {
+            $bestframeindex = max(0, min(
+                count($centerframes) - 1,
+                (int) ($response['bestLiveFrameIndex'] ?? 0)
+            ));
+            // Keep the exact accepted verification frame only in the authenticated
+            // Moodle session until the real quiz/session identifiers exist.
+            $result['snapshotData'] = 'data:image/jpeg;base64,' . base64_encode($centerframes[$bestframeindex]);
+            $result['snapshotCapturedAt'] = (int) ($result['checkedAt'] ?? time());
+        }
+
         $retries = new identity_retry_service();
         if (!empty($result['passed'])) {
             $retries->clear($companyid, $userid, $quizid);
@@ -431,8 +442,10 @@ final class identity_service {
         if ($identitystatus === 'enrolled' || $identitystatus === 'matched') {
             $identitystatus = 'passed';
         }
+        $identitymetadata = $result;
+        unset($identitymetadata['snapshotData']);
         $sessions->update_check_statuses($sessionid, (string) $session->techcheckstatus, $identitystatus, [
-            'identity' => $result,
+            'identity' => $identitymetadata,
         ]);
         $sessions->record_identity_decision(
             $sessionid,
