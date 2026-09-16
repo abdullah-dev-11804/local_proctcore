@@ -19,6 +19,40 @@ final class precheck_service {
     private const RESULT_TTL = 3600;
 
     /**
+     * Starts a clean preflight for re-entry after a closed proctoring session.
+     *
+     * Moodle may rebuild the preflight form several times. The closed session
+     * id makes this reset idempotent so a newly completed identity check is not
+     * erased during form validation.
+     *
+     * @param int $quizid Quiz id.
+     * @param int $userid User id.
+     * @param int $closedsessionid Abandoned/expired session being replaced.
+     * @return void
+     */
+    public function prepare_reentry(int $quizid, int $userid, int $closedsessionid): void {
+        global $SESSION;
+
+        if (!isset($SESSION->local_proctorcore_prechecks)
+                || !is_array($SESSION->local_proctorcore_prechecks)) {
+            $SESSION->local_proctorcore_prechecks = [];
+        }
+        $key = $this->key($quizid, $userid);
+        $state = $SESSION->local_proctorcore_prechecks[$key] ?? null;
+        if (is_array($state) && (int) ($state['reentrysessionid'] ?? 0) === $closedsessionid) {
+            return;
+        }
+
+        (new identity_service())->clear_preflight_state($quizid, $userid);
+        $SESSION->local_proctorcore_prechecks[$key] = [
+            'token' => bin2hex(random_bytes(24)),
+            'issuedat' => time(),
+            'result' => null,
+            'reentrysessionid' => $closedsessionid,
+        ];
+    }
+
+    /**
      * Creates a short-lived token for a quiz/user precheck form.
      *
      * @param int $quizid Quiz id.
@@ -220,7 +254,9 @@ final class precheck_service {
 
         $repository = new session_repository();
         $existing = $repository->get_by_attempt_and_user($attemptid, $userid);
-        if ($existing && $existing->techcheckstatus === 'passed') {
+        $replacement = $existing
+            && in_array((string) $existing->status, ['abandoned', 'expired'], true);
+        if ($existing && !$replacement && $existing->techcheckstatus === 'passed') {
             // A previous Server B call may have failed after the local session
             // was created. Retry the idempotent Section 4.1 binding instead of
             // returning an unusable row with an empty server_sessionid.
@@ -235,7 +271,35 @@ final class precheck_service {
             throw new \moodle_exception('precheck:notpassed', 'local_proctorcore');
         }
 
-        $session = (new integration_service())->create_session_for_attempt($attemptid);
+        $session = (new integration_service())->create_session_for_attempt($attemptid, $replacement);
+
+        if ($replacement) {
+            $repository->merge_server_metadata((int) $session->id, [
+                'reentry' => [
+                    'priorSessionId' => (int) $existing->id,
+                    'sameAttempt' => true,
+                    'freshIdentityRequired' => true,
+                    'timerReset' => false,
+                    'createdAt' => time(),
+                ],
+            ]);
+            (new audit_logger())->log(
+                'session.reentry_created',
+                (int) $session->companyid,
+                (int) $session->id,
+                $userid,
+                [
+                    'attemptId' => $attemptid,
+                    'priorSessionId' => (int) $existing->id,
+                    'sameAttempt' => true,
+                    'freshIdentityRequired' => true,
+                    'timerReset' => false,
+                ],
+                $userid,
+                'session',
+                (int) $session->id
+            );
+        }
 
         $identityrequired = !empty($config->requireidentity);
         $identitystatus = 'notrequired';

@@ -331,6 +331,45 @@ if ($hassiteconfig) {
     ));
 
     $settings->add(new admin_setting_heading(
+        'local_proctorcore/audioanalysisheading',
+        get_string('settings:audioanalysisheading', 'local_proctorcore'),
+        get_string('settings:audioanalysisheading_desc', 'local_proctorcore')
+    ));
+
+    $audiosettings = [
+        ['audioanalysisenabled', 'checkbox', 0, PARAM_BOOL],
+        ['audionoiseenabled', 'checkbox', 1, PARAM_BOOL],
+        ['audionoisethresholddbfs', 'text', '-35', PARAM_FLOAT],
+        ['audionoiseminseconds', 'text', '5', PARAM_FLOAT],
+        ['audionoisecooldownseconds', 'text', 60, PARAM_INT],
+        ['audiospeechenabled', 'checkbox', 1, PARAM_BOOL],
+        ['audiovadthreshold', 'text', '0.65', PARAM_FLOAT],
+        ['audiospeechminseconds', 'text', '0.8', PARAM_FLOAT],
+        ['audiospeechcooldownseconds', 'text', 30, PARAM_INT],
+        ['audiosecondspeakerenabled', 'checkbox', 1, PARAM_BOOL],
+        ['audiospeakersimilaritythreshold', 'text', '0.72', PARAM_FLOAT],
+        ['audiospeakerminsegments', 'text', 3, PARAM_INT],
+        ['audiospeakerwindowseconds', 'text', 60, PARAM_INT],
+        ['audiosecondspeakercooldownseconds', 'text', 120, PARAM_INT],
+        ['audiopromptingenabled', 'checkbox', 1, PARAM_BOOL],
+        ['audiopromptsustainedseconds', 'text', '12', PARAM_FLOAT],
+        ['audiopromptrollingseconds', 'text', '20', PARAM_FLOAT],
+        ['audiopromptwindowseconds', 'text', 60, PARAM_INT],
+        ['audiopromptmultispeaker', 'checkbox', 1, PARAM_BOOL],
+        ['audiopromptcooldownseconds', 'text', 180, PARAM_INT],
+    ];
+    foreach ($audiosettings as [$name, $type, $default, $paramtype]) {
+        $class = $type === 'checkbox' ? 'admin_setting_configcheckbox' : 'admin_setting_configtext';
+        $settings->add(new $class(
+            'local_proctorcore/' . $name,
+            get_string('settings:' . $name, 'local_proctorcore'),
+            get_string('settings:' . $name . '_desc', 'local_proctorcore'),
+            $default,
+            ...($type === 'checkbox' ? [] : [$paramtype])
+        ));
+    }
+
+    $settings->add(new admin_setting_heading(
         'local_proctorcore/riskscoringheading',
         get_string('settings:riskscoringheading', 'local_proctorcore'),
         get_string('settings:riskscoringheading_desc', 'local_proctorcore')
@@ -363,6 +402,9 @@ if ($hassiteconfig) {
         'riskpointsmicrophoneended' => 40,
         'riskpointscamerablocked' => 30,
         'riskpointsspeechdetected' => 30,
+        'riskpointsbackgroundnoise' => 10,
+        'riskpointssecondvoice' => 40,
+        'riskpointspossibleprompting' => 40,
         'riskpointsother' => 10,
     ];
     foreach ($riskpointsettings as $name => $default) {

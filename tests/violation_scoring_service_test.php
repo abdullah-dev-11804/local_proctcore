@@ -12,6 +12,10 @@ final class violation_scoring_service_test extends \advanced_testcase {
         $service = new \local_proctorcore\local\violation_scoring_service();
 
         $this->assertSame(30, $service->points_for('tab_hidden'));
+        $this->assertSame(10, $service->points_for('background_noise'));
+        $this->assertSame(30, $service->points_for('speech_detected'));
+        $this->assertSame(40, $service->points_for('second_voice_detected'));
+        $this->assertSame(40, $service->points_for('possible_prompting'));
         $this->assertSame('passed', $service->evaluate(39)['decision']);
         $this->assertSame('manual_review', $service->evaluate(40)['decision']);
         $this->assertSame('failed', $service->evaluate(80)['decision']);

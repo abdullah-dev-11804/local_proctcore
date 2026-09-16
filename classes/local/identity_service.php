@@ -403,6 +403,31 @@ final class identity_service {
     }
 
     /**
+     * Removes any remembered identity decision and unfinished challenge.
+     *
+     * Used when an abandoned proctoring session is replaced. This prevents a
+     * still-valid result from the earlier session from satisfying the new
+     * identity gate.
+     *
+     * @param int $quizid Quiz id.
+     * @param int $userid User id.
+     * @return void
+     */
+    public function clear_preflight_state(int $quizid, int $userid): void {
+        global $SESSION;
+
+        $key = $this->key($quizid, $userid);
+        if (isset($SESSION->local_proctorcore_identity)
+                && is_array($SESSION->local_proctorcore_identity)) {
+            unset($SESSION->local_proctorcore_identity[$key]);
+        }
+        if (isset($SESSION->local_proctorcore_liveness)
+                && is_array($SESSION->local_proctorcore_liveness)) {
+            unset($SESSION->local_proctorcore_liveness[$key]);
+        }
+    }
+
+    /**
      * Applies the preflight identity decision and protected live photo to a session.
      *
      * @param int $sessionid Local ProctorCore session id.

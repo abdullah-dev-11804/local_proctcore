@@ -9,6 +9,72 @@ defined('MOODLE_INTERNAL') || die();
  * Tests for official session record persistence.
  */
 final class session_repository_test extends \advanced_testcase {
+    public function test_explicit_reentry_session_becomes_latest_for_same_attempt(): void {
+        $this->resetAfterTest();
+
+        $repository = new \local_proctorcore\local\session_repository();
+        $data = [
+            'companyid' => 0,
+            'courseid' => 101,
+            'cmid' => 102,
+            'quizid' => 103,
+            'attemptid' => 104,
+            'userid' => 105,
+        ];
+
+        $original = $repository->create_or_get($data);
+        $repository->update_status((int) $original->id, 'abandoned');
+        $replacement = $repository->create_new($data);
+
+        $this->assertNotSame((int) $original->id, (int) $replacement->id);
+        $this->assertSame(
+            (int) $replacement->id,
+            (int) $repository->get_by_attempt_id(104, 0)->id
+        );
+        $this->assertSame(
+            (int) $replacement->id,
+            (int) $repository->get_by_attempt_and_user(104, 105)->id
+        );
+        $this->assertSame(
+            (int) $replacement->id,
+            (int) $repository->create_or_get($data)->id
+        );
+        $this->assertSame('abandoned', $repository->get_by_id((int) $original->id)->status);
+    }
+
+    public function test_prepare_reentry_clears_old_identity_only_once(): void {
+        global $SESSION;
+
+        $this->resetAfterTest();
+        $key = '7:42';
+        $SESSION->local_proctorcore_identity = [
+            $key => ['result' => ['passed' => true], 'rememberedAt' => time()],
+        ];
+        $SESSION->local_proctorcore_liveness = [
+            $key => ['challengeId' => 'old'],
+        ];
+
+        $service = new \local_proctorcore\local\precheck_service();
+        $service->prepare_reentry(7, 42, 99);
+
+        $state = $SESSION->local_proctorcore_prechecks[$key];
+        $this->assertSame(99, $state['reentrysessionid']);
+        $this->assertNull($state['result']);
+        $this->assertArrayNotHasKey($key, $SESSION->local_proctorcore_identity);
+        $this->assertArrayNotHasKey($key, $SESSION->local_proctorcore_liveness);
+
+        // A Moodle form rebuild for the same abandoned session must preserve a
+        // newly obtained identity decision rather than clearing it again.
+        $token = $state['token'];
+        $SESSION->local_proctorcore_identity[$key] = [
+            'result' => ['passed' => true],
+            'rememberedAt' => time(),
+        ];
+        $service->prepare_reentry(7, 42, 99);
+        $this->assertSame($token, $SESSION->local_proctorcore_prechecks[$key]['token']);
+        $this->assertArrayHasKey($key, $SESSION->local_proctorcore_identity);
+    }
+
     public function test_platform_identity_policy_defaults_to_review_and_enforces_threshold_floor(): void {
         $this->resetAfterTest();
         set_config('identitymismatchmode', 'review', 'local_proctorcore');

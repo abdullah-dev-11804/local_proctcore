@@ -10,6 +10,7 @@ defined('MOODLE_INTERNAL') || die();
  *
  * Supported Section 1.1 events:
  * - asset.captured
+ * - violation.detected
  * - session.completed
  * - session.failed
  *
@@ -21,7 +22,12 @@ final class webhook_processor {
     private const TABLE = 'local_proctorcore_webhooks';
 
     /** Supported event types. */
-    private const SUPPORTED_EVENTS = ['asset.captured', 'session.completed', 'session.failed'];
+    private const SUPPORTED_EVENTS = [
+        'asset.captured',
+        'violation.detected',
+        'session.completed',
+        'session.failed',
+    ];
 
     /** @var session_repository */
     private $sessions;
@@ -125,6 +131,9 @@ final class webhook_processor {
                         $applied = $this->apply_asset_event($session, $event);
                         $this->refresh_media_status_after_asset((int) $session->id);
                         $updatedsession = $this->sessions->get_by_id((int) $session->id);
+                    } else if ($eventtype === 'violation.detected') {
+                        $applied = $this->apply_violation_event($session, $event);
+                        $updatedsession = $this->sessions->get_by_id((int) $session->id);
                     } else {
                         $updatedsession = $this->apply_final_event($session, $event);
                         $this->assets->apply_session_retention(
@@ -145,7 +154,7 @@ final class webhook_processor {
                 throw $exception;
             }
 
-            if ($eventtype !== 'asset.captured') {
+            if (in_array($eventtype, ['session.completed', 'session.failed'], true)) {
                 $this->trigger_result_event($updatedsession, $eventid);
             }
 
@@ -155,6 +164,7 @@ final class webhook_processor {
                 'eventid' => $eventid,
                 'sessionid' => (int) $updatedsession->id,
                 'assetid' => isset($applied['asset']) ? (int) $applied['asset']->id : null,
+                'violationid' => isset($applied['violation']) ? (int) $applied['violation']->id : null,
             ];
         } finally {
             $lock->release();
@@ -236,6 +246,24 @@ final class webhook_processor {
             foreach (['assetId', 'type'] as $required) {
                 if (empty($event['asset'][$required])) {
                     throw new \moodle_exception('error:webhookfieldmissing', 'local_proctorcore', '', 'asset.' . $required);
+                }
+            }
+            return;
+        }
+
+        if ((string) $event['eventType'] === 'violation.detected') {
+            if (!isset($event['violation']) || !is_array($event['violation'])) {
+                throw new \moodle_exception('error:webhookfieldmissing', 'local_proctorcore', '', 'violation');
+            }
+            foreach (['id', 'type', 'occurredAt'] as $required) {
+                if (!array_key_exists($required, $event['violation'])
+                        || trim((string) $event['violation'][$required]) === '') {
+                    throw new \moodle_exception(
+                        'error:webhookfieldmissing',
+                        'local_proctorcore',
+                        '',
+                        'violation.' . $required
+                    );
                 }
             }
             return;
@@ -362,7 +390,7 @@ final class webhook_processor {
             $availableat = $this->parse_timestamp(
                 $asset['availableAt'] ?? $asset['capturedAt'] ?? null
             ) ?? time();
-            $violationid = isset($asset['violationId']) ? (int) $asset['violationId'] : null;
+            $violationid = $this->resolve_violation_id($session, $asset['violationId'] ?? null);
 
             $record = $this->assets->create(
                 (int) $session->id,
@@ -391,6 +419,7 @@ final class webhook_processor {
                         'capturedAt' => $asset['capturedAt'] ?? null,
                         'availableAt' => $asset['availableAt'] ?? null,
                         'reason' => $asset['reason'] ?? ($asset['metadata']['reason'] ?? null),
+                        'serverViolationId' => $asset['violationId'] ?? null,
                         'recordingSegment' => $asset['recordingSegment']
                             ?? ($asset['metadata']['recordingSegment'] ?? null),
                         'serverMetadata' => $asset['metadata'] ?? null,
@@ -410,6 +439,110 @@ final class webhook_processor {
         } finally {
             $lock->release();
         }
+    }
+
+    /** Stores a normalized Server B audio/ML violation in the official timeline. */
+    private function apply_violation_event(\stdClass $session, array $event): array {
+        $violation = $event['violation'];
+        $eventid = clean_param((string) $event['eventId'], PARAM_TEXT);
+        $type = clean_param((string) $violation['type'], PARAM_ALPHANUMEXT);
+        $allowed = [
+            'background_noise',
+            'speech_detected',
+            'second_voice_detected',
+            'possible_prompting',
+        ];
+        if (!in_array($type, $allowed, true)) {
+            throw new \moodle_exception('error:invalidwebhookeventtype', 'local_proctorcore');
+        }
+
+        global $DB;
+        $existing = $DB->get_record('local_proctorcore_violations', [
+            'sessionid' => (int) $session->id,
+            'servereventid' => $eventid,
+        ]);
+        if ($existing) {
+            return ['violation' => $existing, 'duplicateViolation' => true];
+        }
+
+        $severityvalue = strtolower(trim((string) ($violation['severity'] ?? 'warning')));
+        $severitymap = ['notice' => 1, 'warning' => 3, 'high' => 4, 'critical' => 5];
+        $severity = is_numeric($severityvalue)
+            ? min(5, max(1, (int) $severityvalue))
+            : ($severitymap[$severityvalue] ?? 3);
+        $occurredat = $this->parse_timestamp($violation['occurredAt']) ?? time();
+        $metadata = is_array($violation['metadata'] ?? null) ? $violation['metadata'] : [];
+        $metadata['confidence'] = isset($violation['confidence'])
+            ? min(1.0, max(0.0, (float) $violation['confidence']))
+            : null;
+        $metadata['endedAt'] = $violation['endedAt'] ?? null;
+        $metadata['serverViolationId'] = clean_param((string) $violation['id'], PARAM_TEXT);
+        $metadata['reviewSignalOnly'] = $type === 'possible_prompting'
+            ? true
+            : !empty($metadata['reviewSignalOnly']);
+
+        $record = (new violation_repository())->create(
+            (int) $session->id,
+            $type,
+            $severity,
+            'audio_analysis',
+            [
+                'servereventid' => $eventid,
+                'occurredat' => $occurredat,
+                'durationms' => max(0, (int) ($violation['durationMs'] ?? 0)),
+                'description' => $this->audio_violation_description($type),
+                'metadata' => $metadata,
+            ]
+        );
+        $this->link_pending_violation_assets((int) $session->id, $eventid, (int) $record->id);
+        return ['violation' => $record, 'duplicateViolation' => false];
+    }
+
+    /** Links evidence that arrived before its asynchronous violation webhook. */
+    private function link_pending_violation_assets(int $sessionid, string $servereventid, int $violationid): void {
+        global $DB;
+
+        $assets = $DB->get_records('local_proctorcore_assets', [
+            'sessionid' => $sessionid,
+            'violationid' => null,
+        ]);
+        foreach ($assets as $asset) {
+            $metadata = json_decode((string) ($asset->metadata ?? ''), true);
+            if (!is_array($metadata)
+                    || (string) ($metadata['serverViolationId'] ?? '') !== $servereventid) {
+                continue;
+            }
+            $DB->update_record('local_proctorcore_assets', (object) [
+                'id' => (int) $asset->id,
+                'violationid' => $violationid,
+                'timemodified' => time(),
+            ]);
+        }
+    }
+
+    /** Resolves numeric Moodle violation ids or Server B event ids for evidence links. */
+    private function resolve_violation_id(\stdClass $session, $value): ?int {
+        global $DB;
+
+        if ($value === null || $value === '') {
+            return null;
+        }
+        if (ctype_digit((string) $value) && (int) $value > 0) {
+            return (int) $value;
+        }
+        $record = $DB->get_record('local_proctorcore_violations', [
+            'sessionid' => (int) $session->id,
+            'servereventid' => clean_param((string) $value, PARAM_TEXT),
+        ], 'id');
+        return $record ? (int) $record->id : null;
+    }
+
+    /** Provides cautious, localized report wording for audio-derived evidence. */
+    private function audio_violation_description(string $type): string {
+        $key = 'violation:' . $type;
+        return get_string_manager()->string_exists($key, 'local_proctorcore')
+            ? get_string($key, 'local_proctorcore')
+            : ucfirst(str_replace('_', ' ', $type));
     }
 
     /**
@@ -592,6 +725,13 @@ final class webhook_processor {
             $details['externalAssetId'] = (string) $applied['asset']->externalid;
             $details['assetType'] = (string) $applied['asset']->assettype;
             $details['duplicateAsset'] = !empty($applied['duplicateAsset']);
+        } else if ($eventtype === 'violation.detected' && isset($applied['violation'])) {
+            $action = 'integration.violation_received';
+            $targettype = 'violation';
+            $targetid = (int) $applied['violation']->id;
+            $details['violationId'] = (int) $applied['violation']->id;
+            $details['violationType'] = (string) $applied['violation']->type;
+            $details['duplicateViolation'] = !empty($applied['duplicateViolation']);
         } else {
             $details['result'] = (string) $session->result;
             $details['status'] = (string) $session->status;

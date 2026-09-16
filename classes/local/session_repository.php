@@ -22,24 +22,32 @@ final class session_repository {
      * @return \stdClass
      */
     public function create_or_get(array $data): \stdClass {
-        global $DB;
-
-        if (!array_key_exists('companyid', $data) || (int) $data['companyid'] < 0) {
-            throw new \coding_exception('Missing or invalid session field: companyid');
-        }
-        foreach (['courseid', 'cmid', 'quizid', 'attemptid', 'userid'] as $required) {
-            if (empty($data[$required])) {
-                throw new \coding_exception('Missing required session field: ' . $required);
-            }
-        }
-
-        $existing = $DB->get_record(self::TABLE, [
-            'companyid' => (int) $data['companyid'],
-            'attemptid' => (int) $data['attemptid'],
-        ]);
+        $this->validate_create_data($data);
+        $existing = $this->get_by_attempt_id(
+            (int) $data['attemptid'],
+            (int) $data['companyid']
+        );
         if ($existing) {
             return $existing;
         }
+
+        return $this->create_new($data);
+    }
+
+    /**
+     * Creates another proctoring session for an existing Moodle attempt.
+     *
+     * This is intentionally separate from create_or_get(). Normal lifecycle
+     * hooks remain idempotent; only an explicit abandoned-session re-entry may
+     * create a second session for the same Quiz attempt.
+     *
+     * @param array $data Required session fields.
+     * @return \stdClass
+     */
+    public function create_new(array $data): \stdClass {
+        global $DB;
+
+        $this->validate_create_data($data);
 
         $now = time();
         $record = (object) [
@@ -106,7 +114,8 @@ final class session_repository {
         if ($companyid !== null) {
             $conditions['companyid'] = $companyid;
         }
-        return $DB->get_record(self::TABLE, $conditions) ?: null;
+        $records = $DB->get_records(self::TABLE, $conditions, 'id DESC', '*', 0, 1);
+        return $records ? reset($records) : null;
     }
 
     /**
@@ -118,10 +127,23 @@ final class session_repository {
      */
     public function get_by_attempt_and_user(int $attemptid, int $userid): ?\stdClass {
         global $DB;
-        return $DB->get_record(self::TABLE, [
+        $records = $DB->get_records(self::TABLE, [
             'attemptid' => $attemptid,
             'userid' => $userid,
-        ]) ?: null;
+        ], 'id DESC', '*', 0, 1);
+        return $records ? reset($records) : null;
+    }
+
+    /** Validates fields needed to create a session row. */
+    private function validate_create_data(array $data): void {
+        if (!array_key_exists('companyid', $data) || (int) $data['companyid'] < 0) {
+            throw new \coding_exception('Missing or invalid session field: companyid');
+        }
+        foreach (['courseid', 'cmid', 'quizid', 'attemptid', 'userid'] as $required) {
+            if (empty($data[$required])) {
+                throw new \coding_exception('Missing required session field: ' . $required);
+            }
+        }
     }
 
     /**
@@ -586,7 +608,15 @@ final class session_repository {
         }
 
         $session = $this->get_by_id($sessionid);
-        if ($session->result !== 'unknown' && $session->result !== $result) {
+        // A locally calculated violation score may already have failed the
+        // session before Server B finishes media processing. Never downgrade
+        // that official decision merely because media finalization itself
+        // completed successfully.
+        if ((string) $session->result === 'failed' && $result === 'passed') {
+            $result = 'failed';
+            $status = 'failed';
+            $closedreason = 'risk_threshold_reached';
+        } else if ($session->result !== 'unknown' && $session->result !== $result) {
             throw new \moodle_exception('error:resultconflict', 'local_proctorcore');
         }
 

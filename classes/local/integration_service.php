@@ -35,14 +35,15 @@ final class integration_service {
     /**
      * Creates and binds a Server B session for a Moodle quiz attempt.
      *
-     * This operation is idempotent. Repeating it for the same tenant/attempt
-     * returns the existing local session and does not create a second Server B
-     * session after the external id has already been stored.
+     * This operation is idempotent unless replacement is explicitly requested
+     * for an abandoned/expired session. A replacement keeps the same Moodle
+     * attempt and timer while receiving a new local and Server B session.
      *
      * @param int $attemptid Moodle quiz attempt id.
+     * @param bool $replacement Create a replacement for a terminal recovery session.
      * @return \stdClass Updated local session record.
      */
-    public function create_session_for_attempt(int $attemptid): \stdClass {
+    public function create_session_for_attempt(int $attemptid, bool $replacement = false): \stdClass {
         global $CFG, $DB;
 
         $attempt = $DB->get_record('quiz_attempts', ['id' => $attemptid], '*', MUST_EXIST);
@@ -57,14 +58,37 @@ final class integration_service {
             throw new \moodle_exception('error:coursecompanymismatch', 'local_proctorcore');
         }
 
-        $session = $this->sessions->create_or_get([
+        $sessiondata = [
             'companyid' => $companyid,
             'courseid' => $course->id,
             'cmid' => $cm->id,
             'quizid' => $quiz->id,
             'attemptid' => $attempt->id,
             'userid' => $user->id,
-        ]);
+        ];
+
+        // Serialise the local selection/insert by Moodle attempt. If two
+        // requests submit the same re-entry form, only the first one creates
+        // the replacement and the other reuses it.
+        $factory = \core\lock\lock_config::get_lock_factory('local_proctorcore');
+        $attemptlock = $factory->get_lock(
+            'create_attempt_session_' . $companyid . '_' . (int) $attempt->id,
+            20
+        );
+        if (!$attemptlock) {
+            throw new \moodle_exception('error:sessioncreationbusy', 'local_proctorcore');
+        }
+        try {
+            $latest = $this->sessions->get_by_attempt_and_user((int) $attempt->id, (int) $user->id);
+            if ($replacement && $latest
+                    && in_array((string) $latest->status, ['abandoned', 'expired'], true)) {
+                $session = $this->sessions->create_new($sessiondata);
+            } else {
+                $session = $this->sessions->create_or_get($sessiondata);
+            }
+        } finally {
+            $attemptlock->release();
+        }
 
         if (!empty($session->server_sessionid)) {
             return $session;
@@ -74,7 +98,6 @@ final class integration_service {
         // (preflight notification, access enforcement, page setup). Serialise
         // Server B creation so an incomplete local row can be repaired safely
         // without creating duplicate external sessions.
-        $factory = \core\lock\lock_config::get_lock_factory('local_proctorcore');
         $lock = $factory->get_lock('create_server_session_' . (int) $session->id, 20);
         if (!$lock) {
             throw new \moodle_exception('error:sessioncreationbusy', 'local_proctorcore');
@@ -109,6 +132,36 @@ final class integration_service {
                 'videoDays' => max((int) $config->videoretentiondays, (int) $config->appealperioddays),
                 'reportDays' => max(183, (int) $config->reportretentiondays),
                 'appealDays' => max(1, (int) $config->appealperioddays),
+            ],
+            'audioAnalysis' => [
+                'enabled' => (bool) $config->audioanalysisenabled,
+                'backgroundNoise' => [
+                    'enabled' => (bool) $config->audionoiseenabled,
+                    'thresholdDbfs' => (float) $config->audionoisethresholddbfs,
+                    'minimumDurationSeconds' => (float) $config->audionoiseminseconds,
+                    'cooldownSeconds' => (int) $config->audionoisecooldownseconds,
+                ],
+                'speech' => [
+                    'enabled' => (bool) $config->audiospeechenabled,
+                    'vadThreshold' => (float) $config->audiovadthreshold,
+                    'minimumDurationSeconds' => (float) $config->audiospeechminseconds,
+                    'cooldownSeconds' => (int) $config->audiospeechcooldownseconds,
+                ],
+                'secondSpeaker' => [
+                    'enabled' => (bool) $config->audiosecondspeakerenabled,
+                    'similarityThreshold' => (float) $config->audiospeakersimilaritythreshold,
+                    'minimumSegments' => (int) $config->audiospeakerminsegments,
+                    'windowSeconds' => (int) $config->audiospeakerwindowseconds,
+                    'cooldownSeconds' => (int) $config->audiosecondspeakercooldownseconds,
+                ],
+                'possiblePrompting' => [
+                    'enabled' => (bool) $config->audiopromptingenabled,
+                    'sustainedSpeechSeconds' => (float) $config->audiopromptsustainedseconds,
+                    'rollingSpeechSeconds' => (float) $config->audiopromptrollingseconds,
+                    'windowSeconds' => (int) $config->audiopromptwindowseconds,
+                    'multiSpeakerContribution' => (bool) $config->audiopromptmultispeaker,
+                    'cooldownSeconds' => (int) $config->audiopromptcooldownseconds,
+                ],
             ],
             'user' => [
                 'id' => (int) $user->id,

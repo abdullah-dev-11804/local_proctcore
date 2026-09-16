@@ -19,6 +19,9 @@ final class violation_scoring_service {
         'microphone_ended' => ['riskpointsmicrophoneended', 40],
         'camera_blocked' => ['riskpointscamerablocked', 30],
         'speech_detected' => ['riskpointsspeechdetected', 30],
+        'background_noise' => ['riskpointsbackgroundnoise', 10],
+        'second_voice_detected' => ['riskpointssecondvoice', 40],
+        'possible_prompting' => ['riskpointspossibleprompting', 40],
     ];
 
     /** Returns the effective global scoring policy. */
