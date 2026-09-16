@@ -322,8 +322,48 @@ final class participant_field_service {
 
     /** @return string[] */
     private function option_values(\stdClass $field): array {
+        // Moodle is authoritative for mapped custom profile fields. Administrators
+        // edit menu choices in the standard profile-field screen, often after the
+        // field was first included in ProctorCore, so do not rely on the old copy.
+        $profileoptions = $this->profile_option_values($field);
+        if ($profileoptions) {
+            return $profileoptions;
+        }
         $config = json_decode((string) ($field->configjson ?? ''), true);
-        return is_array($config['options'] ?? null) ? array_values($config['options']) : [];
+        return is_array($config['options'] ?? null)
+            ? $this->normalise_options($config['options'])
+            : [];
+    }
+
+    /** Reads the latest choices from a mapped Moodle menu profile field. */
+    private function profile_option_values(\stdClass $field): array {
+        global $DB;
+
+        if (empty($field->profilefieldid)) {
+            return [];
+        }
+        $profile = $DB->get_record(
+            'user_info_field',
+            ['id' => (int) $field->profilefieldid],
+            'id,datatype,param1'
+        );
+        if (!$profile || strtolower((string) $profile->datatype) !== 'menu') {
+            return [];
+        }
+        $options = preg_split('/\R+/', trim((string) $profile->param1), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        return $this->normalise_options($options);
+    }
+
+    /** Trims empty and duplicate dropdown choices while retaining their order. */
+    private function normalise_options(array $options): array {
+        $normalised = [];
+        foreach ($options as $option) {
+            $value = trim((string) $option);
+            if ($value !== '' && !isset($normalised[$value])) {
+                $normalised[$value] = $value;
+            }
+        }
+        return array_values($normalised);
     }
 
     private function upsert(string $table, array $keys, string $value): void {
