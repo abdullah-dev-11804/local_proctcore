@@ -45,7 +45,9 @@ final class server_client {
         string $transactionid,
         bool $enrollment,
         bool $illuminationrequired = false,
-        bool $movementrequired = false
+        bool $movementrequired = false,
+        int $retrylimit = 3,
+        int $retrywindowseconds = 900
     ): array {
         return $this->request('POST', '/api/v1/identity/liveness/challenges', [
             'transactionId' => $transactionid,
@@ -55,6 +57,8 @@ final class server_client {
             'enrollment' => $enrollment,
             'illuminationRequired' => $illuminationrequired,
             'movementRequired' => $movementrequired,
+            'retryLimit' => $retrylimit,
+            'retryWindowSeconds' => $retrywindowseconds,
         ]);
     }
 

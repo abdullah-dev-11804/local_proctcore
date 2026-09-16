@@ -58,6 +58,11 @@ final class company_config_repository {
             'identitymismatchmode' => $this->normalise_mismatch_mode(
                 (string) $this->global_config('identitymismatchmode', 'review')
             ),
+            'identityretrylimit' => min(20, max(1, (int) $this->global_config('identityretrylimit', 3))),
+            'identityretrywindowseconds' => min(
+                DAYSECS,
+                max(MINSECS, (int) $this->global_config('identityretrywindowseconds', 900))
+            ),
             'monitoringenabled' => (bool) $this->global_config('monitoringenabled', 1),
             'monitorintervalms' => min(30000, max(1500, (int) $this->global_config('monitorintervalms', 3000))),
             'nofaceseconds' => min(60, max(1, (int) $this->global_config('nofaceseconds', 3))),

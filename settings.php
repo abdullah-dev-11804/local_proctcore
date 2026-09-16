@@ -245,6 +245,28 @@ if ($hassiteconfig) {
         ]
     ));
 
+    $settings->add(new admin_setting_heading(
+        'local_proctorcore/identityretryheading',
+        get_string('settings:identityretryheading', 'local_proctorcore'),
+        get_string('settings:identityretryheading_desc', 'local_proctorcore')
+    ));
+
+    $settings->add(new admin_setting_configtext(
+        'local_proctorcore/identityretrylimit',
+        get_string('settings:identityretrylimit', 'local_proctorcore'),
+        get_string('settings:identityretrylimit_desc', 'local_proctorcore'),
+        3,
+        PARAM_INT
+    ));
+
+    $settings->add(new admin_setting_configtext(
+        'local_proctorcore/identityretrywindowseconds',
+        get_string('settings:identityretrywindowseconds', 'local_proctorcore'),
+        get_string('settings:identityretrywindowseconds_desc', 'local_proctorcore'),
+        900,
+        PARAM_INT
+    ));
+
     $settings->add(new admin_setting_configcheckbox(
         'local_proctorcore/monitoringenabled',
         get_string('settings:monitoringenabled', 'local_proctorcore'),

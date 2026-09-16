@@ -26,6 +26,17 @@ final class identity_service {
         $this->require_precheck_token($quizid, $userid, $token);
         $quiz = $DB->get_record('quiz', ['id' => $quizid], 'id,course', MUST_EXIST);
         $companyid = (new tenant_resolver())->resolve_company_id($userid, (int) $quiz->course);
+        $config = (new company_config_repository())->get_effective_config($companyid, $quizid);
+        $retrystatus = (new identity_retry_service())->get_status(
+            $companyid,
+            $userid,
+            $quizid,
+            (int) $config->identityretrylimit,
+            (int) $config->identityretrywindowseconds
+        );
+        if ($retrystatus['locked']) {
+            return $this->locked_retry_result($retrystatus);
+        }
         $enrollment = (new face_enrollment_repository())->get_active($userid);
         $transactionid = bin2hex(random_bytes(16));
         $contextid = 'quiz:' . $quizid;
@@ -35,7 +46,9 @@ final class identity_service {
             $transactionid,
             !$enrollment,
             !empty(get_config('local_proctorcore', 'identityilluminationenabled')),
-            !empty(get_config('local_proctorcore', 'identitymovementenabled'))
+            !empty(get_config('local_proctorcore', 'identitymovementenabled')),
+            (int) $config->identityretrylimit,
+            (int) $config->identityretrywindowseconds
         );
         if (empty($challenge['challengeId']) || empty($challenge['nonce'])) {
             throw new \moodle_exception('identity:invalidchallenge', 'local_proctorcore');
@@ -50,7 +63,7 @@ final class identity_service {
             'contextId' => $contextid,
             'expiresAtMs' => (int) ($challenge['expiresAtMs'] ?? 0),
         ];
-        return $challenge;
+        return array_merge($challenge, $retrystatus);
     }
 
     /** Returns model-backed framing guidance without consuming the active challenge. */
@@ -311,6 +324,26 @@ final class identity_service {
             $result['referenceId'] = (string) $enrollment->server_referenceid;
         }
 
+        $retries = new identity_retry_service();
+        if (!empty($result['passed'])) {
+            $retries->clear($companyid, $userid, $quizid);
+            $retrystatus = $retries->get_status(
+                $companyid,
+                $userid,
+                $quizid,
+                (int) $config->identityretrylimit,
+                (int) $config->identityretrywindowseconds
+            );
+        } else {
+            $retrystatus = $retries->record_failure(
+                $companyid,
+                $userid,
+                $quizid,
+                (int) $config->identityretrylimit,
+                (int) $config->identityretrywindowseconds
+            );
+        }
+        $result = array_merge($result, $retrystatus);
         $this->remember($quizid, $userid, $result);
 
         (new audit_logger())->log(
@@ -326,6 +359,9 @@ final class identity_service {
                 'mode' => $result['mode'],
                 'mismatchMode' => $mismatchmode,
                 'transactionId' => $transactionid,
+                'failedAttempts' => $retrystatus['failedAttempts'],
+                'attemptsRemaining' => $retrystatus['attemptsRemaining'],
+                'retryResetAt' => $retrystatus['resetAt'],
             ],
             $userid,
             'quiz',
@@ -534,6 +570,17 @@ final class identity_service {
             $message = get_string($messagekey, 'local_proctorcore');
         } else {
             $message = $this->failure_message($result);
+            if (isset($result['attemptsRemaining'])) {
+                if (!empty($result['locked'])) {
+                    $message .= ' ' . $this->retry_locked_message($result);
+                } else {
+                    $message .= ' ' . get_string(
+                        'identity:attemptsremaining',
+                        'local_proctorcore',
+                        (int) $result['attemptsRemaining']
+                    );
+                }
+            }
         }
         return [
             'ok' => true,
@@ -545,7 +592,34 @@ final class identity_service {
             'livenessResult' => (string) (($result['liveness']['overall'] ?? '') ?: ''),
             'enrollment' => ($result['mode'] ?? '') === 'enroll',
             'message' => $message,
+            'failedAttempts' => (int) ($result['failedAttempts'] ?? 0),
+            'maxAttempts' => (int) ($result['maxAttempts'] ?? 0),
+            'attemptsRemaining' => isset($result['attemptsRemaining'])
+                ? (int) $result['attemptsRemaining']
+                : null,
+            'locked' => !empty($result['locked']),
+            'resetAt' => (int) ($result['resetAt'] ?? 0),
+            'retryAfterSeconds' => (int) ($result['retryAfterSeconds'] ?? 0),
         ];
+    }
+
+    /** Browser response when this learner and Quiz are inside the retry lockout window. */
+    private function locked_retry_result(array $status): array {
+        return array_merge($status, [
+            'ok' => true,
+            'passed' => false,
+            'required' => false,
+            'result' => 'retry_locked',
+            'message' => $this->retry_locked_message($status),
+        ]);
+    }
+
+    /** Localized lockout message with an exact retry time. */
+    private function retry_locked_message(array $status): string {
+        return get_string('identity:retrylocked', 'local_proctorcore', (object) [
+            'max' => (int) ($status['maxAttempts'] ?? 0),
+            'time' => userdate((int) ($status['resetAt'] ?? time())),
+        ]);
     }
 
     /**

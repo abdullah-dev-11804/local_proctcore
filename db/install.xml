@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="local/proctorcore/db" VERSION="2026091200" COMMENT="XMLDB file for local_proctorcore"
+<XMLDB PATH="local/proctorcore/db" VERSION="2026091605" COMMENT="XMLDB file for local_proctorcore"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd">
   <TABLES>
@@ -467,6 +467,29 @@
       <INDEXES>
         <INDEX NAME="companystatus" UNIQUE="false" FIELDS="companyid, status"/>
         <INDEX NAME="session" UNIQUE="false" FIELDS="sessionid"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="local_proctorcore_idretry" COMMENT="Quiz-scoped identity failure counters and timed retry lockouts.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="companyid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="quizid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="failures" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="resetat" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="lastfailedat" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="quizid" TYPE="foreign" FIELDS="quizid" REFTABLE="quiz" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="companyuserquiz" UNIQUE="true" FIELDS="companyid, userid, quizid"/>
+        <INDEX NAME="resetat" UNIQUE="false" FIELDS="resetat"/>
       </INDEXES>
     </TABLE>
 

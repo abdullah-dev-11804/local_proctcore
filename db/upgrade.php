@@ -307,5 +307,28 @@ function xmldb_local_proctorcore_upgrade(int $oldversion): bool {
         upgrade_plugin_savepoint(true, 2026091200, 'local', 'proctorcore');
     }
 
+    if ($oldversion < 2026091605) {
+        $retry = new xmldb_table('local_proctorcore_idretry');
+        if (!$dbman->table_exists($retry)) {
+            $retry->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
+            $retry->add_field('companyid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+            $retry->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+            $retry->add_field('quizid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+            $retry->add_field('failures', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+            $retry->add_field('resetat', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+            $retry->add_field('lastfailedat', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+            $retry->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+            $retry->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+            $retry->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+            $retry->add_key('userid', XMLDB_KEY_FOREIGN, ['userid'], 'user', ['id']);
+            $retry->add_key('quizid', XMLDB_KEY_FOREIGN, ['quizid'], 'quiz', ['id']);
+            $retry->add_index('companyuserquiz', XMLDB_INDEX_UNIQUE, ['companyid', 'userid', 'quizid']);
+            $retry->add_index('resetat', XMLDB_INDEX_NOTUNIQUE, ['resetat']);
+            $dbman->create_table($retry);
+        }
+
+        upgrade_plugin_savepoint(true, 2026091605, 'local', 'proctorcore');
+    }
+
     return true;
 }

@@ -364,6 +364,11 @@ define([], function() {
 
             update(panel, 'running', config.strings.preparingChallenge || config.strings.lookStraight);
             const challenge = await issueChallenge(config);
+            if (challenge.locked) {
+                setField('proctorcore_identity_status', challenge.result || 'retry_locked');
+                update(panel, 'failed', challenge.message || config.strings.failed);
+                return;
+            }
             let livenessEvidence = [];
             if (challenge.required) {
                 await waitForChallengeReady(config, panel, challenge);
@@ -419,7 +424,7 @@ define([], function() {
                     window.ProctorCorePrecheck.resume();
                 }
                 update(panel, 'failed', result.message || config.strings.failed);
-                button.disabled = false;
+                button.disabled = Boolean(result.locked);
             }
         } catch (error) {
             if (window.ProctorCorePrecheck && typeof window.ProctorCorePrecheck.resume === 'function') {

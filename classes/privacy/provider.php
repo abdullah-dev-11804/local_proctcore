@@ -51,6 +51,12 @@ final class provider implements \core_privacy\local\metadata\provider {
             'value' => 'privacy:metadata:participant:value',
         ], 'privacy:metadata:participant');
 
+        $collection->add_database_table('local_proctorcore_idretry', [
+            'userid' => 'privacy:metadata:idretry:userid',
+            'failures' => 'privacy:metadata:idretry:failures',
+            'resetat' => 'privacy:metadata:idretry:resetat',
+        ], 'privacy:metadata:idretry');
+
         return $collection;
     }
 }
