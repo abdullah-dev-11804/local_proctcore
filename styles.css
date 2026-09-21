@@ -1070,10 +1070,14 @@
 /* Compact two-column Quiz preflight, matching the visual hierarchy of the
  * supplied redesign while retaining ProctorCore's established colour system. */
 .mod_quiz_preflight_popup .local-proctorcore-preflight-layout {
+    box-sizing: border-box;
     display: grid;
     gap: .85rem 1rem;
-    grid-template-columns: minmax(0, 1.18fr) minmax(20rem, .95fr);
+    grid-template-columns: minmax(0, 1.18fr) minmax(0, .95fr);
+    max-width: 100%;
+    overflow: hidden;
     padding: 0;
+    width: 100%;
 }
 
 .mod_quiz_preflight_popup .local-proctorcore-precheck {
@@ -1087,6 +1091,7 @@
     gap: .8rem;
     grid-column: 1 / -1;
     margin: 0;
+    min-width: 0;
     padding: .8rem 3.5rem .8rem 1rem;
 }
 
@@ -1225,7 +1230,7 @@
     grid-column: 1;
     grid-row: 2 / span 8;
     height: auto;
-    height: 25rem;
+    height: 430px;
     margin: 0 0 .85rem 1rem;
     min-height: 0;
 }
@@ -1350,6 +1355,10 @@
     display: none;
 }
 
+.mod_quiz_preflight_popup .local-proctorcore-precheck.is-passed .local-proctorcore-precheck-preview {
+    height: 430px;
+}
+
 .mod_quiz_preflight_popup .local-proctorcore-identity {
     border-radius: .7rem;
     margin-bottom: 0;
@@ -1423,7 +1432,7 @@
 }
 
 .moodle-dialogue-base .moodle-dialogue.mod_quiz_preflight_popup {
-    height: min(92vh, 650px) !important;
+    height: min(92vh, 700px) !important;
     max-height: 92vh !important;
     width: min(94vw, 900px) !important;
 }
@@ -1434,38 +1443,29 @@
 }
 
 .moodle-dialogue-base .mod_quiz_preflight_popup .moodle-dialogue-hd {
-    background: transparent;
-    border: 0;
-    font-size: 0;
-    height: 2rem;
-    min-height: 0;
+    background: #fff;
+    border-bottom: 1px solid #e3e8eb;
+    font-size: inherit;
+    height: auto;
+    min-height: 3rem;
     overflow: visible;
-    padding: 0 !important;
-    position: absolute;
-    right: .65rem;
-    top: .65rem;
-    width: 2rem;
-    z-index: 20;
-}
-
-.moodle-dialogue-base .mod_quiz_preflight_popup .moodle-dialogue-hd .closebutton {
-    font-size: 1rem;
+    padding: .75rem 1rem !important;
+    position: static;
+    width: auto;
 }
 
 .moodle-dialogue-base .mod_quiz_preflight_popup .moodle-dialogue-bd {
-    padding: 0 0 4.25rem !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    padding: 0 !important;
 }
 
 .mod_quiz_preflight_popup .mform .fitem_actionbuttons {
     background: #fff;
     border-top: 1px solid #e3e8eb;
-    bottom: 0;
-    left: 0;
     margin: 0;
     padding: .75rem 1rem;
-    position: absolute;
-    right: 0;
-    z-index: 15;
+    position: static;
 }
 
 @media (max-width: 900px) {
@@ -1495,6 +1495,10 @@
         height: min(42dvh, 360px);
         margin: 0 0 .75rem;
         min-height: 15rem;
+    }
+
+    .mod_quiz_preflight_popup .local-proctorcore-precheck.is-passed .local-proctorcore-precheck-preview {
+        height: min(42dvh, 360px);
     }
 
     .mod_quiz_preflight_popup .local-proctorcore-precheck-list,
