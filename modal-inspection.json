@@ -1,0 +1,793 @@
+{
+  "page": {
+    "url": "https://sental.kz/mod/quiz/view.php?id=330&quizfullscreenframe=1",
+    "title": "PTC: Proctorecore Quiz 2 | Sental",
+    "viewport": {
+      "width": 1920,
+      "height": 937
+    }
+  },
+  "frameRect": {
+    "x": 0,
+    "y": 0,
+    "width": 1920,
+    "height": 937,
+    "right": 1920,
+    "bottom": 937
+  },
+  "modal": {
+    "tag": "div",
+    "id": "popover-region-container-6ab1929177d106ab192917418a28",
+    "classes": [
+      "popover-region-container"
+    ],
+    "role": "dialog",
+    "ariaLabel": "Notification window",
+    "rect": {
+      "x": 1065.484375,
+      "y": 10.5,
+      "width": 380,
+      "height": 2,
+      "right": 1445.484375,
+      "bottom": 12.5
+    },
+    "display": "block",
+    "position": "absolute",
+    "boxSizing": "border-box",
+    "width": "380px",
+    "height": "2px",
+    "minWidth": "0px",
+    "maxWidth": "none",
+    "minHeight": "0px",
+    "maxHeight": "749.6px",
+    "overflow": "hidden",
+    "overflowX": "hidden",
+    "overflowY": "hidden",
+    "margin": "0px",
+    "marginTop": "0px",
+    "marginRight": "0px",
+    "marginBottom": "0px",
+    "marginLeft": "0px",
+    "padding": "0px",
+    "paddingTop": "0px",
+    "paddingRight": "0px",
+    "paddingBottom": "0px",
+    "paddingLeft": "0px",
+    "border": "1px solid rgb(221, 221, 221)",
+    "borderRadius": "0px",
+    "background": "rgb(255, 255, 255)",
+    "color": "rgb(255, 255, 255)",
+    "fontFamily": "Inter, \"Segoe UI\", Arial, sans-serif",
+    "fontSize": "15.2px",
+    "fontWeight": "400",
+    "lineHeight": "23.56px",
+    "textAlign": "start",
+    "alignItems": "normal",
+    "justifyContent": "normal",
+    "gap": "normal",
+    "flexDirection": "row",
+    "gridTemplateColumns": "none",
+    "zIndex": "1",
+    "transform": "none"
+  },
+  "modalScroll": {
+    "scrollWidth": 378,
+    "scrollHeight": 55,
+    "clientWidth": 378,
+    "clientHeight": 0
+  },
+  "structure": {
+    "tag": "div",
+    "id": "popover-region-container-6ab1929177d106ab192917418a28",
+    "classes": [
+      "popover-region-container"
+    ],
+    "role": "dialog",
+    "ariaLabel": "Notification window",
+    "rect": {
+      "x": 1065.484375,
+      "y": 10.5,
+      "width": 380,
+      "height": 2,
+      "right": 1445.484375,
+      "bottom": 12.5
+    },
+    "children": [
+      {
+        "tag": "div",
+        "id": null,
+        "classes": [
+          "popover-region-header-container"
+        ],
+        "role": null,
+        "ariaLabel": null,
+        "rect": {
+          "x": 1066.484375,
+          "y": 11.5,
+          "width": 378,
+          "height": 25,
+          "right": 1444.484375,
+          "bottom": 36.5
+        },
+        "children": [
+          {
+            "tag": "h3",
+            "id": null,
+            "classes": [
+              "popover-region-header-text"
+            ],
+            "role": null,
+            "ariaLabel": null,
+            "text": "Notifications",
+            "rect": {
+              "x": 1071.484375,
+              "y": 11.5,
+              "width": 94.953125,
+              "height": 25,
+              "right": 1166.4375,
+              "bottom": 36.5
+            },
+            "children": []
+          },
+          {
+            "tag": "div",
+            "id": null,
+            "classes": [
+              "popover-region-header-actions"
+            ],
+            "role": null,
+            "ariaLabel": null,
+            "rect": {
+              "x": 1327.140625,
+              "y": 11.5,
+              "width": 112.34375,
+              "height": 25.28125,
+              "right": 1439.484375,
+              "bottom": 36.78125
+            },
+            "children": [
+              {
+                "tag": "a",
+                "id": null,
+                "classes": [
+                  "mark-all-read-button",
+                  "btn",
+                  "btn-sm",
+                  "btn-link",
+                  "m-0",
+                  "py-0",
+                  "icon-no-margin"
+                ],
+                "role": "button",
+                "ariaLabel": "Mark all as read",
+                "rect": {
+                  "x": 1327.140625,
+                  "y": 14.171875,
+                  "width": 34.625,
+                  "height": 22.609375,
+                  "right": 1361.765625,
+                  "bottom": 36.78125
+                },
+                "children": [
+                  {
+                    "tag": "span",
+                    "id": null,
+                    "classes": [
+                      "normal-icon"
+                    ],
+                    "role": null,
+                    "ariaLabel": null,
+                    "rect": {
+                      "x": 1336.140625,
+                      "y": 15.171875,
+                      "width": 16.625,
+                      "height": 20.609375,
+                      "right": 1352.765625,
+                      "bottom": 35.78125
+                    },
+                    "children": [
+                      {
+                        "tag": "i",
+                        "id": null,
+                        "classes": [
+                          "icon",
+                          "fa",
+                          "fa-check",
+                          "fa-fw"
+                        ],
+                        "role": null,
+                        "ariaLabel": null,
+                        "text": "",
+                        "rect": {
+                          "x": 1336.140625,
+                          "y": 18.171875,
+                          "width": 16.625,
+                          "height": 13.296875,
+                          "right": 1352.765625,
+                          "bottom": 31.46875
+                        },
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "span",
+                    "id": null,
+                    "classes": [
+                      "loading-icon",
+                      "icon-no-margin"
+                    ],
+                    "role": null,
+                    "ariaLabel": null,
+                    "rect": {
+                      "x": 0,
+                      "y": 0,
+                      "width": 0,
+                      "height": 0,
+                      "right": 0,
+                      "bottom": 0
+                    },
+                    "children": [
+                      {
+                        "tag": "i",
+                        "id": null,
+                        "classes": [
+                          "icon",
+                          "fa",
+                          "fa-spinner",
+                          "fa-spin",
+                          "fa-fw"
+                        ],
+                        "role": "img",
+                        "ariaLabel": "Loading",
+                        "text": "",
+                        "rect": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 0,
+                          "height": 0,
+                          "right": 0,
+                          "bottom": 0
+                        },
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "span",
+                    "id": null,
+                    "classes": [
+                      "visually-hidden"
+                    ],
+                    "role": null,
+                    "ariaLabel": null,
+                    "text": "",
+                    "rect": {
+                      "x": 1351.765625,
+                      "y": 14.171875,
+                      "width": 1,
+                      "height": 1,
+                      "right": 1352.765625,
+                      "bottom": 15.171875
+                    },
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "tag": "a",
+                "id": null,
+                "classes": [
+                  "btn",
+                  "btn-sm",
+                  "btn-link",
+                  "m-0",
+                  "py-0",
+                  "icon-no-margin"
+                ],
+                "role": null,
+                "ariaLabel": "Notification preferences",
+                "rect": {
+                  "x": 1366,
+                  "y": 14.171875,
+                  "width": 34.625,
+                  "height": 22.609375,
+                  "right": 1400.625,
+                  "bottom": 36.78125
+                },
+                "children": [
+                  {
+                    "tag": "i",
+                    "id": null,
+                    "classes": [
+                      "icon",
+                      "fa",
+                      "fa-gear",
+                      "fa-fw"
+                    ],
+                    "role": null,
+                    "ariaLabel": null,
+                    "text": "",
+                    "rect": {
+                      "x": 1375,
+                      "y": 18.171875,
+                      "width": 16.625,
+                      "height": 13.296875,
+                      "right": 1391.625,
+                      "bottom": 31.46875
+                    },
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "tag": "button",
+                "id": null,
+                "classes": [
+                  "btn",
+                  "btn-sm",
+                  "btn-link",
+                  "m-0",
+                  "py-0",
+                  "icon-no-margin"
+                ],
+                "role": null,
+                "ariaLabel": "Close",
+                "rect": {
+                  "x": 1404.859375,
+                  "y": 14.171875,
+                  "width": 34.625,
+                  "height": 22.609375,
+                  "right": 1439.484375,
+                  "bottom": 36.78125
+                },
+                "children": [
+                  {
+                    "tag": "i",
+                    "id": null,
+                    "classes": [
+                      "icon",
+                      "fa",
+                      "fa-xmark",
+                      "fa-fw"
+                    ],
+                    "role": null,
+                    "ariaLabel": null,
+                    "text": "",
+                    "rect": {
+                      "x": 1413.859375,
+                      "y": 18.171875,
+                      "width": 16.625,
+                      "height": 13.296875,
+                      "right": 1430.484375,
+                      "bottom": 31.46875
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "tag": "div",
+        "id": null,
+        "classes": [
+          "popover-region-content-container"
+        ],
+        "role": null,
+        "ariaLabel": null,
+        "rect": {
+          "x": 1066.484375,
+          "y": 36.78125,
+          "width": 378,
+          "height": 0,
+          "right": 1444.484375,
+          "bottom": 36.78125
+        },
+        "children": [
+          {
+            "tag": "div",
+            "id": null,
+            "classes": [
+              "popover-region-content"
+            ],
+            "role": null,
+            "ariaLabel": null,
+            "rect": {
+              "x": 1066.484375,
+              "y": 36.78125,
+              "width": 363,
+              "height": 43.5625,
+              "right": 1429.484375,
+              "bottom": 80.34375
+            },
+            "children": [
+              {
+                "tag": "div",
+                "id": null,
+                "classes": [
+                  "all-notifications"
+                ],
+                "role": "log",
+                "ariaLabel": null,
+                "text": "",
+                "rect": {
+                  "x": 1066.484375,
+                  "y": 36.78125,
+                  "width": 363,
+                  "height": 0,
+                  "right": 1429.484375,
+                  "bottom": 36.78125
+                },
+                "children": []
+              },
+              {
+                "tag": "div",
+                "id": null,
+                "classes": [
+                  "empty-message"
+                ],
+                "role": null,
+                "ariaLabel": null,
+                "text": "You have no notifications",
+                "rect": {
+                  "x": 1066.484375,
+                  "y": 36.78125,
+                  "width": 363,
+                  "height": 43.5625,
+                  "right": 1429.484375,
+                  "bottom": 80.34375
+                },
+                "children": []
+              }
+            ]
+          },
+          {
+            "tag": "span",
+            "id": null,
+            "classes": [
+              "loading-icon",
+              "icon-no-margin"
+            ],
+            "role": null,
+            "ariaLabel": null,
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0,
+              "right": 0,
+              "bottom": 0
+            },
+            "children": [
+              {
+                "tag": "i",
+                "id": null,
+                "classes": [
+                  "icon",
+                  "fa",
+                  "fa-spinner",
+                  "fa-spin",
+                  "fa-fw"
+                ],
+                "role": "img",
+                "ariaLabel": "Loading",
+                "text": "",
+                "rect": {
+                  "x": 0,
+                  "y": 0,
+                  "width": 0,
+                  "height": 0,
+                  "right": 0,
+                  "bottom": 0
+                },
+                "children": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "tag": "a",
+        "id": null,
+        "classes": [
+          "see-all-link"
+        ],
+        "role": null,
+        "ariaLabel": null,
+        "rect": {
+          "x": 1066.484375,
+          "y": 36.78125,
+          "width": 378,
+          "height": 30,
+          "right": 1444.484375,
+          "bottom": 66.78125
+        },
+        "children": [
+          {
+            "tag": "div",
+            "id": null,
+            "classes": [
+              "popover-region-footer-container"
+            ],
+            "role": null,
+            "ariaLabel": null,
+            "rect": {
+              "x": 1066.484375,
+              "y": 36.78125,
+              "width": 378,
+              "height": 30,
+              "right": 1444.484375,
+              "bottom": 66.78125
+            },
+            "children": [
+              {
+                "tag": "div",
+                "id": null,
+                "classes": [
+                  "popover-region-seeall-text"
+                ],
+                "role": null,
+                "ariaLabel": null,
+                "text": "See all",
+                "rect": {
+                  "x": 1066.484375,
+                  "y": 40.78125,
+                  "width": 378,
+                  "height": 23.5625,
+                  "right": 1444.484375,
+                  "bottom": 64.34375
+                },
+                "children": []
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "details": [
+    {
+      "tag": "div",
+      "id": "popover-region-container-6ab1929177d106ab192917418a28",
+      "classes": [
+        "popover-region-container"
+      ],
+      "role": "dialog",
+      "ariaLabel": "Notification window",
+      "rect": {
+        "x": 1065.484375,
+        "y": 10.5,
+        "width": 380,
+        "height": 2,
+        "right": 1445.484375,
+        "bottom": 12.5
+      },
+      "display": "block",
+      "position": "absolute",
+      "boxSizing": "border-box",
+      "width": "380px",
+      "height": "2px",
+      "minWidth": "0px",
+      "maxWidth": "none",
+      "minHeight": "0px",
+      "maxHeight": "749.6px",
+      "overflow": "hidden",
+      "overflowX": "hidden",
+      "overflowY": "hidden",
+      "margin": "0px",
+      "marginTop": "0px",
+      "marginRight": "0px",
+      "marginBottom": "0px",
+      "marginLeft": "0px",
+      "padding": "0px",
+      "paddingTop": "0px",
+      "paddingRight": "0px",
+      "paddingBottom": "0px",
+      "paddingLeft": "0px",
+      "border": "1px solid rgb(221, 221, 221)",
+      "borderRadius": "0px",
+      "background": "rgb(255, 255, 255)",
+      "color": "rgb(255, 255, 255)",
+      "fontFamily": "Inter, \"Segoe UI\", Arial, sans-serif",
+      "fontSize": "15.2px",
+      "fontWeight": "400",
+      "lineHeight": "23.56px",
+      "textAlign": "start",
+      "alignItems": "normal",
+      "justifyContent": "normal",
+      "gap": "normal",
+      "flexDirection": "row",
+      "gridTemplateColumns": "none",
+      "zIndex": "1",
+      "transform": "none",
+      "text": "Notifications You have no notifications See all"
+    },
+    {
+      "tag": "h3",
+      "id": "",
+      "classes": [
+        "popover-region-header-text"
+      ],
+      "role": null,
+      "ariaLabel": null,
+      "rect": {
+        "x": 1071.484375,
+        "y": 11.5,
+        "width": 94.953125,
+        "height": 25,
+        "right": 1166.4375,
+        "bottom": 36.5
+      },
+      "display": "block",
+      "position": "static",
+      "boxSizing": "border-box",
+      "width": "94.9531px",
+      "height": "25px",
+      "minWidth": "0px",
+      "maxWidth": "none",
+      "minHeight": "0px",
+      "maxHeight": "none",
+      "overflow": "visible",
+      "overflowX": "visible",
+      "overflowY": "visible",
+      "margin": "0px",
+      "marginTop": "0px",
+      "marginRight": "0px",
+      "marginBottom": "0px",
+      "marginLeft": "0px",
+      "padding": "0px",
+      "paddingTop": "0px",
+      "paddingRight": "0px",
+      "paddingBottom": "0px",
+      "paddingLeft": "0px",
+      "border": "0px none rgb(44, 62, 80)",
+      "borderRadius": "0px",
+      "background": "rgba(0, 0, 0, 0)",
+      "color": "rgb(44, 62, 80)",
+      "fontFamily": "\"Proxima Nova A\", \"Open Sans\", \"Segoe UI\", Arial, sans-serif",
+      "fontSize": "14px",
+      "fontWeight": "800",
+      "lineHeight": "25px",
+      "textAlign": "start",
+      "alignItems": "normal",
+      "justifyContent": "normal",
+      "gap": "normal",
+      "flexDirection": "row",
+      "gridTemplateColumns": "none",
+      "zIndex": "auto",
+      "transform": "none",
+      "text": "Notifications"
+    },
+    {
+      "tag": "i",
+      "id": "",
+      "classes": [
+        "icon",
+        "fa",
+        "fa-check",
+        "fa-fw"
+      ],
+      "role": null,
+      "ariaLabel": null,
+      "rect": {
+        "x": 1336.140625,
+        "y": 18.171875,
+        "width": 16.625,
+        "height": 13.296875,
+        "right": 1352.765625,
+        "bottom": 31.46875
+      },
+      "display": "inline-block",
+      "position": "static",
+      "boxSizing": "content-box",
+      "width": "16.625px",
+      "height": "13.2969px",
+      "minWidth": "0px",
+      "maxWidth": "30px",
+      "minHeight": "0px",
+      "maxHeight": "24px",
+      "overflow": "visible",
+      "overflowX": "visible",
+      "overflowY": "visible",
+      "margin": "0px",
+      "marginTop": "0px",
+      "marginRight": "0px",
+      "marginBottom": "0px",
+      "marginLeft": "0px",
+      "padding": "0px",
+      "paddingTop": "0px",
+      "paddingRight": "0px",
+      "paddingBottom": "0px",
+      "paddingLeft": "0px",
+      "border": "0px none rgb(44, 62, 80)",
+      "borderRadius": "0px",
+      "background": "rgba(0, 0, 0, 0)",
+      "color": "rgb(44, 62, 80)",
+      "fontFamily": "\"Font Awesome 6 Free\"",
+      "fontSize": "13.3px",
+      "fontWeight": "900",
+      "lineHeight": "13.3px",
+      "textAlign": "center",
+      "alignItems": "normal",
+      "justifyContent": "normal",
+      "gap": "normal",
+      "flexDirection": "row",
+      "gridTemplateColumns": "none",
+      "zIndex": "auto",
+      "transform": "none",
+      "text": ""
+    },
+    {
+      "tag": "button",
+      "id": "",
+      "classes": [
+        "btn",
+        "btn-sm",
+        "btn-link",
+        "m-0",
+        "py-0",
+        "icon-no-margin"
+      ],
+      "role": null,
+      "ariaLabel": "Close",
+      "rect": {
+        "x": 1404.859375,
+        "y": 14.171875,
+        "width": 34.625,
+        "height": 22.609375,
+        "right": 1439.484375,
+        "bottom": 36.78125
+      },
+      "display": "inline-block",
+      "position": "static",
+      "boxSizing": "border-box",
+      "width": "34.625px",
+      "height": "22.6094px",
+      "minWidth": "20px",
+      "maxWidth": "none",
+      "minHeight": "0px",
+      "maxHeight": "none",
+      "overflow": "visible",
+      "overflowX": "visible",
+      "overflowY": "visible",
+      "margin": "0px",
+      "marginTop": "0px",
+      "marginRight": "0px",
+      "marginBottom": "0px",
+      "marginLeft": "0px",
+      "padding": "0px 8px",
+      "paddingTop": "0px",
+      "paddingRight": "8px",
+      "paddingBottom": "0px",
+      "paddingLeft": "8px",
+      "border": "1px solid rgba(0, 0, 0, 0)",
+      "borderRadius": "14px",
+      "background": "rgba(0, 0, 0, 0)",
+      "color": "rgb(44, 62, 80)",
+      "fontFamily": "Inter, \"Segoe UI\", Arial, sans-serif",
+      "fontSize": "13.3px",
+      "fontWeight": "400",
+      "lineHeight": "20.615px",
+      "textAlign": "center",
+      "alignItems": "normal",
+      "justifyContent": "normal",
+      "gap": "normal",
+      "flexDirection": "row",
+      "gridTemplateColumns": "none",
+      "zIndex": "auto",
+      "transform": "none",
+      "text": ""
+    }
+  ],
+  "stylesheets": [
+    "https://sental.kz/theme/yui_combo.php?3.18.1/cssreset/cssreset-min.css&3.18.1/cssfonts/cssfonts-min.css&3.18.1/cssgrids/cssgrids-min.css&3.18.1/cssbase/cssbase-min.css",
+    "https://sental.kz/theme/yui_combo.php?rollup/3.18.1/yui-moodlesimple-min.css",
+    "https://sental.kz/theme/yui_combo.php?3.18.1/cssbutton/cssbutton-min.css",
+    "https://sental.kz/theme/styles.php/sentaliomadtheme/1790021856_1789081616/all",
+    "https://sental.kz/local/proctorcore/styles.css"
+  ],
+  "matchedRules": []
+}

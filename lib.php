@@ -402,11 +402,6 @@ function local_proctorcore_render_precheck_panel(
     $previewhtml .= html_writer::end_div();
 
     $checklisthtml = html_writer::div($rows, 'local-proctorcore-precheck-list');
-    $content .= html_writer::div(
-        $previewhtml . $checklisthtml,
-        'local-proctorcore-precheck-body'
-    );
-
     $summary = html_writer::div('', 'local-proctorcore-precheck-summary', [
         'data-precheck-summary' => '1',
         'role' => 'status',
@@ -420,7 +415,12 @@ function local_proctorcore_render_precheck_panel(
         ]),
         'local-proctorcore-precheck-actions'
     );
-    $content .= html_writer::div($summary . $actions, 'local-proctorcore-precheck-footer');
+    $footer = html_writer::div($summary . $actions, 'local-proctorcore-precheck-footer');
+    $side = html_writer::div($checklisthtml . $footer, 'local-proctorcore-precheck-side');
+    $content .= html_writer::div(
+        $previewhtml . $side,
+        'local-proctorcore-precheck-body'
+    );
 
     return html_writer::div($content, 'local-proctorcore-precheck quizaccess-proctoring-widget', [
         'id' => $panelid,
