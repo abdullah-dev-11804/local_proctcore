@@ -15,3 +15,9 @@ cli/test_ml_identity.php
 cli/test_report_generation.php
 cli/test_violation_event.php
 amd/build/
+
+# Playwright MCP local artifacts
+.playwright-mcp/
+current-modal*.png
+modal-inspection.json
+sental-quiz-*.png
