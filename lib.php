@@ -314,10 +314,41 @@ function local_proctorcore_render_precheck_panel(
         ? get_string('precheck:previewnote', 'local_proctorcore')
         : get_string('precheck:candidatenote', 'local_proctorcore');
 
-    $content = html_writer::div(
-        html_writer::tag('h3', get_string('precheck:title', 'local_proctorcore'), [
+    $headingicon = html_writer::span('', 'local-proctorcore-preflight-brand-icon', [
+        'aria-hidden' => 'true',
+    ]);
+    $headingcopy = html_writer::div(
+        html_writer::tag('h3', get_string('preflight:heading', 'local_proctorcore'), [
             'class' => 'local-proctorcore-precheck-title',
-        ]) . html_writer::div($note, 'local-proctorcore-precheck-rules'),
+        ]) . html_writer::div(
+            $preview ? $note : get_string('preflight:subtitle', 'local_proctorcore'),
+            'local-proctorcore-precheck-rules'
+        ),
+        'local-proctorcore-preflight-heading-copy'
+    );
+    $steps = html_writer::div(
+        html_writer::div(
+            html_writer::span('1', 'local-proctorcore-preflight-step-number') .
+            html_writer::span(get_string('preflight:stepchecks', 'local_proctorcore')),
+            'local-proctorcore-preflight-step local-proctorcore-preflight-step-checks'
+        ) .
+        html_writer::span('', 'local-proctorcore-preflight-step-line', ['aria-hidden' => 'true']) .
+        html_writer::div(
+            html_writer::span('2', 'local-proctorcore-preflight-step-number') .
+            html_writer::span(get_string('preflight:stepidentity', 'local_proctorcore')),
+            'local-proctorcore-preflight-step local-proctorcore-preflight-step-identity'
+        ) .
+        html_writer::span('', 'local-proctorcore-preflight-step-line', ['aria-hidden' => 'true']) .
+        html_writer::div(
+            html_writer::span('3', 'local-proctorcore-preflight-step-number') .
+            html_writer::span(get_string('preflight:stepstart', 'local_proctorcore')),
+            'local-proctorcore-preflight-step local-proctorcore-preflight-step-start'
+        ),
+        'local-proctorcore-preflight-steps',
+        ['aria-label' => get_string('precheck:title', 'local_proctorcore')]
+    );
+    $content = html_writer::div(
+        $headingicon . $headingcopy . $steps,
         'local-proctorcore-precheck-heading'
     );
 
@@ -362,6 +393,11 @@ function local_proctorcore_render_precheck_panel(
         html_writer::span('', 'local-proctorcore-camera-live-dot', ['aria-hidden' => 'true']) .
         html_writer::span(get_string('precheck:camerapreview', 'local_proctorcore')),
         'local-proctorcore-camera-live'
+    );
+    $previewhtml .= html_writer::div(
+        html_writer::span('', 'local-proctorcore-camera-hint-icon', ['aria-hidden' => 'true']) .
+        html_writer::span(get_string('preflight:camerahint', 'local_proctorcore')),
+        'local-proctorcore-camera-hint'
     );
     $previewhtml .= html_writer::end_div();
 

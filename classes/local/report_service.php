@@ -335,6 +335,7 @@ final class report_service {
             'reports' => [],
             'other' => [],
         ];
+        $videochecksums = [];
 
         foreach ($this->assets->get_for_session($sessionid) as $asset) {
             if ((string) $asset->status !== 'active' || !empty($asset->deletedat)) {
@@ -368,6 +369,21 @@ final class report_service {
                     if ($asset->serverassettype === 'full_recording' || $asset->reason === 'full_session') {
                         $grouped['other'][] = $asset;
                         break;
+                    }
+                    $checksum = trim((string) ($asset->checksum ?? ''));
+                    if ($checksum !== '' && isset($videochecksums[$checksum])) {
+                        $primary = $grouped['videos'][$videochecksums[$checksum]];
+                        $primary->reason = 'consolidated_violations';
+                        $primary->displayname = get_string(
+                            'report:violationclip',
+                            'local_proctorcore',
+                            get_string('report:consolidatedviolations', 'local_proctorcore')
+                        );
+                        $primary->duplicatecount = (int) ($primary->duplicatecount ?? 1) + 1;
+                        break;
+                    }
+                    if ($checksum !== '') {
+                        $videochecksums[$checksum] = count($grouped['videos']);
                     }
                     $grouped['videos'][] = $asset;
                     break;
