@@ -21,3 +21,7 @@ amd/build/
 current-modal*.png
 modal-inspection.json
 sental-quiz-*.png
+
+# Playwright visual inspection artifacts
+.playwright-artifacts/
+redesigned-modal*.png
