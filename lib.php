@@ -416,7 +416,22 @@ function local_proctorcore_render_precheck_panel(
         'local-proctorcore-precheck-actions'
     );
     $footer = html_writer::div($summary . $actions, 'local-proctorcore-precheck-footer');
-    $side = html_writer::div($checklisthtml . $footer, 'local-proctorcore-precheck-side');
+    $disclosureid = clean_param($panelid . '-checks-content', PARAM_ALPHANUMEXT);
+    $disclosuretoggle = html_writer::tag(
+        'summary',
+        get_string('preflight:stepchecks', 'local_proctorcore'),
+        ['class' => 'local-proctorcore-precheck-toggle']
+    );
+    $disclosurecontent = html_writer::div(
+        $checklisthtml . $footer,
+        'local-proctorcore-precheck-content',
+        ['id' => $disclosureid]
+    );
+    $side = html_writer::tag(
+        'details',
+        $disclosuretoggle . $disclosurecontent,
+        ['class' => 'local-proctorcore-precheck-side']
+    );
     $content .= html_writer::div(
         $previewhtml . $side,
         'local-proctorcore-precheck-body'
