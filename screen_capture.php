@@ -30,6 +30,8 @@ $PAGE->requires->js_call_amd('local_proctorcore/screen_capture', 'init', [[
         'incomplete' => get_string('capture:screenincomplete', 'local_proctorcore'),
         'stopped' => get_string('capture:screenstopped', 'local_proctorcore'),
         'active' => get_string('capture:screenactive', 'local_proctorcore'),
+        'activeFallback' => get_string('capture:screenactivefallback', 'local_proctorcore'),
+        'connecting' => get_string('capture:screenconnecting', 'local_proctorcore'),
         'start' => get_string('capture:startscreen', 'local_proctorcore'),
         'stop' => get_string('capture:stopscreen', 'local_proctorcore'),
         'failed' => get_string('capture:failed', 'local_proctorcore'),

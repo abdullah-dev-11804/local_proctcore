@@ -650,11 +650,38 @@ define([], function() {
         }
     };
 
-    const requestScreenFinalization = () => new Promise(resolve => {
-        if (!config.screenRecordingEnabled || !screenChannel || screenState !== 'active') {
-            resolve();
+    const refreshScreenState = () => new Promise(resolve => {
+        if (!screenChannel) {
+            resolve(screenState);
             return;
         }
+        const timeout = window.setTimeout(() => {
+            screenChannel.removeEventListener('message', listener);
+            resolve(screenState);
+        }, 1200);
+        const listener = event => {
+            if ((event.data || {}).type === 'status') {
+                window.clearTimeout(timeout);
+                screenChannel.removeEventListener('message', listener);
+                resolve(String(event.data.state || screenState));
+            }
+        };
+        screenChannel.addEventListener('message', listener);
+        screenChannel.postMessage({type: 'status-request'});
+    });
+
+    const requestScreenFinalization = async() => {
+        if (!config.screenRecordingEnabled) {
+            return;
+        }
+        screenState = await refreshScreenState();
+        if (screenState !== 'active') {
+            if (screenState === 'pending') {
+                await apiRequest('screen_missing', {reason: 'screen_share_not_started'}, true).catch(() => {});
+            }
+            return;
+        }
+        await new Promise(resolve => {
         const requestId = `${Date.now()}-${Math.random()}`;
         const timeout = window.setTimeout(() => {
             screenChannel.removeEventListener('message', listener);
@@ -669,7 +696,8 @@ define([], function() {
         };
         screenChannel.addEventListener('message', listener);
         screenChannel.postMessage({type: 'finalize', requestId});
-    });
+        });
+    };
 
     const bindScreenController = () => {
         if (!config.screenRecordingEnabled || typeof BroadcastChannel !== 'function') {
@@ -692,11 +720,6 @@ define([], function() {
             }
         });
         screenChannel.postMessage({type: 'status-request'});
-        window.setTimeout(() => {
-            if (screenState === 'pending' && !submitting) {
-                apiRequest('screen_missing', {reason: 'screen_share_not_started'}, true).catch(() => {});
-            }
-        }, 15000);
     };
 
     const bindSubmission = () => {

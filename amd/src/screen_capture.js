@@ -21,6 +21,11 @@ define([], function() {
     const startButton = () => document.querySelector('[data-screen-start]');
     const stopButton = () => document.querySelector('[data-screen-stop]');
 
+    const withTimeout = (promise, milliseconds, code) => Promise.race([
+        promise,
+        new Promise((resolve, reject) => window.setTimeout(() => reject(new Error(code)), milliseconds)),
+    ]);
+
     const setStatus = (message, state = 'warning') => {
         const node = statusNode();
         if (node) {
@@ -218,6 +223,13 @@ define([], function() {
                 channel?.postMessage({type: 'status', state: 'incomplete'});
                 return;
             }
+            const preview = document.querySelector('[data-screen-preview]');
+            if (preview) {
+                preview.srcObject = displayStream;
+                preview.hidden = false;
+                preview.play().catch(() => {});
+            }
+            setStatus(config.strings.connecting, 'info');
             const bootstrap = await post('screen_bootstrap');
             if (!bootstrap.enabled || bootstrap.supported === false) {
                 throw new Error(bootstrap.reason || 'screen_capture_unavailable');
@@ -225,12 +237,24 @@ define([], function() {
             uploadUrl = bootstrap.uploadUrl;
             uploadToken = bootstrap.uploadToken;
             scheduleCredentialRefresh(bootstrap.uploadTokenExpiresAt);
-            const LivekitClient = await loadScript(bootstrap.clientScriptUrl);
-            room = new LivekitClient.Room({adaptiveStream: true, dynacast: true, disconnectOnPageLeave: false});
-            await room.connect(bootstrap.url, bootstrap.token);
-            await room.localParticipant.publishTrack(track, {
-                source: LivekitClient.Track.Source.ScreenShare, simulcast: false,
-            });
+            let liveKitPublished = false;
+            try {
+                const LivekitClient = await withTimeout(
+                    loadScript(bootstrap.clientScriptUrl), 12000, 'sdk_load_timeout'
+                );
+                room = new LivekitClient.Room({adaptiveStream: true, dynacast: true, disconnectOnPageLeave: false});
+                await withTimeout(room.connect(bootstrap.url, bootstrap.token), 15000, 'livekit_connect_timeout');
+                await withTimeout(room.localParticipant.publishTrack(track, {
+                    source: LivekitClient.Track.Source.ScreenShare, simulcast: false,
+                }), 15000, 'screen_publish_timeout');
+                liveKitPublished = true;
+            } catch (liveKitError) {
+                window.console.warn('LiveKit screen publication unavailable; using browser recording fallback.', liveKitError);
+                if (room) {
+                    room.disconnect();
+                    room = null;
+                }
+            }
             const started = await post('screen_start', {displaySurface});
             serverStarted = true;
             segment = Number(started.segment) || 1;
@@ -241,14 +265,15 @@ define([], function() {
                     stopCapture('screen_share_ended', true);
                 }
             }, {once: true});
-            const preview = document.querySelector('[data-screen-preview]');
-            if (preview) {
-                preview.srcObject = displayStream;
-            }
-            setStatus(config.strings.active, 'success');
+            setStatus(liveKitPublished ? config.strings.active : config.strings.activeFallback, 'success');
             startButton().hidden = true;
             stopButton().hidden = false;
             channel?.postMessage({type: 'status', state: 'active', displaySurface});
+            try {
+                window.resizeTo(500, 460);
+            } catch (error) {
+                // Some browser/window-manager combinations do not allow resizing.
+            }
         } catch (error) {
             if (serverStarted) {
                 await post('screen_stop', {reason: 'screen_capture_start_failed'}, true).catch(() => {});
