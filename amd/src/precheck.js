@@ -5,7 +5,7 @@
  *
  * @module local_proctorcore/precheck
  */
-define([], function() {
+define(['local_proctorcore/preflight_layout'], function(preflightLayout) {
     let currentStream = null;
     let activePanel = null;
 
@@ -400,6 +400,7 @@ define([], function() {
          * @param {Object} config Configuration.
          */
         init: function(config) {
+            preflightLayout.init();
             const panel = document.getElementById(config.panelId || 'local-proctorcore-precheck');
             if (!panel) {
                 return;
