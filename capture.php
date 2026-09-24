@@ -33,6 +33,31 @@ try {
         case 'bootstrap':
             $result = $service->bootstrap($sessionid, (int) $USER->id);
             break;
+        case 'screen_bootstrap':
+            $result = $service->bootstrap_screen($sessionid, (int) $USER->id);
+            break;
+        case 'screen_start':
+            $result = $service->start_screen_capture(
+                $sessionid,
+                (int) $USER->id,
+                clean_param((string) ($data['displaySurface'] ?? 'unknown'), PARAM_ALPHANUMEXT)
+            );
+            break;
+        case 'screen_stop':
+            $result = $service->stop_screen_capture(
+                $sessionid,
+                (int) $USER->id,
+                clean_param((string) ($data['reason'] ?? 'submitted'), PARAM_ALPHANUMEXT)
+            );
+            break;
+        case 'screen_missing':
+            $result = (new \local_proctorcore\local\violation_service())->record_browser_event(
+                $sessionid,
+                (int) $USER->id,
+                'screen_share_not_started',
+                ['reason' => clean_param((string) ($data['reason'] ?? ''), PARAM_ALPHANUMEXT)]
+            );
+            break;
         case 'start':
             $result = $service->start_capture(
                 $sessionid,

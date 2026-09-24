@@ -147,11 +147,19 @@ function local_proctorcore_require_heartbeat(int $sessionid): void {
 function local_proctorcore_require_capture(int $sessionid): void {
     global $PAGE;
 
+    $session = (new \local_proctorcore\local\session_repository())->get_by_id($sessionid);
+    $captureconfig = (new \local_proctorcore\local\company_config_repository())
+        ->get_effective_config((int) $session->companyid);
+
     $PAGE->requires->css('/local/proctorcore/styles.css');
     $PAGE->requires->js_call_amd('local_proctorcore/proctorcore', 'init', [[
         'sessionId' => $sessionid,
         'endpoint' => (new moodle_url('/local/proctorcore/capture.php'))->out(false),
         'sesskey' => sesskey(),
+        'screenRecordingEnabled' => !empty($captureconfig->screenrecordingenabled),
+        'screenControllerUrl' => (new moodle_url('/local/proctorcore/screen_capture.php', [
+            'sessionid' => $sessionid,
+        ]))->out(false),
         'strings' => [
             'connecting' => get_string('capture:connecting', 'local_proctorcore'),
             'permissions' => get_string('capture:permissions', 'local_proctorcore'),
@@ -169,6 +177,9 @@ function local_proctorcore_require_capture(int $sessionid): void {
             'retry' => get_string('capture:retry', 'local_proctorcore'),
             'localMode' => get_string('capture:recording', 'local_proctorcore'),
             'localModeMessage' => get_string('capture:recordingmessage', 'local_proctorcore'),
+            'openScreen' => get_string('capture:openscreen', 'local_proctorcore'),
+            'screenPending' => get_string('capture:screenpending', 'local_proctorcore'),
+            'screenActive' => get_string('capture:screenactive', 'local_proctorcore'),
         ],
     ]]);
 }

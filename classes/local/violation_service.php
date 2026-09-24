@@ -144,22 +144,34 @@ final class violation_service {
             'camera_ended' => [4, get_string('violation:cameraended', 'local_proctorcore')],
             'microphone_ended' => [4, get_string('violation:microphoneended', 'local_proctorcore')],
             'camera_blocked' => [3, get_string('violation:camerablocked', 'local_proctorcore')],
+            'screen_share_not_started' => [2, get_string('violation:screensharenotstarted', 'local_proctorcore')],
+            'screen_share_unsupported' => [2, get_string('violation:screenshareunsupported', 'local_proctorcore')],
+            'screen_share_denied' => [2, get_string('violation:screensharedenied', 'local_proctorcore')],
+            'screen_share_incomplete' => [2, get_string('violation:screenshareincomplete', 'local_proctorcore')],
+            'screen_share_unavailable' => [2, get_string('violation:screenshareunavailable', 'local_proctorcore')],
+            'screen_share_ended' => [3, get_string('violation:screenshareended', 'local_proctorcore')],
         ];
         if (!isset($map[$eventtype])) {
             throw new \moodle_exception('violation:invalidevent', 'local_proctorcore');
         }
         $config = (new company_config_repository())->get_effective_config((int) $session->companyid);
+        $cooldown = strpos($eventtype, 'screen_share_') === 0
+            ? DAYSECS
+            : (int) $config->violationcooldownseconds;
         $violation = $this->create_once(
             $session,
             $eventtype,
             (int) $map[$eventtype][0],
             'browser',
-            (int) $config->violationcooldownseconds,
+            $cooldown,
             [
                 'description' => (string) $map[$eventtype][1],
                 'metadata' => $metadata,
             ]
         );
+        if (strpos($eventtype, 'screen_share_') === 0) {
+            (new session_repository())->require_manual_review((int) $session->id);
+        }
 
         return [
             'ok' => true,

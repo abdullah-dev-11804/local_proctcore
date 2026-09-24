@@ -22,6 +22,12 @@ final class violation_scoring_service {
         'background_noise' => ['riskpointsbackgroundnoise', 10],
         'second_voice_detected' => ['riskpointssecondvoice', 40],
         'possible_prompting' => ['riskpointspossibleprompting', 40],
+        'screen_share_not_started' => ['riskpointsscreensharefailure', 0],
+        'screen_share_unsupported' => ['riskpointsscreensharefailure', 0],
+        'screen_share_denied' => ['riskpointsscreensharefailure', 0],
+        'screen_share_incomplete' => ['riskpointsscreensharefailure', 0],
+        'screen_share_unavailable' => ['riskpointsscreensharefailure', 0],
+        'screen_share_ended' => ['riskpointsscreensharefailure', 0],
     ];
 
     /** Returns the effective global scoring policy. */

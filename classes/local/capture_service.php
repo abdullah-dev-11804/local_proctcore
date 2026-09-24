@@ -146,8 +146,106 @@ final class capture_service {
             'tokenExpiresAt' => $connection['tokenExpiresAt'],
             'uploadUrl' => $connection['uploadUrl'],
             'uploadToken' => $connection['uploadToken'],
+            'uploadTokenExpiresAt' => $connection['uploadTokenExpiresAt'],
             'chunkMilliseconds' => $connection['chunkMilliseconds'],
         ];
+    }
+
+    /** Returns dedicated LiveKit and upload credentials for the persistent screen controller. */
+    public function bootstrap_screen(int $sessionid, int $userid): array {
+        $session = $this->require_session($sessionid, $userid, true);
+        $config = $this->configs->get_effective_config((int) $session->companyid);
+        if (empty($config->screenrecordingenabled)) {
+            return ['ok' => true, 'enabled' => false];
+        }
+        if (local_capture_storage::is_enabled()) {
+            return ['ok' => true, 'enabled' => true, 'supported' => false, 'reason' => 'local_test_mode'];
+        }
+        $identity = 'moodle-user-' . (int) $session->userid . '-attempt-'
+            . (int) $session->attemptid . '-screen';
+        $response = (new server_client((int) $session->companyid, $this->configs))->create_media_token(
+            (string) $session->server_sessionid,
+            [
+                'moodleSessionId' => (int) $session->id,
+                'attemptId' => (int) $session->attemptid,
+                'quizId' => (int) $session->quizid,
+                'courseId' => (int) $session->courseid,
+                'companyId' => (int) $session->companyid,
+                'userId' => (int) $session->userid,
+                'participantIdentity' => $identity,
+                'participantName' => fullname(\core_user::get_user((int) $session->userid, '*', MUST_EXIST))
+                    . ' screen',
+                'mediaRole' => 'screen',
+                'permissions' => [
+                    'canPublish' => true,
+                    'canPublishScreen' => true,
+                    'canPublishCamera' => false,
+                    'canPublishMicrophone' => false,
+                    'canSubscribe' => false,
+                ],
+                'requestedAt' => gmdate('c'),
+            ]
+        );
+        $connection = $this->normalise_connection($response);
+        if ($connection['clientScriptUrl'] === '' && !empty($config->livekitclienturl)) {
+            $connection['clientScriptUrl'] = (string) $config->livekitclienturl;
+        }
+        if ($connection['url'] === '' || $connection['token'] === '' || $connection['uploadUrl'] === '') {
+            throw new \moodle_exception('error:mediaconnectionmissing', 'local_proctorcore');
+        }
+        if ($connection['uploadUrl'] !== '' && strpos($connection['uploadUrl'], '/') === 0) {
+            $connection['uploadUrl'] = rtrim((string) $config->serverbaseurl, '/') . $connection['uploadUrl'];
+        }
+        return [
+            'ok' => true,
+            'enabled' => true,
+            'supported' => true,
+            'serverSessionId' => (string) $session->server_sessionid,
+            'url' => $connection['url'],
+            'token' => $connection['token'],
+            'clientScriptUrl' => $connection['clientScriptUrl'],
+            'uploadUrl' => $connection['uploadUrl'],
+            'uploadToken' => $connection['uploadToken'],
+            'uploadTokenExpiresAt' => $connection['uploadTokenExpiresAt'],
+            'chunkMilliseconds' => $connection['chunkMilliseconds'],
+        ];
+    }
+
+    /** Starts the screen-specific Egress segment after the display track is published. */
+    public function start_screen_capture(
+        int $sessionid,
+        int $userid,
+        string $displaysurface = 'unknown'
+    ): array {
+        $session = $this->require_session($sessionid, $userid, true);
+        return (new server_client((int) $session->companyid, $this->configs))->start_screen_recording(
+            (string) $session->server_sessionid,
+            [
+                'moodleSessionId' => (int) $session->id,
+                'attemptId' => (int) $session->attemptid,
+                'companyId' => (int) $session->companyid,
+                'userId' => (int) $session->userid,
+                'reason' => 'screen_share_started',
+                'displaySurface' => clean_param($displaysurface, PARAM_ALPHANUMEXT),
+                'startedAt' => gmdate('c'),
+            ]
+        );
+    }
+
+    /** Stops the screen-specific recording without finalising the camera session. */
+    public function stop_screen_capture(int $sessionid, int $userid, string $reason = 'submitted'): array {
+        $session = $this->require_session($sessionid, $userid, false);
+        return (new server_client((int) $session->companyid, $this->configs))->stop_screen_recording(
+            (string) $session->server_sessionid,
+            [
+                'moodleSessionId' => (int) $session->id,
+                'attemptId' => (int) $session->attemptid,
+                'companyId' => (int) $session->companyid,
+                'userId' => (int) $session->userid,
+                'reason' => clean_param($reason, PARAM_ALPHANUMEXT) ?: 'submitted',
+                'stoppedAt' => gmdate('c'),
+            ]
+        );
     }
 
     /**
@@ -640,6 +738,9 @@ final class capture_service {
             ]),
             'uploadToken' => $this->first_string($response, [
                 'uploadToken', 'media.uploadToken', 'connection.uploadToken',
+            ]),
+            'uploadTokenExpiresAt' => $this->first_string($response, [
+                'uploadTokenExpiresAt', 'media.uploadTokenExpiresAt', 'connection.uploadTokenExpiresAt',
             ]),
             'chunkMilliseconds' => $this->first_string($response, [
                 'chunkMilliseconds', 'media.chunkMilliseconds', 'connection.chunkMilliseconds',

@@ -358,6 +358,24 @@ final class server_client {
         );
     }
 
+    /** Starts the independently recorded screen-share evidence stream. */
+    public function start_screen_recording(string $serversessionid, array $payload): array {
+        return $this->request(
+            'POST',
+            '/api/v1/sessions/' . rawurlencode($serversessionid) . '/screen-recording/start',
+            $payload
+        );
+    }
+
+    /** Stops the independently recorded screen-share evidence stream. */
+    public function stop_screen_recording(string $serversessionid, array $payload): array {
+        return $this->request(
+            'POST',
+            '/api/v1/sessions/' . rawurlencode($serversessionid) . '/screen-recording/stop',
+            $payload
+        );
+    }
+
     /**
      * Finalises the current Server B recording segment.
      *

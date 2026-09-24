@@ -23,6 +23,8 @@ define([], function() {
     let serverUploadQueue = Promise.resolve();
     let serverUploadError = null;
     let serverSequence = 0;
+    let screenChannel = null;
+    let screenState = 'pending';
 
     const originalDisabled = new Map();
 
@@ -157,7 +159,27 @@ define([], function() {
         retry.hidden = true;
         retry.addEventListener('click', () => window.location.reload());
 
-        panel.append(header, video, message, retry);
+        const screen = document.createElement('button');
+        screen.type = 'button';
+        screen.className = `btn btn-sm ${screenState === 'active' ? 'btn-success' : 'btn-warning'} ` +
+            'local-proctorcore-screen-open';
+        screen.dataset.proctorcoreScreenOpen = '1';
+        screen.textContent = screenState === 'active'
+            ? (config.strings.screenActive || 'Screen evidence active')
+            : (config.strings.openScreen || 'Share screen');
+        screen.hidden = !config.screenRecordingEnabled;
+        screen.addEventListener('click', () => {
+            const controller = window.open(
+                config.screenControllerUrl,
+                `proctorcore-screen-${config.sessionId}`,
+                'popup=yes,width=720,height=620,resizable=yes,scrollbars=yes'
+            );
+            if (controller) {
+                controller.focus();
+            }
+        });
+
+        panel.append(header, video, message, retry, screen);
         document.body.appendChild(panel);
         return panel;
     };
@@ -609,6 +631,7 @@ define([], function() {
         const submissionSnapshot = requestSnapshot('submission').catch(error => {
             window.console.warn('ProctorCore submission snapshot failed:', error);
         });
+        await requestScreenFinalization();
         await stopServerRecorder();
         await submissionSnapshot;
         await apiRequest('stop', {reason: 'submitted'});
@@ -621,6 +644,55 @@ define([], function() {
         } else {
             HTMLFormElement.prototype.submit.call(form);
         }
+    };
+
+    const requestScreenFinalization = () => new Promise(resolve => {
+        if (!config.screenRecordingEnabled || !screenChannel || screenState !== 'active') {
+            resolve();
+            return;
+        }
+        const requestId = `${Date.now()}-${Math.random()}`;
+        const timeout = window.setTimeout(() => {
+            screenChannel.removeEventListener('message', listener);
+            resolve();
+        }, 7000);
+        const listener = event => {
+            if ((event.data || {}).type === 'finalized' && event.data.requestId === requestId) {
+                window.clearTimeout(timeout);
+                screenChannel.removeEventListener('message', listener);
+                resolve();
+            }
+        };
+        screenChannel.addEventListener('message', listener);
+        screenChannel.postMessage({type: 'finalize', requestId});
+    });
+
+    const bindScreenController = () => {
+        if (!config.screenRecordingEnabled || typeof BroadcastChannel !== 'function') {
+            return;
+        }
+        screenChannel = new BroadcastChannel(`proctorcore-screen-${config.sessionId}`);
+        screenChannel.addEventListener('message', event => {
+            const message = event.data || {};
+            if (message.type !== 'status') {
+                return;
+            }
+            screenState = String(message.state || 'pending');
+            const button = document.querySelector('[data-proctorcore-screen-open]');
+            if (button) {
+                button.classList.toggle('btn-success', screenState === 'active');
+                button.classList.toggle('btn-warning', screenState !== 'active');
+                button.textContent = screenState === 'active'
+                    ? (config.strings.screenActive || 'Screen evidence active')
+                    : (config.strings.openScreen || 'Share screen');
+            }
+        });
+        screenChannel.postMessage({type: 'status-request'});
+        window.setTimeout(() => {
+            if (screenState === 'pending' && !submitting) {
+                apiRequest('screen_missing', {reason: 'screen_share_not_started'}, true).catch(() => {});
+            }
+        }, 15000);
     };
 
     const bindSubmission = () => {
@@ -826,6 +898,7 @@ define([], function() {
             };
             bindSubmission();
             bindViolationEvents();
+            bindScreenController();
             window.addEventListener('offline', () => signalFailure('browser_offline', 'Browser reported offline.'));
             window.addEventListener('beforeunload', () => {
                 pageLeaving = true;

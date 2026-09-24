@@ -541,6 +541,13 @@ final class session_repository {
         ]);
     }
 
+    /** Marks a session for human review without changing the Quiz or proctoring result. */
+    public function require_manual_review(int $sessionid): void {
+        global $DB;
+        $DB->set_field(self::TABLE, 'reviewrequired', 1, ['id' => $sessionid]);
+        $DB->set_field(self::TABLE, 'timemodified', time(), ['id' => $sessionid]);
+    }
+
     /**
      * Updates evidence processing independently from the quiz lifecycle.
      *

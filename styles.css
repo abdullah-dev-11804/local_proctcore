@@ -591,6 +591,33 @@
     margin: 0 .75rem .75rem;
 }
 
+.local-proctorcore-screen-open {
+    margin-top: .5rem;
+    width: 100%;
+}
+
+.local-proctorcore-screen-controller {
+    box-sizing: border-box;
+    margin: 0 auto;
+    max-width: 52rem;
+    padding: 1.25rem;
+}
+
+.local-proctorcore-screen-controller video {
+    background: #111827;
+    border-radius: .5rem;
+    display: block;
+    margin: 1rem 0;
+    max-height: 20rem;
+    object-fit: contain;
+    width: 100%;
+}
+
+.local-proctorcore-screen-actions {
+    display: flex;
+    gap: .75rem;
+}
+
 /* Section 3.1 proctoring reports. */
 .local-proctorcore-report-statusbar {
     display: grid;

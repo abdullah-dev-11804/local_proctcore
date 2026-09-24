@@ -37,6 +37,7 @@ final class company_config_repository {
             'requesttimeout' => max(1, (int) $this->global_config('requesttimeout', 20)),
             'verifyssl' => (bool) $this->global_config('verifyssl', 1),
             'livekitclienturl' => trim((string) $this->global_config('livekitclienturl', '')),
+            'screenrecordingenabled' => (bool) $this->global_config('screenrecordingenabled', 1),
             'minimumspeedmbps' => max(0.1, (float) $this->global_config('minimumspeedmbps', 5.0)),
             'minimumlighting' => min(255, max(1, (int) $this->global_config('minimumlighting', 35))),
             'identityenabled' => (bool) $this->global_config('identityenabled', 1),

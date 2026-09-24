@@ -72,6 +72,13 @@ if ($hassiteconfig) {
         PARAM_URL
     ));
 
+    $settings->add(new admin_setting_configcheckbox(
+        'local_proctorcore/screenrecordingenabled',
+        get_string('settings:screenrecordingenabled', 'local_proctorcore'),
+        get_string('settings:screenrecordingenabled_desc', 'local_proctorcore'),
+        1
+    ));
+
     $settings->add(new admin_setting_heading(
         'local_proctorcore/precheckheading',
         get_string('settings:precheckheading', 'local_proctorcore'),
