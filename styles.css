@@ -494,19 +494,39 @@
     border-radius: .5rem;
     bottom: 1rem;
     box-shadow: 0 .35rem 1rem rgba(0, 0, 0, .18);
+    display: flex;
+    flex-direction: column;
     max-width: calc(100vw - 2rem);
     overflow: hidden;
     position: fixed;
     right: 1rem;
-    width: 220px;
+    width: 260px;
     z-index: 1050;
+}
+
+.local-proctorcore-capture-preview {
+    aspect-ratio: 4 / 3;
+    background: #111;
+    overflow: hidden;
+    position: relative;
+    width: 100%;
 }
 
 .local-proctorcore-capture-header {
     align-items: center;
+    background: rgba(17, 24, 39, .82);
+    border-radius: 999px;
+    color: #fff;
     display: flex;
     gap: .5rem;
-    padding: .65rem .75rem .45rem;
+    left: .55rem;
+    line-height: 1.2;
+    max-width: calc(100% - 1.1rem);
+    padding: .4rem .65rem;
+    pointer-events: none;
+    position: absolute;
+    top: .55rem;
+    z-index: 1;
 }
 
 .local-proctorcore-capture-dot {
@@ -522,7 +542,9 @@
     aspect-ratio: 4 / 3;
     background: #111;
     display: block;
-    object-fit: cover;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
     transform: scaleX(-1);
     width: 100%;
 }
@@ -575,7 +597,7 @@
     .local-proctorcore-capture {
         bottom: .5rem;
         right: .5rem;
-        width: 170px;
+        width: 190px;
     }
 
     .local-proctorcore-capture-header {
@@ -592,8 +614,8 @@
 }
 
 .local-proctorcore-screen-open {
-    margin-top: .5rem;
-    width: 100%;
+    margin: 0 .75rem .75rem;
+    width: calc(100% - 1.5rem);
 }
 
 .local-proctorcore-screen-controller {

@@ -146,6 +146,10 @@ define([], function() {
         video.muted = true;
         video.playsInline = true;
 
+        const preview = document.createElement('div');
+        preview.className = 'local-proctorcore-capture-preview';
+        preview.append(video, header);
+
         const message = document.createElement('div');
         message.className = 'local-proctorcore-capture-message';
         message.dataset.proctorcoreCaptureMessage = '1';
@@ -179,7 +183,7 @@ define([], function() {
             }
         });
 
-        panel.append(header, video, message, retry, screen);
+        panel.append(preview, message, retry, screen);
         document.body.appendChild(panel);
         return panel;
     };
