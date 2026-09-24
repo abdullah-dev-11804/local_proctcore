@@ -322,6 +322,7 @@ $string['capture:screenwindowtitle'] = 'ProctorCore screen recording';
 $string['capture:screeninstructions'] = 'Select your entire screen in the browser prompt and keep this controller window open throughout the exam.';
 $string['capture:screenunsupported'] = 'This browser cannot record the device screen. The attempt may continue and will be flagged for manual review.';
 $string['capture:screendenied'] = 'Screen sharing was not started. The attempt may continue and will be flagged for manual review.';
+$string['capture:screenincomplete'] = 'A browser tab or application window was selected. Click Start screen sharing again and select Entire Screen.';
 $string['capture:screenstopped'] = 'Screen sharing stopped. Restart it to restore screen evidence; the session has been flagged for manual review.';
 $string['capture:startscreen'] = 'Start screen sharing';
 $string['capture:stopscreen'] = 'Stop screen sharing';

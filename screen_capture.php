@@ -27,6 +27,7 @@ $PAGE->requires->js_call_amd('local_proctorcore/screen_capture', 'init', [[
         'instructions' => get_string('capture:screeninstructions', 'local_proctorcore'),
         'unsupported' => get_string('capture:screenunsupported', 'local_proctorcore'),
         'denied' => get_string('capture:screendenied', 'local_proctorcore'),
+        'incomplete' => get_string('capture:screenincomplete', 'local_proctorcore'),
         'stopped' => get_string('capture:screenstopped', 'local_proctorcore'),
         'active' => get_string('capture:screenactive', 'local_proctorcore'),
         'start' => get_string('capture:startscreen', 'local_proctorcore'),

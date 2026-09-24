@@ -64,11 +64,43 @@ define([], function() {
             resolve(window.LivekitClient);
             return;
         }
+        if (!url) {
+            reject(new Error('sdk_url_missing'));
+            return;
+        }
+
         const script = document.createElement('script');
         script.src = url;
         script.async = true;
-        script.onload = () => window.LivekitClient ? resolve(window.LivekitClient) : reject(new Error('sdk_missing'));
-        script.onerror = () => reject(new Error('sdk_load_failed'));
+        script.dataset.proctorcoreLivekit = '1';
+
+        // Moodle exposes RequireJS as an AMD loader. A UMD LiveKit bundle sees
+        // that loader and registers there instead of creating
+        // window.LivekitClient, which leaves this standalone controller with
+        // sdk_missing. Temporarily hide the AMD marker while the UMD bundle is
+        // evaluated, matching the established webcam-capture loader.
+        const amdDefine = window.define;
+        const amdDefineAmd = amdDefine && amdDefine.amd ? amdDefine.amd : null;
+        const restoreAmd = () => {
+            if (amdDefine && Object.prototype.hasOwnProperty.call(amdDefine, 'amd')) {
+                amdDefine.amd = amdDefineAmd;
+            }
+        };
+        if (amdDefine && Object.prototype.hasOwnProperty.call(amdDefine, 'amd')) {
+            amdDefine.amd = false;
+        }
+        script.addEventListener('load', () => {
+            restoreAmd();
+            if (window.LivekitClient) {
+                resolve(window.LivekitClient);
+            } else {
+                reject(new Error('sdk_missing'));
+            }
+        }, {once: true});
+        script.addEventListener('error', () => {
+            restoreAmd();
+            reject(new Error('sdk_load_failed'));
+        }, {once: true});
         document.head.appendChild(script);
     });
 
@@ -181,7 +213,7 @@ define([], function() {
             const displaySurface = String((track.getSettings && track.getSettings().displaySurface) || 'unknown');
             if (displaySurface !== 'unknown' && displaySurface !== 'monitor') {
                 track.stop();
-                setStatus(config.strings.denied, 'warning');
+                setStatus(config.strings.incomplete, 'warning');
                 await reportEvent('screen_share_incomplete', {displaySurface});
                 channel?.postMessage({type: 'status', state: 'incomplete'});
                 return;
