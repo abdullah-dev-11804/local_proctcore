@@ -809,6 +809,56 @@
     font-size: .86rem;
     line-height: 1.4;
 }
+.local-proctorcore-identity-guidance {
+    background: #f8fbfa;
+    border-top: 1px solid #e1ebe6;
+    padding: .8rem 1.1rem;
+}
+.local-proctorcore-identity-guidance-title {
+    color: #172b3a;
+    font-size: .92rem;
+    font-weight: 700;
+    margin: 0 0 .25rem;
+}
+.local-proctorcore-identity-guidance-intro,
+.local-proctorcore-identity-enrollment-quality-note {
+    color: #53636d;
+    font-size: .84rem;
+    line-height: 1.4;
+}
+.local-proctorcore-identity-guidance-list {
+    display: grid;
+    font-size: .84rem;
+    gap: .25rem 1.5rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: .5rem 0 0;
+    padding-left: 1.2rem;
+}
+.local-proctorcore-identity-enrollment-quality-note {
+    color: #2f654f;
+    font-weight: 600;
+    margin-top: .55rem;
+}
+.local-proctorcore-identity-quality {
+    border-left: 4px solid #768790;
+    margin: .75rem 1.1rem 0;
+    padding: .55rem .7rem;
+    font-size: .88rem;
+    line-height: 1.4;
+}
+.local-proctorcore-identity-quality.is-checking {
+    background: #f2f6f8;
+}
+.local-proctorcore-identity-quality.is-warning {
+    background: #fff4e5;
+    border-left-color: #d17b00;
+    color: #714700;
+}
+.local-proctorcore-identity-quality.is-ready {
+    background: #e9f7ef;
+    border-left-color: #187653;
+    color: #14583f;
+}
 .local-proctorcore-identity-status {
     color: #304754;
     flex: 1 1 auto;
@@ -846,6 +896,10 @@
     .local-proctorcore-identity-actionbar {
         align-items: stretch;
         flex-direction: column;
+    }
+
+    .local-proctorcore-identity-guidance-list {
+        grid-template-columns: 1fr;
     }
 
     .local-proctorcore-identity-start {

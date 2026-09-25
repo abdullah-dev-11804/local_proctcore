@@ -567,6 +567,17 @@ $string['violation:possible_prompting'] = 'Possible prompting / sustained speech
 
 $string['identity:title'] = 'Identity verification';
 $string['identity:instructions'] = 'Look straight at the camera. It takes about 10 seconds.';
+$string['identity:guidancetitle'] = 'Before you start';
+$string['identity:guidanceintro'] = 'The check accepts only clear, consistent live-camera frames. If a frame is rejected, follow the live message and correct it before capture continues.';
+$string['identity:guidanceoneface'] = 'Make sure only one face is visible and your full face is inside the guide.';
+$string['identity:guidancelighting'] = 'Use even light in front of you; avoid strong backlight, glare, and shadows.';
+$string['identity:guidanceposition'] = 'Look straight at the camera, stay centered, and keep a comfortable distance.';
+$string['identity:guidancestill'] = 'Clean the lens, remove filters or obstructions, and hold still during capture.';
+$string['identity:enrollmentqualitynote'] = 'First-time enrollment requires several consistent high-quality frames. No reusable face reference is saved unless all required checks pass.';
+$string['identity:qualitychecking'] = 'Checking face position, lighting, and image clarity…';
+$string['identity:qualityready'] = 'Capture quality is ready. Keep looking straight and hold still.';
+$string['identity:qualitytimeout'] = 'Correct the issue shown, then try the identity check again.';
+$string['identity:retry'] = 'Try identity check again';
 $string['identity:enrollmenttitle'] = 'First proctored exam identity enrollment';
 $string['identity:enrollmentnotice'] = 'Your face reference will be captured now and used to verify your identity in all future proctored exams on this platform, including exams in other courses.';
 $string['identity:confirmname'] = 'I confirm that I am {$a} and I am the person taking this exam.';

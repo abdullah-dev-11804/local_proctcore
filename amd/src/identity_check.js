@@ -49,6 +49,16 @@ define([], function() {
         }
     };
 
+    const updateQualityFeedback = (panel, state, text) => {
+        const feedback = panel.querySelector('[data-identity-quality-feedback]');
+        if (!feedback) {
+            return;
+        }
+        feedback.hidden = !text;
+        feedback.className = `local-proctorcore-identity-quality is-${state}`;
+        feedback.textContent = text || '';
+    };
+
     const capture = () => {
         if (!window.ProctorCorePrecheck || typeof window.ProctorCorePrecheck.captureJpeg !== 'function') {
             throw new Error('Camera preview is unavailable. Run the equipment check again.');
@@ -95,20 +105,27 @@ define([], function() {
 
     const waitForChallengeReady = async(config, panel, challenge) => {
         let latest = null;
-        for (let attempt = 0; attempt < 3; attempt++) {
+        const correctionDeadline = Date.now() + 20000;
+        updateQualityFeedback(panel, 'checking', config.strings.qualityChecking);
+        while (Date.now() < correctionDeadline) {
             latest = await post(config, {
                 action: 'checkChallengeFrame',
                 challengeId: challenge.challengeId || '',
                 challengeNonce: challenge.nonce || '',
                 image: captureJpegForLiveness(),
             });
-            update(panel, latest.ready ? 'running' : 'failed', latest.message || config.strings.lookStraight);
+            const message = latest.message || config.strings.lookStraight;
+            update(panel, 'running', config.strings.qualityChecking);
+            updateQualityFeedback(panel, latest.ready ? 'ready' : 'warning', message);
             if (latest.ready) {
+                update(panel, 'running', config.strings.qualityReady || message);
+                updateQualityFeedback(panel, 'ready', config.strings.qualityReady || message);
                 return;
             }
-            await sleep(700);
+            await sleep(650);
         }
-        throw new Error((latest && latest.message) || config.strings.failed);
+        const reason = (latest && latest.message) || config.strings.failed;
+        throw new Error(`${reason} ${config.strings.qualityTimeout || ''}`.trim());
     };
 
     const movementLabel = (config, action) => {
@@ -370,9 +387,9 @@ define([], function() {
                 return;
             }
             let livenessEvidence = [];
+            await waitForChallengeReady(config, panel, challenge);
+            await sleep(350);
             if (challenge.required) {
-                await waitForChallengeReady(config, panel, challenge);
-                await sleep(350);
                 livenessEvidence = await captureLivenessEvidence(config, panel, challenge);
                 update(panel, 'running', config.strings.challengeComplete || config.strings.lookStraight);
                 await sleep(250);
@@ -413,6 +430,7 @@ define([], function() {
                 const score = Number(result.similarityScore);
                 const scoreLabel = Number.isFinite(score) && score > 0 ? ` (${score.toFixed(3)})` : '';
                 update(panel, 'passed', `${label}${scoreLabel}`);
+                updateQualityFeedback(panel, 'ready', config.strings.qualityReady);
                 if (window.ProctorCorePrecheck && typeof window.ProctorCorePrecheck.complete === 'function') {
                     window.ProctorCorePrecheck.complete(label);
                     window.ProctorCorePrecheck.stop();
@@ -423,7 +441,9 @@ define([], function() {
                 if (window.ProctorCorePrecheck && typeof window.ProctorCorePrecheck.resume === 'function') {
                     window.ProctorCorePrecheck.resume();
                 }
-                update(panel, 'failed', result.message || config.strings.failed);
+                update(panel, 'failed', config.strings.failed);
+                updateQualityFeedback(panel, 'warning', result.message || config.strings.failed);
+                button.textContent = config.strings.retry || button.textContent;
                 button.disabled = Boolean(result.locked);
             }
         } catch (error) {
@@ -431,7 +451,9 @@ define([], function() {
                 window.ProctorCorePrecheck.resume();
             }
             setField('proctorcore_identity_status', 'error');
-            update(panel, 'failed', error.message || config.strings.failed);
+            update(panel, 'failed', config.strings.failed);
+            updateQualityFeedback(panel, 'warning', error.message || config.strings.failed);
+            button.textContent = config.strings.retry || button.textContent;
             button.disabled = false;
         }
     };

@@ -236,6 +236,35 @@ function local_proctorcore_render_identity_panel(
         'local-proctorcore-identity-heading-copy'
     );
     $content = html_writer::div($heading, 'local-proctorcore-identity-heading');
+
+    $guidanceitems = [
+        get_string('identity:guidanceoneface', 'local_proctorcore'),
+        get_string('identity:guidancelighting', 'local_proctorcore'),
+        get_string('identity:guidanceposition', 'local_proctorcore'),
+        get_string('identity:guidancestill', 'local_proctorcore'),
+    ];
+    $guidancelist = '';
+    foreach ($guidanceitems as $guidanceitem) {
+        $guidancelist .= html_writer::tag('li', $guidanceitem);
+    }
+    $guidance = html_writer::tag('h5', get_string('identity:guidancetitle', 'local_proctorcore'), [
+        'class' => 'local-proctorcore-identity-guidance-title',
+    ]);
+    $guidance .= html_writer::div(
+        get_string('identity:guidanceintro', 'local_proctorcore'),
+        'local-proctorcore-identity-guidance-intro'
+    );
+    $guidance .= html_writer::tag('ul', $guidancelist, [
+        'class' => 'local-proctorcore-identity-guidance-list',
+    ]);
+    if ($enrollmentrequired) {
+        $guidance .= html_writer::div(
+            get_string('identity:enrollmentqualitynote', 'local_proctorcore'),
+            'local-proctorcore-identity-enrollment-quality-note'
+        );
+    }
+    $content .= html_writer::div($guidance, 'local-proctorcore-identity-guidance');
+
     if ($enrollmentrequired) {
         $safeid = clean_param($panelid . '-confirm', PARAM_ALPHANUMEXT);
         $enrollment = html_writer::tag('h5', get_string('identity:enrollmenttitle', 'local_proctorcore'), [
@@ -269,12 +298,19 @@ function local_proctorcore_render_identity_panel(
             'aria-live' => 'polite',
         ]
     );
+    $qualityfeedback = html_writer::div('', 'local-proctorcore-identity-quality is-idle', [
+        'data-identity-quality-feedback' => '1',
+        'role' => 'status',
+        'aria-live' => 'polite',
+        'hidden' => 'hidden',
+    ]);
     $action = html_writer::tag('button', get_string('identity:start', 'local_proctorcore'), [
         'type' => 'button',
         'class' => 'btn btn-primary local-proctorcore-identity-start',
         'data-identity-start' => '1',
         'disabled' => 'disabled',
     ]);
+    $content .= $qualityfeedback;
     $content .= html_writer::div($status . $action, 'local-proctorcore-identity-actionbar');
 
     return html_writer::div($content, 'local-proctorcore-identity is-waiting', [
