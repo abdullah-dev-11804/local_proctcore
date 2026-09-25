@@ -30,6 +30,8 @@ define([], function() {
                 column.className = 'local-proctorcore-preflight-right-column';
                 panel.appendChild(column);
             }
+            // The column is the desktop overflow region; make keyboard scrolling available.
+            column.tabIndex = 0;
             // Keep Checks inside the panel: precheck.js updates its rows there.
             if (checks.parentElement !== column) {
                 column.appendChild(checks);

@@ -1006,7 +1006,7 @@
     display: grid;
     flex: 1 1 0;
     grid-template-columns: minmax(0, 1.48fr) minmax(27rem, 1fr);
-    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
     height: auto;
     max-height: 100%;
     min-height: 0;
@@ -1177,10 +1177,10 @@
     border-radius: .95rem;
     box-shadow: 0 .75rem 2rem rgba(23, 48, 38, .09);
     grid-column: 1;
-    grid-row: 2 / 4;
-    height: auto;
+    grid-row: 2;
+    height: 100%;
     margin: 0 0 .9rem 1rem;
-    min-height: 25rem;
+    min-height: 0;
     overflow: hidden;
 }
 
@@ -1194,10 +1194,40 @@
     border-style: dashed;
     border-width: 2px;
     box-shadow: 0 0 0 999px rgba(7, 20, 15, .08);
-    height: 72%;
+    height: min(72%, 28rem);
+    max-height: calc(100% - 5.5rem);
+    max-width: calc(100% - 2rem);
     opacity: .94;
     top: 49%;
     width: min(46%, 18.5rem);
+}
+
+/* The JS wrapper is the sole scroll container for the complete right column. */
+.mod_quiz_preflight_popup .local-proctorcore-preflight-right-column {
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    gap: .7rem;
+    grid-column: 2;
+    grid-row: 2;
+    margin: 0 .9rem .9rem 0;
+    min-height: 0;
+    min-width: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+}
+
+.mod_quiz_preflight_popup .local-proctorcore-preflight-right-column::-webkit-scrollbar {
+    display: none;
+    height: 0;
+    width: 0;
+}
+
+.mod_quiz_preflight_popup .local-proctorcore-preflight-right-column:focus-visible {
+    outline: 2px solid var(--proctor-ui-accent);
+    outline-offset: -2px;
 }
 
 .mod_quiz_preflight_popup .local-proctorcore-camera-live {
@@ -1257,13 +1287,11 @@
 
 /* Checks disclosure: always remains available after completion. */
 .mod_quiz_preflight_popup .local-proctorcore-precheck-side {
-    align-self: start;
     display: block;
-    grid-column: 2;
-    grid-row: 2;
-    margin: 0 .9rem 0 0;
+    flex: 0 0 auto;
+    margin: 0;
     min-height: 0;
-    overflow: hidden;
+    width: 100%;
 }
 
 .mod_quiz_preflight_popup .local-proctorcore-precheck-toggle {
@@ -1409,41 +1437,13 @@
 /* Right-side identity + rules remain visible whether Checks is open or closed. */
 .mod_quiz_preflight_popup .local-proctorcore-preflight-details {
     display: flex;
+    flex: 0 0 auto;
     flex-direction: column;
     gap: .7rem;
-    grid-column: 2;
-    grid-row: 3;
-    margin: 0 .9rem .9rem 0;
-    min-height: 0;
-    overflow: hidden;
-}
-
-/*
- * Identity stays fixed. Exam rules and any fields revealed after identity
- * verification share the remaining height. This is the only desktop region
- * allowed to scroll when Checks consumes vertical space.
- */
-.mod_quiz_preflight_popup .local-proctorcore-preflight-scroll-region {
-    display: flex;
-    flex: 1 1 auto;
-    flex-direction: column;
-    gap: .7rem;
+    margin: 0;
     min-height: 0;
     overflow: visible;
-    overscroll-behavior: contain;
-    padding: 0;
-    scrollbar-color: #a9bcae transparent;
-    scrollbar-gutter: stable;
-    scrollbar-width: thin;
     width: 100%;
-}
-
-.mod_quiz_preflight_popup .local-proctorcore-preflight-scroll-region:has(
-    .local-proctorcore-participant-fields:not(.is-waiting)
-) {
-    overflow-x: hidden;
-    overflow-y: auto;
-    padding-right: .3rem;
 }
 
 .mod_quiz_preflight_popup .local-proctorcore-identity {
@@ -1552,13 +1552,13 @@
 }
 
 /* Rules */
-.mod_quiz_preflight_popup .local-proctorcore-preflight-scroll-region > [id*="proctorcore_rules_heading"] {
+.mod_quiz_preflight_popup .local-proctorcore-preflight-details > [id*="proctorcore_rules_heading"] {
     background: #fff;
     border: 1px solid var(--proctor-ui-border);
     border-radius: .9rem;
     box-shadow: 0 .3rem .95rem rgba(23, 48, 38, .04);
     display: flex;
-    flex: 1 1 auto;
+    flex: 0 0 auto;
     flex-direction: column;
     margin: 0;
     min-height: 12rem;
@@ -1751,97 +1751,8 @@
     }
 }
 
-@media (min-width: 901px) {
-    /*
-     * Open Checks leaves less vertical space on the right. Limit the rule text
-     * itself instead of depending on Moodle's generated form-wrapper heights.
-     * This selector applies only while Checks is open; closed Checks therefore
-     * continues to show the complete rules without an internal scrollbar.
-     */
-    .mod_quiz_preflight_popup .local-proctorcore-preflight-layout:has(.local-proctorcore-precheck-side[open])
-        .local-proctorcore-preflight-scroll-region {
-        flex: 1 1 0;
-        overflow: hidden;
-        padding-right: 0;
-    }
-
-    .mod_quiz_preflight_popup .local-proctorcore-preflight-layout:has(.local-proctorcore-precheck-side[open])
-        .local-proctorcore-preflight-scroll-region > [id*="proctorcore_rules_heading"] {
-        flex: 1 1 0;
-        min-height: 0;
-        overflow: hidden;
-    }
-
-    .mod_quiz_preflight_popup .local-proctorcore-preflight-layout:has(.local-proctorcore-precheck-side[open])
-        .local-proctorcore-rules {
-        display: block;
-        flex: none;
-        max-height: 4.5rem;
-        overflow-x: hidden !important;
-        overflow-y: scroll !important;
-        overscroll-behavior: contain;
-        scrollbar-color: #a9bcae transparent;
-        scrollbar-gutter: stable;
-        scrollbar-width: thin;
-    }
-
-    .mod_quiz_preflight_popup .local-proctorcore-preflight-layout:has(.local-proctorcore-precheck-side[open])
-        .local-proctorcore-rules::-webkit-scrollbar {
-        width: .5rem;
-    }
-
-    .mod_quiz_preflight_popup .local-proctorcore-preflight-layout:has(.local-proctorcore-precheck-side[open])
-        .local-proctorcore-rules::-webkit-scrollbar-track {
-        background: #edf5e9;
-        border-radius: 1rem;
-    }
-
-    .mod_quiz_preflight_popup .local-proctorcore-preflight-layout:has(.local-proctorcore-precheck-side[open])
-        .local-proctorcore-rules::-webkit-scrollbar-thumb {
-        background: #9eb39f;
-        border: 2px solid #edf5e9;
-        border-radius: 1rem;
-    }
-
-    /* After identity, scroll the revealed fields and rules as one region. */
-    .mod_quiz_preflight_popup .local-proctorcore-preflight-layout:has(.local-proctorcore-precheck-side[open])
-        .local-proctorcore-preflight-scroll-region:has(
-            .local-proctorcore-participant-fields:not(.is-waiting)
-        ) {
-        overflow-x: hidden;
-        overflow-y: auto;
-        padding-right: .3rem;
-    }
-
-    .mod_quiz_preflight_popup .local-proctorcore-preflight-layout:has(.local-proctorcore-precheck-side[open])
-        .local-proctorcore-preflight-scroll-region:has(
-            .local-proctorcore-participant-fields:not(.is-waiting)
-        ) .local-proctorcore-rules {
-        max-height: none;
-        overflow: visible !important;
-        scrollbar-gutter: auto;
-    }
-}
-
-.mod_quiz_preflight_popup #id_proctorcore_rules_heading .form-check {
-    margin: 0;
-    padding-left: 1.75rem;
-}
-
-.mod_quiz_preflight_popup #id_proctorcore_rules_ack {
-    accent-color: var(--proctor-ui-accent);
-    margin-left: -1.75rem;
-}
-
-.mod_quiz_preflight_popup #id_proctorcore_rules_heading .form-check label {
-    color: var(--proctor-ui-ink);
-    font-size: .92rem;
-    font-weight: 650;
-    line-height: 1.35;
-}
-
 /* Moodle renders the rules acknowledgement as its own row below Time Limit. */
-.mod_quiz_preflight_popup #fitem_id_proctorcore_rules_ack {
+.mod_quiz_preflight_popup .local-proctorcore-rules-acknowledgement {
     box-sizing: border-box;
     margin: .15rem .8rem .55rem !important;
     min-width: 0;
@@ -1849,17 +1760,34 @@
     width: auto;
 }
 
-.mod_quiz_preflight_popup #fitem_id_proctorcore_rules_ack > .col-form-label,
-.mod_quiz_preflight_popup #fitem_id_proctorcore_rules_ack > .fitemtitle {
+.mod_quiz_preflight_popup .local-proctorcore-rules-acknowledgement > .col-form-label,
+.mod_quiz_preflight_popup .local-proctorcore-rules-acknowledgement > .fitemtitle {
     display: none !important;
 }
 
-.mod_quiz_preflight_popup #fitem_id_proctorcore_rules_ack > .felement {
+.mod_quiz_preflight_popup .local-proctorcore-rules-acknowledgement > .felement {
     flex: 1 1 100% !important;
     max-width: 100% !important;
     min-width: 0;
     padding: 0 !important;
     width: 100% !important;
+}
+
+.mod_quiz_preflight_popup .local-proctorcore-rules-acknowledgement .form-check {
+    margin: 0;
+    padding-left: 1.75rem;
+}
+
+.mod_quiz_preflight_popup .local-proctorcore-rules-acknowledgement #id_proctorcore_rules_ack {
+    accent-color: var(--proctor-ui-accent);
+    margin-left: -1.75rem;
+}
+
+.mod_quiz_preflight_popup .local-proctorcore-rules-acknowledgement .form-check label {
+    color: var(--proctor-ui-ink);
+    font-size: .92rem;
+    font-weight: 650;
+    line-height: 1.35;
 }
 
 /* Time limit / Moodle policy */
@@ -2022,10 +1950,6 @@
         padding-top: .55rem;
     }
 
-    .mod_quiz_preflight_popup .local-proctorcore-precheck-preview {
-        min-height: 20rem;
-    }
-
     .mod_quiz_preflight_popup .local-proctorcore-precheck-list {
         max-height: none;
         overflow: visible;
@@ -2041,7 +1965,7 @@
         gap: .5rem;
     }
 
-    .mod_quiz_preflight_popup .local-proctorcore-preflight-scroll-region > [id*="proctorcore_rules_heading"] {
+    .mod_quiz_preflight_popup .local-proctorcore-preflight-details > [id*="proctorcore_rules_heading"] {
         min-height: 9rem;
     }
 }
@@ -2067,7 +1991,9 @@
 
     .mod_quiz_preflight_popup .local-proctorcore-preflight-layout {
         display: block;
+        flex: 0 0 auto;
         height: auto;
+        max-height: none;
         overflow: visible;
         padding: 0 .75rem .75rem;
     }
@@ -2097,20 +2023,17 @@
         width: 100%;
     }
 
+    .mod_quiz_preflight_popup .local-proctorcore-preflight-right-column {
+        display: block;
+        margin: 0;
+        overflow: visible;
+        width: 100%;
+    }
+
     .mod_quiz_preflight_popup .local-proctorcore-precheck-side,
     .mod_quiz_preflight_popup .local-proctorcore-preflight-details {
         margin: 0 0 .75rem;
         overflow: visible;
-    }
-
-    .mod_quiz_preflight_popup .local-proctorcore-preflight-scroll-region,
-    .mod_quiz_preflight_popup .local-proctorcore-preflight-layout:has(.local-proctorcore-precheck-side[open])
-        .local-proctorcore-preflight-scroll-region,
-    .mod_quiz_preflight_popup .local-proctorcore-preflight-scroll-region:has(
-        .local-proctorcore-participant-fields:not(.is-waiting)
-    ) {
-        overflow: visible;
-        padding-right: 0;
     }
 
     .mod_quiz_preflight_popup .local-proctorcore-precheck-list {
@@ -2127,7 +2050,7 @@
         display: flex;
     }
 
-    .mod_quiz_preflight_popup .local-proctorcore-preflight-scroll-region > [id*="proctorcore_rules_heading"] {
+    .mod_quiz_preflight_popup .local-proctorcore-preflight-details > [id*="proctorcore_rules_heading"] {
         min-height: 18rem;
         width: 100%;
     }
