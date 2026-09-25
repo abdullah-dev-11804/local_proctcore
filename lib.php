@@ -135,6 +135,7 @@ function local_proctorcore_require_heartbeat(int $sessionid): void {
     $PAGE->requires->js_call_amd('local_proctorcore/session_heartbeat', 'init', [[
         'sessionId' => $sessionid,
         'intervalSeconds' => $interval,
+        'failedMessage' => get_string('capture:heartbeatfailed', 'local_proctorcore'),
     ]]);
 }
 
@@ -180,6 +181,17 @@ function local_proctorcore_require_capture(int $sessionid): void {
             'openScreen' => get_string('capture:openscreen', 'local_proctorcore'),
             'screenPending' => get_string('capture:screenpending', 'local_proctorcore'),
             'screenActive' => get_string('capture:screenactive', 'local_proctorcore'),
+            'cameraTrackEnded' => get_string('capture:cameratrackended', 'local_proctorcore'),
+            'microphoneTrackEnded' => get_string('capture:microphonetrackended', 'local_proctorcore'),
+            'snapshotNotReady' => get_string('capture:snapshotnotready', 'local_proctorcore'),
+            'snapshotFailed' => get_string('capture:snapshotfailed', 'local_proctorcore'),
+            'recorderUnsupported' => get_string('capture:recorderunsupported', 'local_proctorcore'),
+            'localUploadFailed' => get_string('capture:localuploadfailed', 'local_proctorcore'),
+            'localRecorderError' => get_string('capture:localrecordererror', 'local_proctorcore'),
+            'serverRecorderError' => get_string('capture:serverrecordererror', 'local_proctorcore'),
+            'mediaDeviceError' => get_string('capture:mediadeviceerror', 'local_proctorcore'),
+            'mediaConnectionEnded' => get_string('capture:mediaconnectionended', 'local_proctorcore'),
+            'browserOffline' => get_string('capture:browseroffline', 'local_proctorcore'),
         ],
     ]]);
 }

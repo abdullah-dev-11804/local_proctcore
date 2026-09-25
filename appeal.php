@@ -5,6 +5,7 @@ require_once(__DIR__ . '/../../config.php');
 
 use local_proctorcore\form\appeal_form;
 use local_proctorcore\local\appeal_service;
+use local_proctorcore\local\localised_value;
 use local_proctorcore\local\report_service;
 
 require_login();
@@ -40,7 +41,8 @@ if (!$appeal && $service->can_submit($session, (int) $USER->id)) {
 
 echo $OUTPUT->header();
 if ($appeal) {
-    echo $OUTPUT->notification(get_string('appeal:currentstatus', 'local_proctorcore', s($appeal->status)),
+    echo $OUTPUT->notification(get_string('appeal:currentstatus', 'local_proctorcore',
+        localised_value::value((string) $appeal->status)),
         \core\output\notification::NOTIFY_INFO);
     echo html_writer::tag('p', format_text((string) $appeal->details, FORMAT_PLAIN));
     if ($appeal->decision) {

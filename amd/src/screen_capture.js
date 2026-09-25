@@ -289,7 +289,7 @@ define([], function() {
                 credentialTimer = null;
             }
             const denied = error && (error.name === 'NotAllowedError' || error.name === 'AbortError');
-            setStatus(denied ? config.strings.denied : `${config.strings.failed}: ${error.message || error}`, 'warning');
+            setStatus(denied ? config.strings.denied : config.strings.failed, 'warning');
             await reportEvent(denied ? 'screen_share_denied' : 'screen_share_unavailable', {
                 error: String(error && (error.name || error.message) || error),
             });

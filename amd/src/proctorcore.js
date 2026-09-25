@@ -169,8 +169,8 @@ define([], function() {
             'local-proctorcore-screen-open';
         screen.dataset.proctorcoreScreenOpen = '1';
         screen.textContent = screenState === 'active'
-            ? (config.strings.screenActive || 'Screen evidence active')
-            : (config.strings.openScreen || 'Share screen');
+            ? (config.strings.screenActive || '')
+            : (config.strings.openScreen || '');
         screen.hidden = !config.screenRecordingEnabled;
         screen.addEventListener('click', () => {
             window.dispatchEvent(new CustomEvent('proctorcore:intentionalfocusloss', {
@@ -227,7 +227,7 @@ define([], function() {
                         window.dispatchEvent(new CustomEvent('proctorcore:mediaended', {
                             detail: {kind: 'video', reason: 'media_track_ended'},
                         }));
-                        signalFailure('media_track_ended', 'Camera track ended.');
+                        signalFailure('media_track_ended', config.strings.cameraTrackEnded);
                     },
                     {once: true}
                 );
@@ -242,7 +242,7 @@ define([], function() {
                     window.dispatchEvent(new CustomEvent('proctorcore:mediaended', {
                         detail: {kind: 'audio', reason: 'media_track_ended'},
                     }));
-                    signalFailure('media_track_ended', 'Microphone track ended.');
+                    signalFailure('media_track_ended', config.strings.microphoneTrackEnded);
                 },
                 {once: true}
             );
@@ -350,7 +350,7 @@ define([], function() {
     const captureLocalSnapshot = async(reason, violationId = null) => {
         const video = panelVideo();
         if (!video || !video.videoWidth || !video.videoHeight) {
-            throw new Error('The camera preview is not ready for a snapshot.');
+            throw new Error(config.strings.snapshotNotReady);
         }
 
         const canvas = document.createElement('canvas');
@@ -364,7 +364,7 @@ define([], function() {
                 if (result) {
                     resolve(result);
                 } else {
-                    reject(new Error('Could not create the camera snapshot.'));
+                    reject(new Error(config.strings.snapshotFailed));
                 }
             }, 'image/jpeg', 0.85);
         });
@@ -395,7 +395,7 @@ define([], function() {
 
     const startLocalRecorder = chunkMilliseconds => {
         if (!window.MediaRecorder || !localStream) {
-            throw new Error('MediaRecorder is not supported by this browser.');
+            throw new Error(config.strings.recorderUnsupported);
         }
 
         const mimeType = chooseRecorderMime();
@@ -420,13 +420,14 @@ define([], function() {
             localSequence += 1;
             enqueueLocalUpload(event.data, 'video_chunk', 'continuous_recording').catch(error => {
                 if (!submitting) {
-                    signalFailure('local_upload_failed', error.message || 'Local recording upload failed.');
+                    signalFailure('local_upload_failed', error.message || config.strings.localUploadFailed);
                 }
             });
         });
 
         mediaRecorder.addEventListener('error', event => {
-            const message = event.error && event.error.message ? event.error.message : 'Local recorder error.';
+            const message = event.error && event.error.message
+                ? event.error.message : config.strings.localRecorderError;
             signalFailure('media_recorder_error', message);
         });
 
@@ -507,7 +508,8 @@ define([], function() {
             });
         });
         serverMediaRecorder.addEventListener('error', event => {
-            const message = event.error && event.error.message ? event.error.message : 'Server B recorder error.';
+            const message = event.error && event.error.message
+                ? event.error.message : config.strings.serverRecorderError;
             window.console.warn('ProctorCore Server B recorder failed:', message);
             serverUploadError = new Error(message);
         });
@@ -718,8 +720,8 @@ define([], function() {
                 button.classList.toggle('btn-success', screenState === 'active');
                 button.classList.toggle('btn-warning', screenState !== 'active');
                 button.textContent = screenState === 'active'
-                    ? (config.strings.screenActive || 'Screen evidence active')
-                    : (config.strings.openScreen || 'Share screen');
+                    ? (config.strings.screenActive || '')
+                    : (config.strings.openScreen || '');
             }
         });
         screenChannel.postMessage({type: 'status-request'});
@@ -758,13 +760,14 @@ define([], function() {
                 event.stopImmediatePropagation();
                 setAttemptLocked(true);
                 finishLocalSubmission(form, submitter).catch(error => {
+                    window.console.warn('ProctorCore final submission failed:', error);
                     submitting = false;
                     failureSent = true;
                     setAttemptLocked(true);
                     updateStatus(
                         'failed',
                         config.strings.captureFailed,
-                        error.message || config.strings.captureFailed,
+                        config.strings.captureFailed,
                         true
                     );
                 });
@@ -775,13 +778,14 @@ define([], function() {
             event.stopImmediatePropagation();
             setAttemptLocked(true);
             finishServerSubmission(form, submitter).catch(error => {
+                window.console.warn('ProctorCore final submission failed:', error);
                 submitting = false;
                 failureSent = true;
                 setAttemptLocked(true);
                 updateStatus(
                     'failed',
                     config.strings.captureFailed,
-                    error.message || config.strings.captureFailed,
+                    config.strings.captureFailed,
                     true
                 );
             });
@@ -817,11 +821,12 @@ define([], function() {
                 updateStatus('recording', config.strings.recording, config.strings.recordingMessage);
             });
             room.on(LivekitClient.RoomEvent.MediaDevicesError, error => {
-                signalFailure('media_device_error', error && error.message ? error.message : 'Media device error.');
+                signalFailure('media_device_error',
+                    error && error.message ? error.message : config.strings.mediaDeviceError);
             });
             room.on(LivekitClient.RoomEvent.Disconnected, () => {
                 if (!pageLeaving && !submitting) {
-                    signalFailure('media_connection_disconnected', 'Live media connection ended.');
+                    signalFailure('media_connection_disconnected', config.strings.mediaConnectionEnded);
                 }
             });
         }
@@ -869,7 +874,8 @@ define([], function() {
                 window.dispatchEvent(new CustomEvent('proctorcore:mediaended', {
                     detail: {kind: track.kind, reason: 'media_track_ended'},
                 }));
-                signalFailure('media_track_ended', `${track.kind} track ended.`);
+                signalFailure('media_track_ended', track.kind === 'audio'
+                    ? config.strings.microphoneTrackEnded : config.strings.cameraTrackEnded);
             }, {once: true});
         });
         await attachLocalStream(localStream);
@@ -929,7 +935,7 @@ define([], function() {
             bindSubmission();
             bindViolationEvents();
             bindScreenController();
-            window.addEventListener('offline', () => signalFailure('browser_offline', 'Browser reported offline.'));
+            window.addEventListener('offline', () => signalFailure('browser_offline', config.strings.browserOffline));
             window.addEventListener('beforeunload', () => {
                 pageLeaving = true;
                 requestServerRecorderData();
@@ -945,6 +951,7 @@ define([], function() {
                 pageLeaving = true;
             });
             connect().catch(error => {
+                window.console.warn('ProctorCore capture startup failed:', error);
                 failureSent = true;
                 setAttemptLocked(false);
                 disconnectRoom();
@@ -952,7 +959,7 @@ define([], function() {
                 updateStatus(
                     'failed',
                     config.strings.captureFailed,
-                    error.message || config.strings.captureFailed,
+                    config.strings.captureFailed,
                     true
                 );
                 window.dispatchEvent(new CustomEvent('proctorcore:capturefailed', {

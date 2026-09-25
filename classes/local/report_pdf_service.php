@@ -219,10 +219,14 @@ final class report_pdf_service {
             $report['endtime'] ? userdate((int) $report['endtime']) : get_string('report:pending', 'local_proctorcore'));
         $html .= $this->pdf_row(get_string('report:duration', 'local_proctorcore'),
             $report['duration'] ? format_time((int) $report['duration']) : '—');
-        $html .= $this->pdf_row(get_string('report:result', 'local_proctorcore'), ucfirst((string) $session->result));
-        $html .= $this->pdf_row(get_string('report:status', 'local_proctorcore'), ucfirst((string) $session->status));
-        $html .= $this->pdf_row(get_string('report:identitystatus', 'local_proctorcore'), ucfirst((string) $session->identitystatus));
-        $html .= $this->pdf_row(get_string('report:technicalstatus', 'local_proctorcore'), ucfirst((string) $session->techcheckstatus));
+        $html .= $this->pdf_row(get_string('report:result', 'local_proctorcore'),
+            localised_value::value((string) $session->result));
+        $html .= $this->pdf_row(get_string('report:status', 'local_proctorcore'),
+            localised_value::value((string) $session->status));
+        $html .= $this->pdf_row(get_string('report:identitystatus', 'local_proctorcore'),
+            localised_value::value((string) $session->identitystatus));
+        $html .= $this->pdf_row(get_string('report:technicalstatus', 'local_proctorcore'),
+            localised_value::value((string) $session->techcheckstatus));
         $html .= $this->pdf_row(get_string('report:grade', 'local_proctorcore'),
             $report['grade'] !== null ? format_float((float) $report['grade'], 2) : '—');
         $html .= $this->pdf_row(get_string('report:percentage', 'local_proctorcore'),
@@ -255,8 +259,10 @@ final class report_pdf_service {
             $appeal = $report['appeal'];
             $html .= '<h2 style="font-size:13px;">' . s(get_string('appeal:title', 'local_proctorcore')) . '</h2>';
             $html .= '<table border="1" cellpadding="4">'
-                . $this->pdf_row(get_string('appeal:status', 'local_proctorcore'), ucfirst((string) $appeal->status))
-                . $this->pdf_row(get_string('appeal:reason', 'local_proctorcore'), ucfirst(str_replace('_', ' ', (string) $appeal->reason)))
+                . $this->pdf_row(get_string('appeal:status', 'local_proctorcore'),
+                    localised_value::value((string) $appeal->status))
+                . $this->pdf_row(get_string('appeal:reason', 'local_proctorcore'),
+                    localised_value::appeal_reason((string) $appeal->reason))
                 . $this->pdf_row(get_string('appeal:details', 'local_proctorcore'), (string) $appeal->details)
                 . $this->pdf_row(get_string('appeal:decision', 'local_proctorcore'), (string) ($appeal->decision ?? ''))
                 . '</table><br>';
@@ -277,10 +283,13 @@ final class report_pdf_service {
                 $metadata = json_decode((string) ($violation->metadata ?? ''), true);
                 $metadata = is_array($metadata) ? $metadata : [];
                 $html .= '<tr><td>' . s(userdate((int) $violation->occurredat)) . '</td>'
-                    . '<td>' . s(ucfirst(str_replace('_', ' ', (string) $violation->type))) . '</td>'
+                    . '<td>' . s(localised_value::violation((string) $violation->type)) . '</td>'
                     . '<td>' . (int) $violation->severity . '</td>'
                     . '<td>' . (isset($metadata['riskPoints']) ? (int) $metadata['riskPoints'] : '—') . '</td>'
-                    . '<td>' . s((string) ($violation->description ?? '')) . '</td></tr>';
+                    . '<td>' . s(localised_value::violation(
+                        (string) $violation->type,
+                        (string) ($violation->description ?? '')
+                    )) . '</td></tr>';
             }
             $html .= '</table>';
         }

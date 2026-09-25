@@ -8,6 +8,7 @@
 define([], function() {
     'use strict';
 
+    let cameraPreviewError = '';
     const sleep = ms => new Promise(resolve => window.setTimeout(resolve, ms));
     const field = name => document.querySelector(`[name="${name}"]`);
 
@@ -61,7 +62,7 @@ define([], function() {
 
     const capture = () => {
         if (!window.ProctorCorePrecheck || typeof window.ProctorCorePrecheck.captureJpeg !== 'function') {
-            throw new Error('Camera preview is unavailable. Run the equipment check again.');
+            throw new Error(cameraPreviewError);
         }
         return window.ProctorCorePrecheck.captureJpeg(0.96, 1440);
     };
@@ -77,18 +78,24 @@ define([], function() {
 
     const post = async(config, payload) => {
         const token = field('proctorcore_preflight_token');
-        const response = await fetch(config.endpoint, {
-            method: 'POST',
-            credentials: 'same-origin',
-            cache: 'no-store',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                sesskey: config.sesskey,
-                quizId: Number(config.quizId),
-                token: token ? token.value : '',
-                ...payload,
-            }),
-        });
+        let response;
+        try {
+            response = await fetch(config.endpoint, {
+                method: 'POST',
+                credentials: 'same-origin',
+                cache: 'no-store',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    sesskey: config.sesskey,
+                    quizId: Number(config.quizId),
+                    token: token ? token.value : '',
+                    ...payload,
+                }),
+            });
+        } catch (error) {
+            window.console.warn('ProctorCore identity request failed:', error);
+            throw new Error(config.strings.serviceUnavailable);
+        }
         let data = {};
         try {
             data = await response.json();
@@ -143,7 +150,7 @@ define([], function() {
         let captureError = null;
         const capture = () => {
             if (!window.ProctorCorePrecheck || typeof window.ProctorCorePrecheck.captureJpeg !== 'function') {
-                captureError = new Error('Camera preview is unavailable. Run the equipment check again.');
+                captureError = new Error(config.strings.cameraPreviewUnavailable || config.strings.failed);
                 return;
             }
             try {
@@ -359,7 +366,7 @@ define([], function() {
 
     const captureJpegForLiveness = () => {
         if (!window.ProctorCorePrecheck || typeof window.ProctorCorePrecheck.captureJpeg !== 'function') {
-            throw new Error('Camera preview is unavailable. Run the equipment check again.');
+            throw new Error(cameraPreviewError);
         }
         return window.ProctorCorePrecheck.captureJpeg(0.88, 960);
     };
@@ -463,6 +470,7 @@ define([], function() {
          * @param {Object} config Moodle configuration.
          */
         init: function(config) {
+            cameraPreviewError = config.strings.cameraPreviewUnavailable || config.strings.failed;
             setParticipantFieldsVisible(false);
             const panel = document.getElementById(config.panelId);
             if (!panel) {

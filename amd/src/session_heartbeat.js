@@ -10,7 +10,7 @@ define([], function() {
         window.dispatchEvent(new CustomEvent(name, {detail: detail}));
     };
 
-    const send = async(sessionId) => {
+    const send = async(sessionId, failedMessage) => {
         const body = new URLSearchParams();
         body.set('sessionid', String(sessionId));
         body.set('sesskey', M.cfg.sesskey);
@@ -24,7 +24,7 @@ define([], function() {
 
         const result = await response.json();
         if (!response.ok || result.ok !== true) {
-            throw new Error(result.message || result.error || 'Heartbeat failed');
+            throw new Error(result.message || result.error || failedMessage);
         }
 
         if (result.status === 'interrupted') {
@@ -53,7 +53,7 @@ define([], function() {
             let timer = null;
             const tick = async() => {
                 try {
-                    await send(sessionId);
+                    await send(sessionId, config.failedMessage || '');
                 } catch (error) {
                     emit('proctorcore:connectionlost', {
                         sessionId: sessionId,

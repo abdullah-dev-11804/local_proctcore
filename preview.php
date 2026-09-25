@@ -85,6 +85,8 @@ $PAGE->requires->js_call_amd('local_proctorcore/precheck', 'init', [[
         'tooDark' => get_string('precheck:toodark', 'local_proctorcore'),
         'cameraRequiredFirst' => get_string('precheck:camerarequiredfirst', 'local_proctorcore'),
         'snapshotCaptured' => get_string('precheck:snapshotcaptured', 'local_proctorcore'),
+        'cameraPreviewNotReady' => get_string('precheck:camerapreviewnotready', 'local_proctorcore'),
+        'cameraPreviewTimedOut' => get_string('precheck:camerapreviewtimedout', 'local_proctorcore'),
     ],
 ]]);
 

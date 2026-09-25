@@ -5,6 +5,8 @@ namespace local_proctorcore\output;
 
 defined('MOODLE_INTERNAL') || die();
 
+use local_proctorcore\local\localised_value;
+
 /** Prepares appeal queue data for Mustache. */
 final class appeal_renderer {
     /** @param \stdClass[] $records @return array */
@@ -23,8 +25,8 @@ final class appeal_renderer {
                 'course' => format_string((string) $record->coursename),
                 'quiz' => format_string((string) $record->quizname),
                 'attempt' => (int) ($record->attemptnumber ?? 0),
-                'reason' => ucfirst(str_replace('_', ' ', (string) $record->reason)),
-                'status' => ucfirst(str_replace('_', ' ', $status)),
+                'reason' => localised_value::appeal_reason((string) $record->reason),
+                'status' => localised_value::value($status),
                 'statusclass' => $statusclass,
                 'submittedat' => userdate((int) $record->submittedat),
                 'viewurl' => (new \moodle_url('/local/proctorcore/appeal.php', [

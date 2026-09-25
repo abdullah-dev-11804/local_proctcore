@@ -409,8 +409,10 @@ final class report_service {
      * @return string
      */
     private function asset_display_name(\stdClass $asset): string {
-        $reason = str_replace(['_', '-'], ' ', (string) ($asset->reason ?? ''));
-        $reason = $reason !== '' ? ucfirst($reason) : get_string('report:notavailable', 'local_proctorcore');
+        $storedreason = (string) ($asset->reason ?? '');
+        $reason = $storedreason !== ''
+            ? localised_value::violation($storedreason, localised_value::value($storedreason))
+            : get_string('report:notavailable', 'local_proctorcore');
         if ((string) ($asset->serverassettype ?? '') === 'full_recording'
                 || (string) ($asset->reason ?? '') === 'full_session') {
             return get_string('report:fullrecording', 'local_proctorcore');
@@ -513,11 +515,7 @@ final class report_service {
         $assets = $this->get_report_assets((int) $session->id);
         $violationtypes = [];
         foreach ($violations as $violation) {
-            $violationtypes[(int) $violation->id] = ucfirst(str_replace(
-                ['_', '-'],
-                ' ',
-                (string) $violation->type
-            ));
+            $violationtypes[(int) $violation->id] = localised_value::violation((string) $violation->type);
         }
         foreach ($assets['violations'] as $asset) {
             if (!empty($asset->violationid) && isset($violationtypes[(int) $asset->violationid])) {

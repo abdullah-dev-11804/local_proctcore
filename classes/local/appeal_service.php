@@ -218,16 +218,16 @@ final class appeal_service {
         $appeal = $DB->get_record('local_proctorcore_appeals', ['id' => $appealid], '*', MUST_EXIST);
         $session = (new session_repository())->get_by_id((int) $appeal->sessionid);
         $users = get_users_by_capability(\context_system::instance(), 'local/proctorcore:reviewappeals',
-            'u.id,u.firstname,u.lastname,u.email') ?: [];
+            'u.id,u.firstname,u.lastname,u.email,u.lang') ?: [];
         $coursecontext = \context_course::instance((int) $session->courseid);
         foreach (get_enrolled_users($coursecontext, 'moodle/course:manageactivities', 0,
-            'u.id,u.firstname,u.lastname,u.email') as $user) {
+            'u.id,u.firstname,u.lastname,u.email,u.lang') as $user) {
             $users[(int) $user->id] = $user;
         }
         if (!empty($session->cmid)) {
             $modulecontext = \context_module::instance((int) $session->cmid);
             foreach (get_users_by_capability($modulecontext, 'mod/quiz:viewreports',
-                'u.id,u.firstname,u.lastname,u.email') ?: [] as $user) {
+                'u.id,u.firstname,u.lastname,u.email,u.lang') ?: [] as $user) {
                 $users[(int) $user->id] = $user;
             }
         }
@@ -241,18 +241,22 @@ final class appeal_service {
                     && !$tenants->user_belongs_to_company((int) $user->id, (int) $appeal->companyid)) {
                 continue;
             }
-            $this->send_message($user, get_string('appeal:notificationsubject', 'local_proctorcore'),
-                get_string('appeal:notificationreviewer', 'local_proctorcore', $appealid), null, $url);
+            $lang = clean_param((string) ($user->lang ?? 'en'), PARAM_LANG);
+            $this->send_message($user,
+                get_string('appeal:notificationsubject', 'local_proctorcore', null, $lang),
+                get_string('appeal:notificationreviewer', 'local_proctorcore', $appealid, $lang), null, $url);
         }
     }
 
     private function notify_user(\stdClass $appeal, int $reviewerid): void {
-        $user = \core_user::get_user((int) $appeal->userid, 'id,firstname,lastname,email', MUST_EXIST);
-        $this->send_message($user, get_string('appeal:decisionnotificationsubject', 'local_proctorcore'),
+        $user = \core_user::get_user((int) $appeal->userid, 'id,firstname,lastname,email,lang', MUST_EXIST);
+        $lang = clean_param((string) ($user->lang ?? 'en'), PARAM_LANG);
+        $this->send_message($user,
+            get_string('appeal:decisionnotificationsubject', 'local_proctorcore', null, $lang),
             get_string('appeal:notificationdecision', 'local_proctorcore', [
-                'status' => $appeal->status,
+                'status' => localised_value::value((string) $appeal->status, $lang),
                 'decision' => $appeal->decision,
-            ]), $reviewerid);
+            ], $lang), $reviewerid);
     }
 
     private function send_message(

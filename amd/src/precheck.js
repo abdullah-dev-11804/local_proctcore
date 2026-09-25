@@ -14,7 +14,8 @@ define(['local_proctorcore/preflight_layout'], function(preflightLayout) {
     const captureJpeg = (quality = 0.95, maxDimension = 1280) => {
         const video = document.querySelector('[data-precheck-video]');
         if (!video || !video.videoWidth || !video.videoHeight || video.readyState < 2) {
-            throw new Error('Camera preview is not ready.');
+            const message = activePanel && activePanel.dataset.cameraNotReady;
+            throw new Error(message || '');
         }
         const canvas = document.createElement('canvas');
         const scale = maxDimension > 0 ? Math.min(1, maxDimension / Math.max(video.videoWidth, video.videoHeight)) : 1;
@@ -132,12 +133,12 @@ define(['local_proctorcore/preflight_layout'], function(preflightLayout) {
         return {ok: false, name: navigator.userAgentData?.brands?.[0]?.brand || 'Unsupported', version: ''};
     };
 
-    const waitForVideo = video => new Promise((resolve, reject) => {
+    const waitForVideo = (video, timeoutMessage) => new Promise((resolve, reject) => {
         if (video.readyState >= 2) {
             resolve();
             return;
         }
-        const timeout = window.setTimeout(() => reject(new Error('Camera preview timed out')), 5000);
+        const timeout = window.setTimeout(() => reject(new Error(timeoutMessage || '')), 5000);
         video.addEventListener('loadeddata', () => {
             window.clearTimeout(timeout);
             resolve();
@@ -207,6 +208,7 @@ define(['local_proctorcore/preflight_layout'], function(preflightLayout) {
 
     const run = async(config, panel) => {
         const strings = config.strings;
+        panel.dataset.cameraNotReady = strings.cameraPreviewNotReady || '';
         const required = {
             camera: bool(config.requireCamera) || bool(config.requireSnapshot),
             microphone: bool(config.requireMicrophone),
@@ -275,7 +277,7 @@ define(['local_proctorcore/preflight_layout'], function(preflightLayout) {
         } catch (error) {
             results.network = false;
             setField('proctorcore_preflight_network', 0);
-            setRow(panel, 'network', 'failed', error.message || strings.networkFailed);
+            setRow(panel, 'network', 'failed', navigator.onLine ? strings.networkFailed : strings.networkOffline);
         }
 
         // Camera and microphone.
@@ -333,7 +335,7 @@ define(['local_proctorcore/preflight_layout'], function(preflightLayout) {
                             placeholder.hidden = true;
                         }
                         video.srcObject = currentStream;
-                        await waitForVideo(video);
+                        await waitForVideo(video, strings.cameraPreviewTimedOut);
                         await new Promise(resolve => window.setTimeout(resolve, 400));
 
                         setRow(panel, 'lighting', 'running', strings.checking);
@@ -354,6 +356,13 @@ define(['local_proctorcore/preflight_layout'], function(preflightLayout) {
                     }
                 }
             } catch (error) {
+                const knownMessages = [
+                    strings.mediaUnsupported,
+                    strings.cameraPreviewNotReady,
+                    strings.cameraPreviewTimedOut,
+                ];
+                const mediaError = knownMessages.includes(error.message)
+                    ? error.message : strings.permissionDenied;
                 if (required.camera) {
                     results.camera = false;
                     results.lighting = false;
@@ -361,7 +370,7 @@ define(['local_proctorcore/preflight_layout'], function(preflightLayout) {
                     setField('proctorcore_preflight_camera', 0);
                     setField('proctorcore_preflight_lighting', 0);
                     setField('proctorcore_preflight_snapshot', required.snapshot ? 0 : 1);
-                    setRow(panel, 'camera', 'failed', error.message || strings.permissionDenied);
+                    setRow(panel, 'camera', 'failed', mediaError);
                     setRow(panel, 'lighting', 'failed', strings.cameraRequiredFirst);
                     if (required.snapshot) {
                         setRow(panel, 'snapshot', 'failed', strings.cameraRequiredFirst);
@@ -370,7 +379,7 @@ define(['local_proctorcore/preflight_layout'], function(preflightLayout) {
                 if (required.microphone) {
                     results.microphone = false;
                     setField('proctorcore_preflight_microphone', 0);
-                    setRow(panel, 'microphone', 'failed', error.message || strings.permissionDenied);
+                    setRow(panel, 'microphone', 'failed', mediaError);
                 }
             }
         }

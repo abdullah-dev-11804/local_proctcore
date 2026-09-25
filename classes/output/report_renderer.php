@@ -5,6 +5,8 @@ namespace local_proctorcore\output;
 
 defined('MOODLE_INTERNAL') || die();
 
+use local_proctorcore\local\localised_value;
+
 /**
  * Converts report service data into Mustache-safe values.
  *
@@ -40,13 +42,17 @@ final class report_renderer {
             $violations[] = [
                 'id' => (int) $violation->id,
                 'time' => userdate((int) $violation->occurredat),
-                'type' => self::humanise((string) $violation->type),
+                'type' => localised_value::violation((string) $violation->type),
                 'severity' => (int) $violation->severity,
                 'points' => isset($metadata['riskPoints']) ? (int) $metadata['riskPoints'] : '—',
-                'status' => self::humanise((string) $violation->status),
-                'description' => format_text((string) ($violation->description ?? ''), FORMAT_PLAIN),
+                'status' => localised_value::value((string) $violation->status),
+                'description' => localised_value::violation(
+                    (string) $violation->type,
+                    format_text((string) ($violation->description ?? ''), FORMAT_PLAIN)
+                ),
                 'duration' => !empty($violation->durationms)
-                    ? format_float(((int) $violation->durationms) / 1000, 1) . ' s'
+                    ? get_string('report:seconds', 'local_proctorcore',
+                        format_float(((int) $violation->durationms) / 1000, 1))
                     : get_string('report:notavailable', 'local_proctorcore'),
             ];
         }
@@ -116,7 +122,7 @@ final class report_renderer {
             'coursename' => format_string((string) $session->coursename),
             'quizname' => format_string((string) $session->quizname),
             'attemptnumber' => (int) ($session->attemptnumber ?? 0),
-            'attemptstate' => self::humanise((string) ($session->attemptstate ?? 'unknown')),
+            'attemptstate' => localised_value::value((string) ($session->attemptstate ?? 'unknown')),
             'starttime' => $start > 0 ? userdate($start) : '—',
             'endtime' => $end > 0 ? userdate($end) : get_string('report:pending', 'local_proctorcore'),
             'duration' => (int) $report['duration'] > 0 ? format_time((int) $report['duration']) : '—',
@@ -138,7 +144,7 @@ final class report_renderer {
             'identitythreshold' => $session->identitythreshold !== null
                 ? format_float((float) $session->identitythreshold, 4)
                 : '—',
-            'identitypolicy' => self::humanise((string) ($session->identitypolicy ?? '')),
+            'identitypolicy' => localised_value::value((string) ($session->identitypolicy ?? '')),
             'reviewrequired' => self::yesno(!empty($session->reviewrequired)),
             'risk' => $session->risk_score !== null ? format_float((float) $session->risk_score, 2) : '—',
             'riskreviewthreshold' => isset($scoring['reviewThreshold'])
@@ -174,8 +180,8 @@ final class report_renderer {
             ]))->out(false),
             'viewerid' => $viewerid,
             'appeal' => $appeal ? [
-                'status' => self::humanise((string) $appeal->status),
-                'reason' => self::humanise((string) $appeal->reason),
+                'status' => localised_value::value((string) $appeal->status),
+                'reason' => localised_value::appeal_reason((string) $appeal->reason),
                 'details' => format_text((string) $appeal->details, FORMAT_PLAIN),
                 'decision' => format_text((string) ($appeal->decision ?? ''), FORMAT_PLAIN),
                 'submittedat' => userdate((int) $appeal->submittedat),
@@ -214,7 +220,7 @@ final class report_renderer {
                 'resultclass' => $result['class'],
                 'reviewrequired' => !empty($record->reviewrequired),
                 'reviewtext' => self::yesno(!empty($record->reviewrequired)),
-                'mediastatus' => self::humanise((string) ($record->mediastatus ?? 'pending')),
+                'mediastatus' => localised_value::value((string) ($record->mediastatus ?? 'pending')),
                 'violationcount' => (int) $record->violationcount,
                 'appealtext' => $appeal['text'],
                 'appealclass' => $appeal['class'],
@@ -249,9 +255,9 @@ final class report_renderer {
         return [
             'id' => (int) $asset->id,
             'filename' => s((string) $asset->filename),
-            'type' => self::humanise((string) $asset->assettype),
+            'type' => localised_value::value((string) $asset->assettype),
             'reason' => s((string) ($asset->displayname
-                ?? self::humanise((string) ($asset->reason ?: $asset->assettype)))),
+                ?? localised_value::value((string) ($asset->reason ?: $asset->assettype)))),
             'createdat' => userdate((int) $asset->timecreated),
             'filesize' => $asset->filesize !== null ? display_size((int) $asset->filesize) : '—',
             'viewurl' => $url->out(false),
@@ -276,7 +282,7 @@ final class report_renderer {
                 'finalizing', 'needs_review', 'partial', 'submitted', 'hold_pending', 'held'], true)) {
             $class = 'badge-warning';
         }
-        return ['text' => self::humanise($normal), 'class' => $class];
+        return ['text' => localised_value::value($normal), 'class' => $class];
     }
 
     /** @param bool $value @return string */
@@ -284,9 +290,4 @@ final class report_renderer {
         return $value ? get_string('yes') : get_string('no');
     }
 
-    /** @param string $value @return string */
-    private static function humanise(string $value): string {
-        $value = trim(str_replace(['_', '-'], ' ', $value));
-        return $value === '' ? '—' : ucfirst($value);
-    }
 }
