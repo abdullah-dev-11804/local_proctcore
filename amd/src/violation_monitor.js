@@ -19,6 +19,40 @@ define([], function() {
     let lastLatencyMs = null;
     let activeController = null;
     let lastFrameImage = null;
+    let suppressFocusUntil = 0;
+    let pageLeaving = false;
+
+    const suppressFocusEvents = durationMs => {
+        const duration = Math.min(15000, Math.max(0, Number(durationMs || 0)));
+        suppressFocusUntil = Math.max(suppressFocusUntil, Date.now() + duration);
+    };
+
+    const focusEventIsIntentional = () => pageLeaving || Date.now() < suppressFocusUntil;
+
+    const isQuizNavigationForm = form => {
+        if (!(form instanceof HTMLFormElement)) {
+            return false;
+        }
+        const action = String(form.getAttribute('action') || '');
+        return form.id === 'responseform' || action.includes('/mod/quiz/processattempt.php');
+    };
+
+    const isQuizNavigationLink = target => {
+        const link = target instanceof Element ? target.closest('a[href]') : null;
+        if (!link) {
+            return false;
+        }
+        try {
+            const url = new URL(link.href, window.location.href);
+            return url.origin === window.location.origin && [
+                '/mod/quiz/attempt.php',
+                '/mod/quiz/processattempt.php',
+                '/mod/quiz/summary.php',
+            ].some(path => url.pathname.endsWith(path));
+        } catch (error) {
+            return false;
+        }
+    };
 
     const request = async(payload, keepalive = false) => {
         const controller = new AbortController();
@@ -165,14 +199,31 @@ define([], function() {
     };
 
     const bindEvents = () => {
+        // Moodle reloads the document for normal question navigation. Mark the
+        // transition before blur/visibilitychange fires so it is not mistaken
+        // for the learner leaving the exam.
+        document.addEventListener('submit', event => {
+            if (isQuizNavigationForm(event.target)) {
+                suppressFocusEvents(10000);
+            }
+        }, true);
+        document.addEventListener('click', event => {
+            if (isQuizNavigationLink(event.target)) {
+                suppressFocusEvents(10000);
+            }
+        }, true);
+        window.addEventListener('proctorcore:intentionalfocusloss', event => {
+            const detail = event.detail || {};
+            suppressFocusEvents(detail.durationMs || 10000);
+        });
         document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
+            if (document.hidden && !focusEventIsIntentional()) {
                 browserEvent('tab_hidden', {visibilityState: document.visibilityState}, true);
             }
         });
         window.addEventListener('blur', () => {
             const now = Date.now();
-            if (!document.hidden && now - lastBlurAt > 3000) {
+            if (!document.hidden && !focusEventIsIntentional() && now - lastBlurAt > 3000) {
                 lastBlurAt = now;
                 browserEvent('window_blur', {at: now}, true);
             }
@@ -196,6 +247,7 @@ define([], function() {
             stopped = false;
             schedule(1200);
             window.addEventListener('beforeunload', () => {
+                pageLeaving = true;
                 stopped = true;
                 if (timer) {
                     window.clearTimeout(timer);

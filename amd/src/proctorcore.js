@@ -173,6 +173,9 @@ define([], function() {
             : (config.strings.openScreen || 'Share screen');
         screen.hidden = !config.screenRecordingEnabled;
         screen.addEventListener('click', () => {
+            window.dispatchEvent(new CustomEvent('proctorcore:intentionalfocusloss', {
+                detail: {reason: 'screen_capture_controller', durationMs: 10000},
+            }));
             const controller = window.open(
                 config.screenControllerUrl,
                 `proctorcore-screen-${config.sessionId}`,
