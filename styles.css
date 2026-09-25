@@ -1714,6 +1714,43 @@
     padding-left: .12rem;
 }
 
+.mod_quiz_preflight_popup .local-proctorcore-rules-list {
+    display: grid;
+    gap: .45rem .65rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.mod_quiz_preflight_popup .local-proctorcore-rules-list li {
+    align-items: flex-start;
+    background: #f7fbf8;
+    border: 1px solid #dcebe2;
+    border-radius: .55rem;
+    display: flex;
+    gap: .5rem;
+    line-height: 1.35;
+    margin: 0;
+    padding: .5rem .6rem;
+}
+
+.mod_quiz_preflight_popup .local-proctorcore-rules-list li::before {
+    background: var(--proctor-ui-accent-deep);
+    border-radius: 50%;
+    content: '';
+    flex: 0 0 .45rem;
+    height: .45rem;
+    margin-top: .38rem;
+    width: .45rem;
+}
+
+@media (max-width: 900px) {
+    .mod_quiz_preflight_popup .local-proctorcore-rules-list {
+        grid-template-columns: 1fr;
+    }
+}
+
 @media (min-width: 901px) {
     /*
      * Open Checks leaves less vertical space on the right. Limit the rule text

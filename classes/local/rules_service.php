@@ -13,10 +13,38 @@ final class rules_service {
         }
         $mform->addElement('header', 'proctorcore_rules_heading', get_string('rules:title', 'local_proctorcore'));
         $mform->addElement('static', 'proctorcore_rules_text', '',
-            \html_writer::div(format_text((string) $config->ruleshtml, FORMAT_HTML), 'local-proctorcore-rules'));
+            $this->render_rules((string) $config->ruleshtml));
         $mform->addElement('advcheckbox', 'proctorcore_rules_ack', get_string('rules:acknowledge', 'local_proctorcore'));
         $mform->setType('proctorcore_rules_ack', PARAM_BOOL);
         $mform->addRule('proctorcore_rules_ack', get_string('rules:required', 'local_proctorcore'), 'required', null, 'client');
+    }
+
+    /**
+     * Renders pipe-separated rules as a compact responsive list while retaining
+     * compatibility with existing formatted rule text.
+     *
+     * @param string $ruleshtml Configured rule text.
+     * @return string Rendered rules markup.
+     */
+    private function render_rules(string $ruleshtml): string {
+        if (strpos($ruleshtml, '|') === false) {
+            return \html_writer::div(format_text($ruleshtml, FORMAT_HTML), 'local-proctorcore-rules');
+        }
+
+        $items = '';
+        $ruletext = html_to_text($ruleshtml, 0, false);
+        foreach (preg_split('/\s*\|\s*/u', $ruletext) as $rule) {
+            $rule = trim($rule);
+            if ($rule === '') {
+                continue;
+            }
+            $items .= \html_writer::tag('li', s($rule));
+        }
+
+        return \html_writer::div(
+            \html_writer::tag('ul', $items, ['class' => 'local-proctorcore-rules-list']),
+            'local-proctorcore-rules local-proctorcore-rules-piped'
+        );
     }
 
     public function validate_and_remember(array $data, int $quizid, int $userid, \stdClass $config): array {
