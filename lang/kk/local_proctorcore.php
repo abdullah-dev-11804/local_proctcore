@@ -749,3 +749,19 @@ $string['value:identity_verification'] = 'Жеке басты растау';
 $string['value:submission'] = 'Жіберу';
 $string['value:violation'] = 'Бұзушылық';
 $string['value:consolidated_violations'] = 'Біріктірілген бұзушылықтар';
+
+// Қатысушыға ескерту және бұзушылық туралы хабарламалар.
+$string['preexamwarning:title'] = 'Бұл тест прокторингпен өткізіледі';
+$string['preexamwarning:intro'] = 'Камера, микрофон және экрандағы әрекеттер жазылып, тексерілуі мүмкін. Мына әрекеттер бұзушылық ретінде тіркелуі мүмкін:';
+$string['preexamwarning:face'] = 'Қайта-қайта басқа жаққа қарау немесе камера көрінісінен кету';
+$string['preexamwarning:people'] = 'Басқа адамның немесе бірнеше беттің көрінуі';
+$string['preexamwarning:audio'] = 'Сөйлеу, сыбырлап көмек алу немесе күмәнді фондық дыбыс';
+$string['preexamwarning:device'] = 'Қойындыларды не терезелерді ауыстыру, браузерді кішірейту немесе басқа қолданбаларды ашу';
+$string['preexamwarning:equipment'] = 'Камераны, микрофонды немесе міндетті экран көрсетілімін жабу, өшіру не ажырату';
+$string['preexamwarning:materials'] = 'Телефонды, жазбаларды, рұқсат етілмеген материалдарды, фотоларды, қайталап көрсетуді немесе сыртқы көмекті пайдалану';
+$string['preexamwarning:consequence'] = 'Қайталанған бұзушылықтар үшін тәуекел ұпайлары қосылады. Прокторинг нәтижесі «Өтпеді» болса, тест нәтижесі есептелмейді.';
+$string['preexamwarning:logging'] = 'Ұпай қосылмайтын ескертулер де есепте тіркеледі.';
+$string['violation:notificationtitle'] = 'Прокторинг ескертуі';
+$string['violation:pointsadded'] = 'тәуекел ұпайы қосылды.';
+$string['violation:warningonly'] = 'Ескерту тіркелді — тәуекел ұпайы қосылмады.';
+$string['violation:dismiss'] = 'Хабарламаны жабу';

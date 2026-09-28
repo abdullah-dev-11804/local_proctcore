@@ -749,3 +749,19 @@ $string['value:identity_verification'] = 'Проверка личности';
 $string['value:submission'] = 'Отправка';
 $string['value:violation'] = 'Нарушение';
 $string['value:consolidated_violations'] = 'Объединённые нарушения';
+
+// Предупреждение кандидата и уведомления о нарушениях.
+$string['preexamwarning:title'] = 'Этот тест проводится с прокторингом';
+$string['preexamwarning:intro'] = 'Камера, микрофон и действия на экране могут записываться и проверяться. Нарушениями могут считаться:';
+$string['preexamwarning:face'] = 'Неоднократный взгляд в сторону или выход из поля зрения камеры';
+$string['preexamwarning:people'] = 'Появление другого человека или нескольких лиц';
+$string['preexamwarning:audio'] = 'Разговоры, подсказки или подозрительный фоновый звук';
+$string['preexamwarning:device'] = 'Переключение вкладок или окон, сворачивание браузера либо открытие других приложений';
+$string['preexamwarning:equipment'] = 'Закрытие, отключение или отсоединение камеры, микрофона либо обязательной демонстрации экрана';
+$string['preexamwarning:materials'] = 'Использование телефона, заметок, запрещённых материалов, фотографий, повторных записей или посторонней помощи';
+$string['preexamwarning:consequence'] = 'За повторные нарушения начисляются баллы риска. Если результат прокторинга — «Не пройдено», результат теста не будет засчитан.';
+$string['preexamwarning:logging'] = 'Предупреждения без штрафных баллов также сохраняются в отчёте.';
+$string['violation:notificationtitle'] = 'Предупреждение прокторинга';
+$string['violation:pointsadded'] = 'баллов риска начислено.';
+$string['violation:warningonly'] = 'Предупреждение записано — баллы риска не начислены.';
+$string['violation:dismiss'] = 'Закрыть уведомление';

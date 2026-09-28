@@ -208,6 +208,9 @@ function local_proctorcore_require_violation_monitor(int $sessionid): void {
     $session = (new \local_proctorcore\local\session_repository())->get_by_id($sessionid);
     $config = (new \local_proctorcore\local\company_config_repository())
         ->get_effective_config((int) $session->companyid);
+    $violationcursor = (new \local_proctorcore\local\violation_repository())
+        ->get_latest_id($sessionid);
+    $PAGE->requires->css('/local/proctorcore/styles.css');
     $PAGE->requires->js_call_amd('local_proctorcore/violation_monitor', 'init', [[
         'enabled' => !empty($config->monitoringenabled),
         'sessionId' => $sessionid,
@@ -215,9 +218,15 @@ function local_proctorcore_require_violation_monitor(int $sessionid): void {
         'sesskey' => sesskey(),
         'intervalMs' => (int) $config->monitorintervalms,
         'requestTimeoutMs' => min(15000, max(2000, (int) $config->requesttimeout * 1000)),
+        'violationCursor' => $violationcursor,
+        'pollIntervalMs' => 2500,
         'strings' => [
             'failed' => get_string('violation:monitorfailed', 'local_proctorcore'),
             'invalidResponse' => get_string('capture:invalidresponse', 'local_proctorcore'),
+            'notificationTitle' => get_string('violation:notificationtitle', 'local_proctorcore'),
+            'pointsAdded' => get_string('violation:pointsadded', 'local_proctorcore'),
+            'warningOnly' => get_string('violation:warningonly', 'local_proctorcore'),
+            'dismiss' => get_string('violation:dismiss', 'local_proctorcore'),
         ],
     ]]);
 }

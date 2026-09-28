@@ -154,16 +154,14 @@ final class violation_service {
         if (!isset($map[$eventtype])) {
             throw new \moodle_exception('violation:invalidevent', 'local_proctorcore');
         }
-        $config = (new company_config_repository())->get_effective_config((int) $session->companyid);
-        $cooldown = strpos($eventtype, 'screen_share_') === 0
-            ? DAYSECS
-            : (int) $config->violationcooldownseconds;
-        $violation = $this->create_once(
-            $session,
+        // Browser events are discrete learner actions. Store every occurrence;
+        // retry/idempotency suppression belongs at the transport boundary, not
+        // in the violation policy where it would erase repeated penalties.
+        $violation = (new violation_repository())->create(
+            (int) $session->id,
             $eventtype,
             (int) $map[$eventtype][0],
             'browser',
-            $cooldown,
             [
                 'description' => (string) $map[$eventtype][1],
                 'metadata' => $metadata,
@@ -178,6 +176,27 @@ final class violation_service {
             'violation' => $violation ? $this->public_violation($violation) : null,
             'suppressed' => !$violation,
         ];
+    }
+
+    /**
+     * Returns newly stored violations for asynchronous candidate alerts.
+     *
+     * @param int $sessionid Session id.
+     * @param int $userid Current user id.
+     * @param int $afterid Last violation id already observed by the browser.
+     * @return array
+     */
+    public function poll_violations(int $sessionid, int $userid, int $afterid): array {
+        $session = (new session_repository())->get_by_id($sessionid);
+        $this->require_active_owner($session, $userid);
+        $records = (new violation_repository())->get_after_id($sessionid, max(0, $afterid));
+        $cursor = max(0, $afterid);
+        $violations = [];
+        foreach ($records as $record) {
+            $cursor = max($cursor, (int) $record->id);
+            $violations[] = $this->public_violation($record);
+        }
+        return ['ok' => true, 'cursor' => $cursor, 'violations' => $violations];
     }
 
     /**
@@ -205,7 +224,7 @@ final class violation_service {
         $conditions = is_array($monitor['conditions'] ?? null) ? $monitor['conditions'] : [];
         $state = is_array($conditions[$type] ?? null) ? $conditions[$type] : [];
         if (!$active) {
-            $state = ['activeSince' => null, 'lastSeenAt' => $now];
+            $state = ['activeSince' => null, 'lastSeenAt' => $now, 'reported' => false];
             $conditions[$type] = $state;
             $monitor['conditions'] = $conditions;
             return $monitor;
@@ -220,17 +239,17 @@ final class violation_service {
         $conditions[$type] = $state;
         $monitor['conditions'] = $conditions;
 
-        if ($now - $activefrom < max(1, $thresholdseconds)) {
+        if (!empty($state['reported']) || $now - $activefrom < max(1, $thresholdseconds)) {
             return $monitor;
         }
 
-        $config = (new company_config_repository())->get_effective_config((int) $session->companyid);
-        $violation = $this->create_once(
-            $session,
+        // A continuous condition is one episode. It may be reported again only
+        // after it clears and later recurs, at which point it is penalised again.
+        $violation = (new violation_repository())->create(
+            (int) $session->id,
             $type,
             $severity,
             'ml_service',
-            (int) $config->violationcooldownseconds,
             [
                 'occurredat' => $activefrom,
                 'durationms' => max(1, $now - $activefrom) * 1000,
@@ -240,42 +259,27 @@ final class violation_service {
         );
         if ($violation) {
             $events[] = $this->public_violation($violation);
-            $monitor['conditions'][$type]['activeSince'] = $now;
+            $monitor['conditions'][$type]['reported'] = true;
         }
         return $monitor;
     }
 
-    /**
-     * @param \stdClass $session Session.
-     * @param string $type Type.
-     * @param int $severity Severity.
-     * @param string $source Source.
-     * @param int $cooldown Cooldown seconds.
-     * @param array $data Data.
-     * @return \stdClass|null
-     */
-    private function create_once(
-        \stdClass $session,
-        string $type,
-        int $severity,
-        string $source,
-        int $cooldown,
-        array $data
-    ): ?\stdClass {
-        $repository = new violation_repository();
-        if ($repository->get_recent((int) $session->id, $type, time() - max(1, $cooldown))) {
-            return null;
-        }
-        return $repository->create((int) $session->id, $type, $severity, $source, $data);
-    }
-
     /** @return array */
     private function public_violation(\stdClass $violation): array {
+        $metadata = json_decode((string) ($violation->metadata ?? ''), true);
+        $metadata = is_array($metadata) ? $metadata : [];
+        $points = min(100, max(0, (int) ($metadata['riskPoints'] ?? 0)));
         return [
             'id' => (int) $violation->id,
             'type' => (string) $violation->type,
+            'label' => localised_value::violation(
+                (string) $violation->type,
+                (string) ($violation->description ?? '')
+            ),
             'severity' => (int) $violation->severity,
             'occurredAt' => (int) $violation->occurredat,
+            'points' => $points,
+            'penalized' => $points > 0,
         ];
     }
 

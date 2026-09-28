@@ -122,4 +122,42 @@ final class violation_repository {
         );
         return $record ?: null;
     }
+
+    /**
+     * Returns violations created after a cursor, in notification order.
+     *
+     * @param int $sessionid Session id.
+     * @param int $afterid Last violation id already observed by the browser.
+     * @param int $limit Maximum records returned in one poll.
+     * @return \stdClass[]
+     */
+    public function get_after_id(int $sessionid, int $afterid, int $limit = 50): array {
+        global $DB;
+        return array_values($DB->get_records_sql(
+            "SELECT *
+               FROM {local_proctorcore_violations}
+              WHERE sessionid = :sessionid
+                AND id > :afterid
+           ORDER BY id ASC",
+            ['sessionid' => $sessionid, 'afterid' => max(0, $afterid)],
+            0,
+            min(100, max(1, $limit))
+        ));
+    }
+
+    /**
+     * Returns the current notification cursor for a session.
+     *
+     * @param int $sessionid Session id.
+     * @return int
+     */
+    public function get_latest_id(int $sessionid): int {
+        global $DB;
+        return (int) $DB->get_field_sql(
+            "SELECT COALESCE(MAX(id), 0)
+               FROM {local_proctorcore_violations}
+              WHERE sessionid = :sessionid",
+            ['sessionid' => $sessionid]
+        );
+    }
 }

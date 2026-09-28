@@ -771,3 +771,19 @@ $string['value:identity_verification'] = 'Identity verification';
 $string['value:submission'] = 'Submission';
 $string['value:violation'] = 'Violation';
 $string['value:consolidated_violations'] = 'Consolidated violations';
+
+// Candidate warning and live violation notifications.
+$string['preexamwarning:title'] = 'This quiz is proctored';
+$string['preexamwarning:intro'] = 'Your camera, microphone and on-screen activity may be recorded and reviewed. The following actions can be recorded as violations:';
+$string['preexamwarning:face'] = 'Looking away repeatedly or leaving the camera view';
+$string['preexamwarning:people'] = 'Another person or more than one face appearing';
+$string['preexamwarning:audio'] = 'Speaking, receiving prompts or suspicious background audio';
+$string['preexamwarning:device'] = 'Switching tabs or windows, minimising the browser or opening other applications';
+$string['preexamwarning:equipment'] = 'Blocking, disabling or disconnecting the camera, microphone or required screen sharing';
+$string['preexamwarning:materials'] = 'Using a phone, notes, unauthorised materials, photos, replays or outside assistance';
+$string['preexamwarning:consequence'] = 'Repeated violations add risk points. If the proctoring result is Failed, your quiz result will not be counted.';
+$string['preexamwarning:logging'] = 'Warning-only events may carry zero points but are still recorded in the report.';
+$string['violation:notificationtitle'] = 'Proctoring warning';
+$string['violation:pointsadded'] = 'risk points added.';
+$string['violation:warningonly'] = 'Warning recorded — no risk points added.';
+$string['violation:dismiss'] = 'Dismiss notification';

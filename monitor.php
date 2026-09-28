@@ -39,6 +39,12 @@ try {
             clean_param((string) ($data['eventType'] ?? ''), PARAM_ALPHANUMEXT),
             is_array($data['metadata'] ?? null) ? $data['metadata'] : []
         );
+    } elseif ($action === 'poll') {
+        $result = $service->poll_violations(
+            $sessionid,
+            (int) $USER->id,
+            max(0, (int) ($data['afterId'] ?? 0))
+        );
     } else {
         throw new moodle_exception('violation:invalidrequest', 'local_proctorcore');
     }

@@ -10,6 +10,7 @@ define([], function() {
 
     let config = null;
     let timer = null;
+    let pollTimer = null;
     let requestRunning = false;
     let lastBlurAt = 0;
     let stopped = false;
@@ -21,6 +22,120 @@ define([], function() {
     let lastFrameImage = null;
     let suppressFocusUntil = 0;
     let pageLeaving = false;
+    let violationCursor = 0;
+    let pollFailures = 0;
+    let audioContext = null;
+    const seenViolationIds = new Set();
+
+    const notificationStack = () => {
+        let stack = document.querySelector('[data-proctorcore-violation-notifications]');
+        if (stack) {
+            return stack;
+        }
+        stack = document.createElement('div');
+        stack.className = 'local-proctorcore-violation-notifications';
+        stack.dataset.proctorcoreViolationNotifications = '1';
+        stack.setAttribute('aria-live', 'assertive');
+        stack.setAttribute('aria-atomic', 'false');
+        document.body.appendChild(stack);
+        return stack;
+    };
+
+    const ensureAudioContext = () => {
+        if (audioContext) {
+            return audioContext;
+        }
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) {
+            return null;
+        }
+        audioContext = new AudioContext();
+        return audioContext;
+    };
+
+    const unlockAudio = () => {
+        const context = ensureAudioContext();
+        if (context && context.state === 'suspended') {
+            context.resume().catch(() => {});
+        }
+    };
+
+    const playViolationSound = () => {
+        const context = ensureAudioContext();
+        if (!context) {
+            return;
+        }
+        const play = () => {
+            const start = context.currentTime;
+            [0, 0.18].forEach((offset, index) => {
+                const oscillator = context.createOscillator();
+                const gain = context.createGain();
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(index === 0 ? 740 : 880, start + offset);
+                gain.gain.setValueAtTime(0.0001, start + offset);
+                gain.gain.exponentialRampToValueAtTime(0.16, start + offset + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.0001, start + offset + 0.15);
+                oscillator.connect(gain);
+                gain.connect(context.destination);
+                oscillator.start(start + offset);
+                oscillator.stop(start + offset + 0.16);
+            });
+        };
+        if (context.state === 'suspended') {
+            context.resume().then(play).catch(() => {});
+        } else {
+            play();
+        }
+    };
+
+    const showViolationNotification = violation => {
+        const stack = notificationStack();
+        const notice = document.createElement('section');
+        notice.className = 'local-proctorcore-violation-notice';
+        notice.setAttribute('role', 'alert');
+
+        const header = document.createElement('div');
+        header.className = 'local-proctorcore-violation-notice-header';
+        const heading = document.createElement('strong');
+        heading.textContent = config.strings.notificationTitle;
+        const dismiss = document.createElement('button');
+        dismiss.type = 'button';
+        dismiss.className = 'local-proctorcore-violation-notice-dismiss';
+        dismiss.setAttribute('aria-label', config.strings.dismiss);
+        dismiss.textContent = '\u00d7';
+        header.append(heading, dismiss);
+
+        const label = document.createElement('div');
+        label.className = 'local-proctorcore-violation-notice-label';
+        label.textContent = violation.label || violation.type || config.strings.notificationTitle;
+        const outcome = document.createElement('div');
+        outcome.className = 'local-proctorcore-violation-notice-outcome';
+        const points = Math.max(0, Number(violation.points || 0));
+        outcome.textContent = points > 0
+            ? `${points} ${config.strings.pointsAdded}`
+            : config.strings.warningOnly;
+
+        notice.append(header, label, outcome);
+        stack.prepend(notice);
+        dismiss.addEventListener('click', () => notice.remove());
+        const dismissLater = () => window.setTimeout(() => {
+            notice.classList.add('is-leaving');
+            window.setTimeout(() => notice.remove(), 250);
+        }, 8000);
+        if (document.hidden) {
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) {
+                    dismissLater();
+                }
+            }, {once: true});
+        } else {
+            dismissLater();
+        }
+        while (stack.children.length > 4) {
+            stack.lastElementChild.remove();
+        }
+        playViolationSound();
+    };
 
     const suppressFocusEvents = durationMs => {
         const duration = Math.min(15000, Math.max(0, Number(durationMs || 0)));
@@ -120,9 +235,17 @@ define([], function() {
             ? data.violations
             : (data.violation ? [data.violation] : []);
         violations.filter(Boolean).forEach(violation => {
+            const violationId = Number(violation.id);
+            if (violationId > 0 && seenViolationIds.has(violationId)) {
+                return;
+            }
+            if (violationId > 0) {
+                seenViolationIds.add(violationId);
+            }
+            showViolationNotification(violation);
             window.dispatchEvent(new CustomEvent('proctorcore:violation', {
                 detail: {
-                    violationId: Number(violation.id),
+                    violationId,
                     violationType: violation.type,
                     severity: Number(violation.severity || 1),
                     occurredAt: Number(violation.occurredAt || Math.floor(Date.now() / 1000)),
@@ -130,6 +253,32 @@ define([], function() {
                 },
             }));
         });
+    };
+
+    const pollViolations = async() => {
+        try {
+            const data = await request({action: 'poll', afterId: violationCursor});
+            violationCursor = Math.max(violationCursor, Number(data.cursor || 0));
+            pollFailures = 0;
+            dispatchViolations(data);
+        } catch (error) {
+            pollFailures += 1;
+            window.console.warn('ProctorCore violation polling failed:', error);
+        }
+    };
+
+    const schedulePoll = delay => {
+        if (stopped) {
+            return;
+        }
+        if (pollTimer) {
+            window.clearTimeout(pollTimer);
+        }
+        pollTimer = window.setTimeout(async() => {
+            await pollViolations();
+            const interval = Math.max(1500, Number(config.pollIntervalMs || 2500));
+            schedulePoll(interval * Math.min(4, Math.pow(2, pollFailures)));
+        }, Math.max(0, delay));
     };
 
     const analyse = async() => {
@@ -239,18 +388,23 @@ define([], function() {
         /** @param {Object} options Moodle options. */
         init: function(options) {
             config = options;
-            if (!config.enabled) {
-                return;
-            }
-            bindEvents();
-            const interval = Math.max(1500, Number(config.intervalMs || 3000));
+            violationCursor = Math.max(0, Number(config.violationCursor || 0));
+            document.addEventListener('pointerdown', unlockAudio, {once: true, capture: true});
+            document.addEventListener('keydown', unlockAudio, {once: true, capture: true});
             stopped = false;
-            schedule(1200);
+            schedulePoll(1500);
+            if (config.enabled) {
+                bindEvents();
+                schedule(1200);
+            }
             window.addEventListener('beforeunload', () => {
                 pageLeaving = true;
                 stopped = true;
                 if (timer) {
                     window.clearTimeout(timer);
+                }
+                if (pollTimer) {
+                    window.clearTimeout(pollTimer);
                 }
                 if (activeController) {
                     activeController.abort();

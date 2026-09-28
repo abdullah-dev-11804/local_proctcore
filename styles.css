@@ -2104,3 +2104,136 @@
         width: 100%;
     }
 }
+
+/* Proctored-exam warning shown before Moodle creates the attempt. */
+.mod_quiz_preflight_popup .local-proctorcore-exam-warning {
+    background: linear-gradient(135deg, #fff8e5, #fffdf7);
+    border: 1px solid #edca72;
+    border-left: .35rem solid #c78500;
+    border-radius: .8rem;
+    color: #3f3420;
+    margin: .25rem 0 .8rem;
+    padding: .8rem 1rem;
+}
+
+.mod_quiz_preflight_popup .local-proctorcore-exam-warning-title {
+    color: #4d3911;
+    font-size: 1.15rem;
+    font-weight: 750;
+    margin: 0 0 .25rem;
+}
+
+.mod_quiz_preflight_popup .local-proctorcore-exam-warning-intro,
+.mod_quiz_preflight_popup .local-proctorcore-exam-warning-consequence,
+.mod_quiz_preflight_popup .local-proctorcore-exam-warning-logging {
+    margin: .3rem 0;
+}
+
+.mod_quiz_preflight_popup .local-proctorcore-exam-warning-list {
+    display: grid;
+    gap: .25rem 1.25rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: .55rem 0;
+    padding-left: 1.2rem;
+}
+
+.mod_quiz_preflight_popup .local-proctorcore-exam-warning-consequence {
+    color: #72251e;
+    font-weight: 700;
+}
+
+.mod_quiz_preflight_popup .local-proctorcore-exam-warning-logging {
+    color: #66563a;
+    font-size: .88rem;
+}
+
+/* Candidate-side violation alerts deliberately sit above the capture widget. */
+.local-proctorcore-violation-notifications {
+    display: flex;
+    flex-direction: column;
+    gap: .65rem;
+    max-width: min(24rem, calc(100vw - 2rem));
+    pointer-events: none;
+    position: fixed;
+    right: 1rem;
+    top: 5rem;
+    width: 100%;
+    z-index: 1085;
+}
+
+.local-proctorcore-violation-notice {
+    animation: local-proctorcore-notice-in .25s ease-out;
+    background: #fff;
+    border: 1px solid #e1a49e;
+    border-left: .35rem solid #bd382d;
+    border-radius: .7rem;
+    box-shadow: 0 .75rem 2rem rgba(28, 31, 34, .2);
+    color: #263746;
+    opacity: 1;
+    padding: .7rem .8rem;
+    pointer-events: auto;
+    transform: translateX(0);
+    transition: opacity .2s ease, transform .2s ease;
+}
+
+.local-proctorcore-violation-notice.is-leaving {
+    opacity: 0;
+    transform: translateX(1rem);
+}
+
+.local-proctorcore-violation-notice-header {
+    align-items: center;
+    color: #8e281f;
+    display: flex;
+    gap: .75rem;
+    justify-content: space-between;
+}
+
+.local-proctorcore-violation-notice-dismiss {
+    background: transparent;
+    border: 0;
+    color: #5d6870;
+    cursor: pointer;
+    font-size: 1.35rem;
+    line-height: 1;
+    padding: 0 .15rem;
+}
+
+.local-proctorcore-violation-notice-label {
+    font-weight: 700;
+    margin-top: .3rem;
+}
+
+.local-proctorcore-violation-notice-outcome {
+    color: #5d6870;
+    font-size: .88rem;
+    margin-top: .15rem;
+}
+
+@keyframes local-proctorcore-notice-in {
+    from {
+        opacity: 0;
+        transform: translateX(1.5rem);
+    }
+}
+
+@media (max-width: 700px) {
+    .mod_quiz_preflight_popup .local-proctorcore-exam-warning-list {
+        grid-template-columns: 1fr;
+    }
+
+    .local-proctorcore-violation-notifications {
+        left: .75rem;
+        max-width: none;
+        right: .75rem;
+        top: 4.25rem;
+        width: auto;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .local-proctorcore-violation-notice {
+        animation: none;
+        transition: none;
+    }
+}

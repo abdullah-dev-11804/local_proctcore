@@ -7,6 +7,49 @@ defined('MOODLE_INTERNAL') || die();
 
 /** Captures an explicit, version-bound acknowledgement of quiz rules. */
 final class rules_service {
+    /**
+     * Adds the always-visible warning for a quiz protected by ProctorCore.
+     *
+     * @param \MoodleQuickForm $mform Quiz preflight form.
+     * @return void
+     */
+    public function add_proctoring_warning($mform): void {
+        $items = '';
+        foreach ([
+            'preexamwarning:face',
+            'preexamwarning:people',
+            'preexamwarning:audio',
+            'preexamwarning:device',
+            'preexamwarning:equipment',
+            'preexamwarning:materials',
+        ] as $stringkey) {
+            $items .= \html_writer::tag('li', get_string($stringkey, 'local_proctorcore'));
+        }
+
+        $content = \html_writer::tag(
+            'h3',
+            get_string('preexamwarning:title', 'local_proctorcore'),
+            ['class' => 'local-proctorcore-exam-warning-title']
+        );
+        $content .= \html_writer::tag(
+            'p',
+            get_string('preexamwarning:intro', 'local_proctorcore'),
+            ['class' => 'local-proctorcore-exam-warning-intro']
+        );
+        $content .= \html_writer::tag('ul', $items, ['class' => 'local-proctorcore-exam-warning-list']);
+        $content .= \html_writer::tag(
+            'p',
+            get_string('preexamwarning:consequence', 'local_proctorcore'),
+            ['class' => 'local-proctorcore-exam-warning-consequence']
+        );
+        $content .= \html_writer::tag(
+            'p',
+            get_string('preexamwarning:logging', 'local_proctorcore'),
+            ['class' => 'local-proctorcore-exam-warning-logging']
+        );
+        $mform->addElement('html', \html_writer::div($content, 'local-proctorcore-exam-warning'));
+    }
+
     public function add_preflight_field($mform, \stdClass $config): void {
         if (empty($config->requirerulesack) || trim((string) ($config->ruleshtml ?? '')) === '') {
             return;
