@@ -113,18 +113,14 @@ foreach ($records as $record) {
     $actions = [];
     $deletionstatus = (string) ($record->deletionstatus ?? 'none');
     if ((string) $record->status === 'active' && $deletionstatus === 'none') {
-        $baseaction = [
+        $resetaction = [
             'userid' => (int) $record->userid,
             'returntomanager' => 1,
+            'action' => 'reset',
         ];
         $actions[] = html_writer::link(
-            new moodle_url('/local/proctorcore/reset_face.php', $baseaction + ['action' => 'reset']),
+            new moodle_url('/local/proctorcore/reset_face.php', $resetaction),
             get_string('identity:resetaction', 'local_proctorcore')
-        );
-        $actions[] = html_writer::link(
-            new moodle_url('/local/proctorcore/reset_face.php', $baseaction + ['action' => 'delete']),
-            get_string('identity:deleteaction', 'local_proctorcore'),
-            ['class' => 'text-danger']
         );
     }
     $table->data[] = [
