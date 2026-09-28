@@ -21,6 +21,18 @@ define([], function() {
     const startButton = () => document.querySelector('[data-screen-start]');
     const stopButton = () => document.querySelector('[data-screen-stop]');
 
+    const markControllerFocusAsIntentional = () => {
+        try {
+            if (window.opener && !window.opener.closed) {
+                window.opener.dispatchEvent(new window.opener.CustomEvent('proctorcore:intentionalfocusloss', {
+                    detail: {reason: 'screen_capture_controller', durationMs: 2000},
+                }));
+            }
+        } catch (error) {
+            // Ignore opener access restrictions; blur de-duplication still applies.
+        }
+    };
+
     const withTimeout = (promise, milliseconds, code) => Promise.race([
         promise,
         new Promise((resolve, reject) => window.setTimeout(() => reject(new Error(code)), milliseconds)),
@@ -208,6 +220,7 @@ define([], function() {
             return;
         }
         startButton().disabled = true;
+        markControllerFocusAsIntentional();
         let serverStarted = false;
         try {
             displayStream = await navigator.mediaDevices.getDisplayMedia({
@@ -301,6 +314,8 @@ define([], function() {
 
     return {init: options => {
         config = options;
+        window.addEventListener('focus', markControllerFocusAsIntentional);
+        document.addEventListener('pointerdown', markControllerFocusAsIntentional, true);
         channel = typeof BroadcastChannel === 'function'
             ? new BroadcastChannel(`proctorcore-screen-${config.sessionId}`) : null;
         channel?.addEventListener('message', event => {

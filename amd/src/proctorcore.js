@@ -795,6 +795,9 @@ define([], function() {
     const bindViolationEvents = () => {
         window.addEventListener('proctorcore:violation', event => {
             const detail = event.detail || {};
+            if (detail.skipCameraSnapshot) {
+                return;
+            }
             requestSnapshot('violation', detail.violationId || null, false, detail).catch(error => {
                 window.console.warn('ProctorCore violation snapshot failed:', error);
             });

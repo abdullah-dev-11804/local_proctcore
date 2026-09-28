@@ -588,7 +588,14 @@ final class webhook_processor {
             'assetCount' => $expectedassets,
             'receivedAssetCount' => $receivedassets,
             'finalizedAt' => $completedat,
+            'processingCompletedAt' => $event['processingCompletedAt'] ?? null,
+            'evidenceFailures' => is_array($event['evidenceFailures'] ?? null)
+                ? array_values($event['evidenceFailures'])
+                : [],
         ]);
+        if (in_array($mediastatus, ['partial', 'failed'], true)) {
+            $this->sessions->require_manual_review((int) $updated->id);
+        }
 
         return $this->sessions->get_by_id((int) $updated->id);
     }

@@ -13,6 +13,7 @@ define([], function() {
     let pollTimer = null;
     let requestRunning = false;
     let lastBlurAt = 0;
+    let blurTimer = null;
     let stopped = false;
     let consecutiveErrors = 0;
     let droppedSamples = 0;
@@ -26,6 +27,9 @@ define([], function() {
     let pollFailures = 0;
     let audioContext = null;
     const seenViolationIds = new Set();
+    const screenEvidenceOnlyTypes = new Set([
+        'tab_hidden', 'tab_switch', 'window_blur', 'focus_loss', 'leaving_exam_window',
+    ]);
 
     const notificationStack = () => {
         let stack = document.querySelector('[data-proctorcore-violation-notifications]');
@@ -249,7 +253,9 @@ define([], function() {
                     violationType: violation.type,
                     severity: Number(violation.severity || 1),
                     occurredAt: Number(violation.occurredAt || Math.floor(Date.now() / 1000)),
-                    snapshotImage: snapshotImage || lastFrameImage,
+                    snapshotImage: screenEvidenceOnlyTypes.has(String(violation.type || ''))
+                        ? null : (snapshotImage || lastFrameImage),
+                    skipCameraSnapshot: screenEvidenceOnlyTypes.has(String(violation.type || '')),
                 },
             }));
         });
@@ -338,7 +344,7 @@ define([], function() {
     const browserEvent = async(type, metadata = {}, keepalive = false) => {
         // Preserve a camera frame before a hidden tab can suspend rendering or
         // delay the asynchronous response that creates the violation record.
-        const snapshotImage = frameData() || lastFrameImage;
+        const snapshotImage = screenEvidenceOnlyTypes.has(type) ? null : (frameData() || lastFrameImage);
         try {
             const data = await request({action: 'event', eventType: type, metadata}, keepalive);
             dispatchViolations(data, snapshotImage);
@@ -367,14 +373,33 @@ define([], function() {
         });
         document.addEventListener('visibilitychange', () => {
             if (document.hidden && !focusEventIsIntentional()) {
+                if (blurTimer) {
+                    window.clearTimeout(blurTimer);
+                    blurTimer = null;
+                }
                 browserEvent('tab_hidden', {visibilityState: document.visibilityState}, true);
             }
         });
         window.addEventListener('blur', () => {
-            const now = Date.now();
-            if (!document.hidden && !focusEventIsIntentional() && now - lastBlurAt > 3000) {
-                lastBlurAt = now;
-                browserEvent('window_blur', {at: now}, true);
+            // A tab switch normally emits blur immediately before the reliable
+            // visibilitychange event. Briefly defer classification so one user
+            // action cannot become both window_blur and tab_hidden.
+            if (blurTimer) {
+                window.clearTimeout(blurTimer);
+            }
+            blurTimer = window.setTimeout(() => {
+                blurTimer = null;
+                const now = Date.now();
+                if (!document.hidden && !focusEventIsIntentional() && now - lastBlurAt > 3000) {
+                    lastBlurAt = now;
+                    browserEvent('window_blur', {at: now}, true);
+                }
+            }, 350);
+        });
+        window.addEventListener('focus', () => {
+            if (blurTimer) {
+                window.clearTimeout(blurTimer);
+                blurTimer = null;
             }
         });
         window.addEventListener('proctorcore:mediaended', event => {
