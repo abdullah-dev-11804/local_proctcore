@@ -29,6 +29,24 @@ final class tenant_resolver {
     /** Newer IOMAD course/company table. */
     private const CURRENT_COURSE_TABLE = 'local_iomad_company_courses';
 
+    /** Legacy IOMAD course settings table containing the sharing mode. */
+    private const LEGACY_COURSE_SETTINGS_TABLE = 'iomad_courses';
+
+    /** Newer IOMAD course settings table containing the sharing mode. */
+    private const CURRENT_COURSE_SETTINGS_TABLE = 'local_iomad_courses';
+
+    /** Legacy IOMAD closed-sharing allocation table. */
+    private const LEGACY_SHARED_COURSE_TABLE = 'company_shared_courses';
+
+    /** Newer IOMAD closed-sharing allocation table. */
+    private const CURRENT_SHARED_COURSE_TABLE = 'local_iomad_company_shared_courses';
+
+    /** IOMAD open sharing makes the course available to every company. */
+    private const SHARING_OPEN = 1;
+
+    /** IOMAD closed sharing makes the course available only to selected companies. */
+    private const SHARING_CLOSED = 2;
+
     /**
      * Returns true when an IOMAD company/user table is installed.
      *
@@ -125,6 +143,101 @@ final class tenant_resolver {
     }
 
     /**
+     * Gets companies explicitly selected for an IOMAD closed-shared course.
+     *
+     * @param int $courseid Moodle course id.
+     * @return int[] Sorted unique company ids.
+     */
+    public function get_closed_shared_course_company_ids(int $courseid): array {
+        global $DB;
+
+        if ($courseid <= 0) {
+            return [];
+        }
+
+        $table = $this->first_existing_table([
+            self::CURRENT_SHARED_COURSE_TABLE,
+            self::LEGACY_SHARED_COURSE_TABLE,
+        ]);
+        if ($table === null) {
+            return [];
+        }
+
+        $columns = $DB->get_columns($table);
+        $companyfield = isset($columns['companyid']) ? 'companyid' : (isset($columns['company']) ? 'company' : '');
+        $coursefield = isset($columns['courseid']) ? 'courseid' : (isset($columns['course']) ? 'course' : '');
+        if ($companyfield === '' || $coursefield === '') {
+            return [];
+        }
+
+        $ids = $DB->get_fieldset_select(
+            $table,
+            $companyfield,
+            "{$coursefield} = :courseid",
+            ['courseid' => $courseid]
+        );
+        $ids = array_values(array_unique(array_filter(array_map('intval', $ids))));
+        sort($ids, SORT_NUMERIC);
+        return $ids;
+    }
+
+    /**
+     * Gets IOMAD's sharing mode for a course.
+     *
+     * Values are 0 (not shared), 1 (open sharing), and 2 (closed sharing).
+     * Null means that IOMAD has no course-settings row and the resolver should
+     * retain its normal-Moodle/global-course fallback.
+     *
+     * @param int $courseid Moodle course id.
+     * @return int|null
+     */
+    public function get_course_sharing_mode(int $courseid): ?int {
+        global $DB;
+
+        if ($courseid <= 0) {
+            return null;
+        }
+        $table = $this->first_existing_table([
+            self::CURRENT_COURSE_SETTINGS_TABLE,
+            self::LEGACY_COURSE_SETTINGS_TABLE,
+        ]);
+        if ($table === null) {
+            return null;
+        }
+
+        $columns = $DB->get_columns($table);
+        $coursefield = isset($columns['courseid']) ? 'courseid' : (isset($columns['course']) ? 'course' : '');
+        if ($coursefield === '' || !isset($columns['shared'])) {
+            return null;
+        }
+        $mode = $DB->get_field($table, 'shared', [$coursefield => $courseid], IGNORE_MISSING);
+        if ($mode === false) {
+            return null;
+        }
+        return min(self::SHARING_CLOSED, max(0, (int) $mode));
+    }
+
+    /**
+     * Gets the finite list of companies explicitly allowed to use a course.
+     *
+     * Open-shared courses intentionally return only direct allocations here;
+     * their all-company rule is handled separately so a multi-company learner
+     * must still have an unambiguous selected company for tenant scoping.
+     *
+     * @param int $courseid Moodle course id.
+     * @return int[]
+     */
+    private function get_explicit_course_company_ids(int $courseid): array {
+        $ids = $this->get_course_company_ids($courseid);
+        if ($this->get_course_sharing_mode($courseid) === self::SHARING_CLOSED) {
+            $ids = array_merge($ids, $this->get_closed_shared_course_company_ids($courseid));
+        }
+        $ids = array_values(array_unique(array_filter(array_map('intval', $ids))));
+        sort($ids, SORT_NUMERIC);
+        return $ids;
+    }
+
+    /**
      * Resolves the most appropriate company for a user and optional course.
      *
      * Resolution order:
@@ -153,7 +266,10 @@ final class tenant_resolver {
         }
 
         if ($courseid > 0) {
-            $coursecompanies = $this->get_course_company_ids($courseid);
+            $sharingmode = $this->get_course_sharing_mode($courseid);
+            $coursecompanies = $sharingmode === self::SHARING_OPEN
+                ? $usercompanies
+                : $this->get_explicit_course_company_ids($courseid);
             if ($coursecompanies) {
                 $matches = array_values(array_intersect($usercompanies, $coursecompanies));
                 if (count($matches) === 1) {
@@ -213,10 +329,10 @@ final class tenant_resolver {
     }
 
     /**
-     * Checks whether a course is allocated to a company.
+     * Checks whether a course is available to a company under IOMAD sharing.
      *
-     * An empty IOMAD course allocation table is treated as no additional
-     * restriction because some sites use shared/global Moodle courses.
+     * A course with neither an IOMAD allocation nor an IOMAD settings row is
+     * treated as a normal Moodle/global course for non-IOMAD compatibility.
      *
      * @param int $courseid Course id.
      * @param int $companyid Company id.
@@ -224,7 +340,21 @@ final class tenant_resolver {
      */
     public function is_course_available_to_company(int $courseid, int $companyid): bool {
         $coursecompanies = $this->get_course_company_ids($courseid);
-        return !$coursecompanies || in_array($companyid, $coursecompanies, true);
+        if (in_array($companyid, $coursecompanies, true)) {
+            return true;
+        }
+
+        $sharingmode = $this->get_course_sharing_mode($courseid);
+        if ($sharingmode === self::SHARING_OPEN) {
+            return true;
+        }
+        if ($sharingmode === self::SHARING_CLOSED) {
+            return in_array($companyid, $this->get_closed_shared_course_company_ids($courseid), true);
+        }
+
+        // Preserve normal Moodle/global-course support only when IOMAD has no
+        // ownership allocation and no explicit course-settings record.
+        return !$coursecompanies && $sharingmode === null;
     }
 
     /**
