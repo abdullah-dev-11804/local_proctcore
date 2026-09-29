@@ -406,6 +406,15 @@ final class server_client {
         );
     }
 
+    /** Registers an existing Moodle violation for Server B evidence extraction. */
+    public function register_violation_evidence(string $serversessionid, array $payload): array {
+        return $this->request(
+            'POST',
+            '/api/v1/sessions/' . rawurlencode($serversessionid) . '/violations',
+            $payload
+        );
+    }
+
     /**
      * Permanently removes an expired media object from Server B storage.
      *

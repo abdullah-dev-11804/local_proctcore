@@ -419,6 +419,8 @@ final class webhook_processor {
                         'capturedAt' => $asset['capturedAt'] ?? null,
                         'availableAt' => $asset['availableAt'] ?? null,
                         'reason' => $asset['reason'] ?? ($asset['metadata']['reason'] ?? null),
+                        'displayTitle' => $asset['metadata']['displayTitle'] ?? null,
+                        'reasonCode' => $asset['metadata']['reasonCode'] ?? null,
                         'serverViolationId' => $asset['violationId'] ?? null,
                         'recordingSegment' => $asset['recordingSegment']
                             ?? ($asset['metadata']['recordingSegment'] ?? null),

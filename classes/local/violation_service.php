@@ -171,6 +171,10 @@ final class violation_service {
             (new session_repository())->require_manual_review((int) $session->id);
         }
 
+        if ($violation && in_array($eventtype, ['tab_hidden', 'window_blur'], true)) {
+            $this->register_screen_evidence_event($session, $violation, $metadata);
+        }
+
         return [
             'ok' => true,
             'violation' => $violation ? $this->public_violation($violation) : null,
@@ -281,6 +285,46 @@ final class violation_service {
             'points' => $points,
             'penalized' => $points > 0,
         ];
+    }
+
+    /**
+     * Gives Server B the exact timestamp needed to cut screen-only evidence.
+     * Moodle remains authoritative for the violation, so Server B must not
+     * send the same event back through the violation webhook.
+     */
+    private function register_screen_evidence_event(
+        \stdClass $session,
+        \stdClass $violation,
+        array $metadata
+    ): void {
+        if (empty($session->server_sessionid)) {
+            return;
+        }
+        try {
+            (new server_client((int) $session->companyid))->register_violation_evidence(
+                (string) $session->server_sessionid,
+                [
+                    'moodleSessionId' => (int) $session->id,
+                    'companyId' => (int) $session->companyid,
+                    'attemptId' => (int) $session->attemptid,
+                    'userId' => (int) $session->userid,
+                    'violationId' => (int) $violation->id,
+                    'violationType' => (string) $violation->type,
+                    'severity' => (int) $violation->severity,
+                    'occurredAt' => (int) $violation->occurredat,
+                    'durationMs' => max(0, (int) ($violation->durationms ?? 0)),
+                    'description' => (string) ($violation->description ?? ''),
+                    'metadata' => $metadata,
+                ]
+            );
+        } catch (\Throwable $exception) {
+            // The local violation must still be recorded if evidence transport
+            // is temporarily unavailable. Surface the failure in Moodle logs.
+            debugging(
+                'ProctorCore screen evidence event could not be registered: ' . $exception->getMessage(),
+                DEBUG_DEVELOPER
+            );
+        }
     }
 
     /**

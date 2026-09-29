@@ -409,10 +409,21 @@ final class report_service {
      * @return string
      */
     private function asset_display_name(\stdClass $asset): string {
+        $metadata = is_array($asset->metadataarray ?? null) ? $asset->metadataarray : [];
+        $servermetadata = is_array($metadata['serverMetadata'] ?? null)
+            ? $metadata['serverMetadata']
+            : [];
+        $displaytitle = trim((string) (
+            $metadata['displayTitle']
+            ?? $servermetadata['displayTitle']
+            ?? ''
+        ));
         $storedreason = (string) ($asset->reason ?? '');
-        $reason = $storedreason !== ''
-            ? localised_value::violation($storedreason, localised_value::value($storedreason))
-            : get_string('report:notavailable', 'local_proctorcore');
+        $reason = $displaytitle !== ''
+            ? $displaytitle
+            : ($storedreason !== ''
+                ? localised_value::violation($storedreason, localised_value::value($storedreason))
+                : get_string('report:notavailable', 'local_proctorcore'));
         if ((string) ($asset->serverassettype ?? '') === 'full_recording'
                 || (string) ($asset->reason ?? '') === 'full_session') {
             return get_string('report:fullrecording', 'local_proctorcore');

@@ -40,4 +40,43 @@ final class report_asset_dedup_test extends \advanced_testcase {
         $this->assertSame(2, $grouped['videos'][0]->duplicatecount);
         $this->assertStringContainsString('Consolidated violations', $grouped['videos'][0]->displayname);
     }
+
+    public function test_video_uses_nested_server_display_title_when_reason_is_missing(): void {
+        $this->resetAfterTest();
+
+        $session = (new \local_proctorcore\local\session_repository())->create_new([
+            'companyid' => 0,
+            'courseid' => 201,
+            'cmid' => 202,
+            'quizid' => 203,
+            'attemptid' => 204,
+            'userid' => 205,
+        ]);
+        (new \local_proctorcore\local\asset_repository())->create(
+            (int) $session->id,
+            0,
+            \local_proctorcore\local\asset_repository::TYPE_VIDEO_CLIP,
+            [
+                'externalid' => 'clip-with-display-title',
+                'checksum' => hash('sha256', 'display-title-video'),
+                'mime' => 'video/mp4',
+                'filesize' => 1024,
+                'metadata' => [
+                    'serverAssetType' => 'video_clip',
+                    'serverMetadata' => [
+                        'displayTitle' => 'Speech detected + Multiple faces (2 events)',
+                    ],
+                ],
+            ]
+        );
+
+        $grouped = (new \local_proctorcore\local\report_service())
+            ->get_report_assets((int) $session->id);
+
+        $this->assertCount(1, $grouped['videos']);
+        $this->assertStringContainsString(
+            'Speech detected + Multiple faces (2 events)',
+            $grouped['videos'][0]->displayname
+        );
+    }
 }
