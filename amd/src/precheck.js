@@ -409,7 +409,9 @@ define(['local_proctorcore/preflight_layout'], function(preflightLayout) {
          * @param {Object} config Configuration.
          */
         init: function(config) {
-            preflightLayout.init();
+            preflightLayout.init({
+                rulesRequired: (config.strings || {}).rulesRequired || '',
+            });
             const panel = document.getElementById(config.panelId || 'local-proctorcore-precheck');
             if (!panel) {
                 return;

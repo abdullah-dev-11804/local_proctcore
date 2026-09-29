@@ -14,6 +14,15 @@ final class rules_service {
      * @return void
      */
     public function add_proctoring_warning($mform): void {
+        $mform->addElement('html', $this->render_proctoring_warning());
+    }
+
+    /**
+     * Renders the warning on the Quiz overview before the preflight opens.
+     *
+     * @return string Localised warning markup.
+     */
+    public function render_proctoring_warning(): string {
         $items = '';
         foreach ([
             'preexamwarning:face',
@@ -29,7 +38,10 @@ final class rules_service {
         $content = \html_writer::tag(
             'h3',
             get_string('preexamwarning:title', 'local_proctorcore'),
-            ['class' => 'local-proctorcore-exam-warning-title']
+            [
+                'class' => 'local-proctorcore-exam-warning-title',
+                'id' => 'local-proctorcore-exam-warning-title',
+            ]
         );
         $content .= \html_writer::tag(
             'p',
@@ -47,7 +59,10 @@ final class rules_service {
             get_string('preexamwarning:logging', 'local_proctorcore'),
             ['class' => 'local-proctorcore-exam-warning-logging']
         );
-        $mform->addElement('html', \html_writer::div($content, 'local-proctorcore-exam-warning'));
+        return \html_writer::div($content, 'local-proctorcore-exam-warning', [
+            'role' => 'note',
+            'aria-labelledby' => 'local-proctorcore-exam-warning-title',
+        ]);
     }
 
     public function add_preflight_field($mform, \stdClass $config): void {

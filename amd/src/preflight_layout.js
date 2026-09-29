@@ -7,8 +7,56 @@
  */
 define([], function() {
     const bound = new WeakSet();
+    const guardedForms = new WeakSet();
     let scheduled = false;
     let initialized = false;
+    let rulesRequiredMessage = '';
+
+    const clearRulesError = (checkbox, field) => {
+        checkbox.setCustomValidity('');
+        checkbox.removeAttribute('aria-invalid');
+        field.classList.remove('has-danger');
+        const feedback = field.querySelector('[data-proctorcore-rules-error]');
+        if (feedback) {
+            feedback.hidden = true;
+        }
+    };
+
+    const guardRulesAcknowledgement = (form, checkbox, field) => {
+        if (guardedForms.has(form)) {
+            return;
+        }
+        guardedForms.add(form);
+        checkbox.addEventListener('change', () => {
+            if (checkbox.checked) {
+                clearRulesError(checkbox, field);
+            }
+        });
+        form.addEventListener('submit', event => {
+            if (checkbox.checked) {
+                clearRulesError(checkbox, field);
+                return;
+            }
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            checkbox.setCustomValidity(rulesRequiredMessage || 'Please acknowledge the exam rules before starting.');
+            checkbox.setAttribute('aria-invalid', 'true');
+            field.classList.add('has-danger');
+            let feedback = field.querySelector('[data-proctorcore-rules-error]');
+            if (!feedback) {
+                feedback = document.createElement('div');
+                feedback.className = 'invalid-feedback d-block local-proctorcore-rules-error';
+                feedback.dataset.proctorcoreRulesError = 'true';
+                feedback.setAttribute('role', 'alert');
+                field.appendChild(feedback);
+            }
+            feedback.textContent = checkbox.validationMessage;
+            feedback.hidden = false;
+            field.scrollIntoView({behavior: 'smooth', block: 'center'});
+            checkbox.focus({preventScroll: true});
+            checkbox.reportValidity();
+        }, true);
+    };
 
     const updateState = (form, checks) => {
         form.classList.toggle('local-proctorcore-checks-open', checks.open);
@@ -61,6 +109,7 @@ define([], function() {
             timer.insertAdjacentElement('afterend', field);
         }
         field.classList.add('local-proctorcore-rules-acknowledgement');
+        guardRulesAcknowledgement(form, checkbox, field);
         form.classList.add('local-proctorcore-ui-ready');
     };
 
@@ -69,7 +118,8 @@ define([], function() {
     };
 
     return {
-        init: function() {
+        init: function(config = {}) {
+            rulesRequiredMessage = config.rulesRequired || rulesRequiredMessage;
             if (initialized) {
                 return;
             }
